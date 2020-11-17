@@ -23,10 +23,10 @@ import os
 import shutil
 import xml.etree.ElementTree as ET
 
-import tools.utils
+import DTUtils
 
 
-class AndroidTools(tools.utils.DeployToolsUtils):
+class AndroidTools(DTUtils.Utils):
     def __init__(self):
         super().__init__()
         self.androidPlatform = ''

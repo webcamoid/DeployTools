@@ -23,10 +23,10 @@ import os
 import struct
 import sys
 
-import tools.binary
+import DTBinary
 
 
-class DeployToolsBinary(tools.binary.DeployToolsBinary):
+class MachBinaryTools(DTBinary.BinaryTools):
     def __init__(self):
         super().__init__()
 

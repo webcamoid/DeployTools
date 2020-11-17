@@ -25,10 +25,10 @@ import re
 import struct
 import sys
 
-import tools.binary
+import DTBinary
 
 
-class DeployToolsBinary(tools.binary.DeployToolsBinary):
+class ElfBinaryTools(DTBinary.BinaryTools):
     def __init__(self):
         super().__init__()
         self.ldLibraryPath = os.environ['LD_LIBRARY_PATH'].split(':') if 'LD_LIBRARY_PATH' in os.environ else []

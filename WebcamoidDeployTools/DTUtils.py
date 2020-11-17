@@ -28,7 +28,7 @@ import shutil
 import subprocess # nosec
 import sys
 
-class DeployToolsUtils:
+class Utils:
     def __init__(self):
         self.make = ''
 

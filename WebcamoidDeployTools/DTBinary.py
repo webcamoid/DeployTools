@@ -25,10 +25,10 @@ import subprocess # nosec
 import threading
 import time
 
-import tools
+import DTUtils
 
 
-class DeployToolsBinary(tools.utils.DeployToolsUtils):
+class BinaryTools(DTUtils.Utils):
     def __init__(self):
         super().__init__()
         self.detectStrip()

@@ -24,9 +24,10 @@ import sys
 import platform
 import shutil
 
-import utils
+import DTUtils
 
-class DeployBase(utils.DeployToolsUtils):
+
+class DeployBase(DTUtils.Utils):
     def __init__(self):
         super().__init__()
         self.rootDir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..'))

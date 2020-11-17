@@ -30,10 +30,10 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 
-import tools.utils
+import DTUtils
 
 
-class DeployToolsQt(tools.utils.DeployToolsUtils):
+class Qt5Tools(DTUtils.Utils):
     def __init__(self):
         super().__init__()
         self.qmake = ''

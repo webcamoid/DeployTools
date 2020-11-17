@@ -24,21 +24,13 @@ import sys
 import platform
 import shutil
 
-import DTUtils
+from . import DTUtils
 
 
 class DeployBase(DTUtils.Utils):
     def __init__(self):
         super().__init__()
-        self.rootDir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..'))
-        self.buildDir = os.environ['BUILD_PATH'] if 'BUILD_PATH' in os.environ else self.rootDir
-        self.installDir = os.path.join(self.rootDir, 'ports/deploy/temp_priv/root')
-        self.rootInstallDir = ''
-        self.pkgsDir = os.path.join(self.rootDir,
-                                    'ports/deploy/packages_auto',
-                                    sys.platform if os.name == 'posix' else os.name)
-        self.programVersion = ''
-        self.qmake = ''
+        self.setRootDir()
 
     def __str__(self):
         deployInfo = 'Python version: {}\n' \
@@ -69,6 +61,17 @@ class DeployBase(DTUtils.Utils):
                                self.qmake)
 
         return deployInfo
+
+    def setRootDir(self, rootDir=''):
+        self.rootDir = rootDir
+        self.buildDir = os.environ['BUILD_PATH'] if 'BUILD_PATH' in os.environ else self.rootDir
+        self.installDir = os.path.join(self.rootDir, 'ports/deploy/temp_priv/root')
+        self.rootInstallDir = ''
+        self.pkgsDir = os.path.join(self.rootDir,
+                                    'ports/deploy/packages_auto',
+                                    sys.platform if os.name == 'posix' else os.name)
+        self.programVersion = ''
+        self.qmake = ''
 
     def run(self):
         print('Deploy info\n')

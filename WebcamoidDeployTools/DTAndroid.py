@@ -23,7 +23,7 @@ import os
 import shutil
 import xml.etree.ElementTree as ET
 
-import DTUtils
+from . import DTUtils
 
 
 class AndroidTools(DTUtils.Utils):

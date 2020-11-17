@@ -25,7 +25,7 @@ import subprocess # nosec
 import threading
 import time
 
-import DTUtils
+from . import DTUtils
 
 
 class BinaryTools(DTUtils.Utils):

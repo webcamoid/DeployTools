@@ -30,7 +30,7 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 
-import DTUtils
+from . import DTUtils
 
 
 class Qt5Tools(DTUtils.Utils):

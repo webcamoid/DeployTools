@@ -24,7 +24,7 @@ import os
 import struct
 import sys
 
-import DTBinary
+from . import DTBinary
 
 
 class PecoffBinaryTools(DTBinary.BinaryTools):

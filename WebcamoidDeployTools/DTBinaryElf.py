@@ -25,7 +25,7 @@ import re
 import struct
 import sys
 
-import DTBinary
+from . import DTBinary
 
 
 class ElfBinaryTools(DTBinary.BinaryTools):

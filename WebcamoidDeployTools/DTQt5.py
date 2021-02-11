@@ -104,8 +104,7 @@ class Qt5Tools(DTUtils.Utils):
 
         return ''
 
-    @staticmethod
-    def detectVersion(proFile):
+    def detectVersion(self, proFile):
         if 'DAILY_BUILD' in os.environ:
             branch = self.gitBranch(self.rootDir)
             count = self.gitCommitCount(self.rootDir)

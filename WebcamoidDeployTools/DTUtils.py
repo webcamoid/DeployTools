@@ -253,3 +253,63 @@ class Utils:
             pass
 
         return makeFiles
+
+    def gitCommitHash(self, path):
+        try:
+            process = subprocess.Popen(['git', 'rev-parse', 'HEAD'], # nosec
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        cwd=path)
+            stdout, _ = process.communicate()
+
+            if process.returncode != 0:
+                return ''
+
+            return stdout.decode(sys.getdefaultencoding()).strip()
+        except:
+            return ''
+
+    def gitCommitShortHash(self, path):
+        try:
+            process = subprocess.Popen(['git', 'rev-parse', '--short', 'HEAD'], # nosec
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        cwd=path)
+            stdout, _ = process.communicate()
+
+            if process.returncode != 0:
+                return ''
+
+            return stdout.decode(sys.getdefaultencoding()).strip()
+        except:
+            return ''
+
+    def gitBranch(self, path):
+        try:
+            process = subprocess.Popen(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], # nosec
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        cwd=path)
+            stdout, _ = process.communicate()
+
+            if process.returncode != 0:
+                return ''
+
+            return stdout.decode(sys.getdefaultencoding()).strip()
+        except:
+            return ''
+
+    def gitCommitCount(self, path):
+        try:
+            process = subprocess.Popen(['git', 'rev-list', '--count', 'HEAD'], # nosec
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        cwd=path)
+            stdout, _ = process.communicate()
+
+            if process.returncode != 0:
+                return ''
+
+            return stdout.decode(sys.getdefaultencoding()).strip()
+        except:
+            return ''

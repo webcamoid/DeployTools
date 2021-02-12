@@ -106,10 +106,18 @@ class Qt5Tools(DTUtils.Utils):
 
     def detectVersion(self, proFile):
         if 'DAILY_BUILD' in os.environ:
-            branch = self.gitBranch(self.rootDir)
+            branch = ''
+
+            if 'TRAVIS_BRANCH' in os.environ:
+                branch = os.environ['TRAVIS_BRANCH']
+            elif 'APPVEYOR_REPO_BRANCH' in os.environ:
+                branch = os.environ['APPVEYOR_REPO_BRANCH']
+            else:
+                branch = self.gitBranch(self.rootDir)
+
             count = self.gitCommitCount(self.rootDir)
             shortHash = self.gitCommitShortHash(self.rootDir)
-            
+
             return 'daily-{}-{}-{}'.format(branch, count, shortHash)
 
         verMaj = '0'

@@ -313,3 +313,41 @@ class Utils:
             return stdout.decode(sys.getdefaultencoding()).strip()
         except:
             return ''
+
+    def gitLastTag(self, path):
+        try:
+            process = subprocess.Popen(['git', 'describe', '--abbrev=0'], # nosec
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        cwd=path)
+            stdout, _ = process.communicate()
+
+            if process.returncode != 0:
+                return ''
+
+            return stdout.decode(sys.getdefaultencoding()).strip()
+        except:
+            return ''
+
+    def gitCommitCountSince(self, path, tag):
+        try:
+            process = subprocess.Popen(['git', 'rev-list', '--count', '{}..HEAD'.format(tag)], # nosec
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        cwd=path)
+            stdout, _ = process.communicate()
+
+            if process.returncode != 0:
+                return ''
+
+            return stdout.decode(sys.getdefaultencoding()).strip()
+        except:
+            return ''
+
+    def gitCommitCountSinceLastTag(self, path):
+        tag = self.gitLastTag(path)
+            
+        if tag == '':
+            return '';
+        
+        return self.gitCommitCountSince(tag)

@@ -460,10 +460,6 @@ class Qt5Tools(DTUtils.Utils):
 
     def writeQtConf(self):
         prefix = self.binaryInstallDir
-
-        if self.targetSystem == 'mac':
-            prefix = os.path.abspath(os.path.join(self.binaryInstallDir, '..'))
-
         paths = {'Plugins': os.path.relpath(self.pluginsInstallDir, prefix).replace('\\', '/'),
                  'Imports': os.path.relpath(self.qmlInstallDir, prefix).replace('\\', '/'),
                  'Qml2Imports': os.path.relpath(self.qmlInstallDir, prefix).replace('\\', '/')}
@@ -472,11 +468,17 @@ class Qt5Tools(DTUtils.Utils):
         if not os.path.exists(confPath):
             os.makedirs(confPath)
 
+        print()
+
         with open(self.qtConf, 'w') as qtconf:
             qtconf.write('[Paths]\n')
+            print('[Paths]')
 
             for path in paths:
                 qtconf.write('{} = {}\n'.format(path, paths[path]))
+                print('{} = {}'.format(path, paths[path]))
+
+        print()
 
     @staticmethod
     def readChangeLog(changeLog, appName, version):

@@ -116,9 +116,8 @@ class Qt5Tools(DTUtils.Utils):
                 branch = self.gitBranch(self.rootDir)
 
             count = self.gitCommitCount(self.rootDir)
-            shortHash = self.gitCommitShortHash(self.rootDir)
 
-            return 'daily-{}-{}-{}'.format(branch, count, shortHash)
+            return 'daily-{}-{}'.format(branch, count)
 
         verMaj = '0'
         verMin = '0'

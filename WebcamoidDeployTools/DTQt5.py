@@ -104,39 +104,6 @@ class Qt5Tools(DTUtils.Utils):
 
         return ''
 
-    def detectVersion(self, proFile):
-        if 'DAILY_BUILD' in os.environ:
-            branch = ''
-
-            if 'TRAVIS_BRANCH' in os.environ:
-                branch = os.environ['TRAVIS_BRANCH']
-            elif 'APPVEYOR_REPO_BRANCH' in os.environ:
-                branch = os.environ['APPVEYOR_REPO_BRANCH']
-            else:
-                branch = self.gitBranch(self.rootDir)
-
-            count = self.gitCommitCount(self.rootDir)
-
-            return 'daily-{}-{}'.format(branch, count)
-
-        verMaj = '0'
-        verMin = '0'
-        verPat = '0'
-
-        try:
-            with open(proFile) as f:
-                for line in f:
-                    if line.startswith('VER_MAJ') and '=' in line:
-                        verMaj = line.split('=')[1].strip()
-                    elif line.startswith('VER_MIN') and '=' in line:
-                        verMin = line.split('=')[1].strip()
-                    elif line.startswith('VER_PAT') and '=' in line:
-                        verPat = line.split('=')[1].strip()
-        except:
-            pass
-
-        return verMaj + '.' + verMin + '.' + verPat
-
     def detectQtIFW(self):
         if 'BINARYCREATOR' in os.environ:
             self.qtIFW = os.environ['BINARYCREATOR']
@@ -557,7 +524,7 @@ class Qt5Tools(DTUtils.Utils):
             if 'DAILY_BUILD' in os.environ:
                 config.write('    <Version>0.0.0</Version>\n')
             else:
-                config.write('    <Version>{}</Version>\n'.format(self.programVersion))
+                config.write('    <Version>{}</Version>\n'.format(packageConf['Package']['version'].strip()))
 
             config.write('    <Title>{}</Title>\n'.format(packageConf['Package']['description'].strip()))
             config.write('    <Publisher>{}</Publisher>\n'.format(appName))
@@ -590,7 +557,7 @@ class Qt5Tools(DTUtils.Utils):
             if 'DAILY_BUILD' in os.environ:
                 f.write('    <Version>0.0.0</Version>\n')
             else:
-                f.write('    <Version>{}</Version>\n'.format(self.programVersion))
+                f.write('    <Version>{}</Version>\n'.format(packageConf['Package']['version'].strip()))
 
             f.write('    <ReleaseDate>{}</ReleaseDate>\n'.format(time.strftime('%Y-%m-%d')))
             f.write('    <Name>{}</Name>\n'.format(componentName))
@@ -603,8 +570,8 @@ class Qt5Tools(DTUtils.Utils):
 
             if not 'DAILY_BUILD' in os.environ:
                 f.write(self.readChangeLog(self.changeLog,
-                                        appName,
-                                        self.programVersion))
+                                           appName,
+                                           packageConf['Package']['version'].strip()))
 
             f.write('    </UpdateText>\n')
             f.write('    <Default>true</Default>\n')

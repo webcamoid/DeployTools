@@ -43,9 +43,7 @@ class DeployBase(DTUtils.Utils):
                      'Target system: {}\n' \
                      'Target architecture: {}\n' \
                      'Number of threads: {}\n' \
-                     'Program version: {}\n' \
-                     'Make executable: {}\n' \
-                     'Qmake executable: {}'. \
+                     'Program version: {}'. \
                         format(platform.python_version(),
                                self.rootDir,
                                self.buildDir,
@@ -56,9 +54,7 @@ class DeployBase(DTUtils.Utils):
                                self.targetSystem,
                                self.targetArch,
                                self.njobs,
-                               self.programVersion,
-                               self.make,
-                               self.qmake)
+                               self.programVersion())
 
         return deployInfo
 
@@ -70,7 +66,6 @@ class DeployBase(DTUtils.Utils):
         self.pkgsDir = os.path.join(self.rootDir,
                                     'ports/deploy/packages_auto',
                                     sys.platform if os.name == 'posix' else os.name)
-        self.programVersion = ''
         self.qmake = ''
 
     def run(self):

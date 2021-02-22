@@ -19,6 +19,7 @@
 #
 # Web-Site: http://github.com/webcamoid/DeployTools/
 
+import configparser
 import fnmatch
 import hashlib
 import multiprocessing
@@ -61,6 +62,46 @@ class Utils:
             binary = self.mainBinary
 
         self.targetArch = platform.architecture(binary)[0]
+        
+    def packageName(self):
+        pkgName = 'package'
+        
+        try:
+            packageConf = configparser.ConfigParser()
+            packageConf.optionxform=str
+            packageConf.read(self.packageConfig, 'utf-8')
+            pkgName = packageConf['Package']['packageName'].strip()
+        except:
+            pass
+
+        return pkgName
+
+    def programVersion(self):
+        if 'DAILY_BUILD' in os.environ:
+            branch = ''
+
+            if 'TRAVIS_BRANCH' in os.environ:
+                branch = os.environ['TRAVIS_BRANCH']
+            elif 'APPVEYOR_REPO_BRANCH' in os.environ:
+                branch = os.environ['APPVEYOR_REPO_BRANCH']
+            else:
+                branch = self.gitBranch(self.rootDir)
+
+            count = self.gitCommitCount(self.rootDir)
+
+            return 'daily-{}-{}'.format(branch, count)
+
+        version = '0.0.0'
+        
+        try:
+            packageConf = configparser.ConfigParser()
+            packageConf.optionxform=str
+            packageConf.read(self.packageConfig, 'utf-8')
+            version = packageConf['Package']['version'].strip()
+        except:
+            pass
+
+        return version
 
     def whereBin(self, binary):
         for path in self.sysBinsPath:

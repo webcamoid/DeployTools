@@ -76,6 +76,19 @@ class Utils:
 
         return pkgName
 
+    def targetSystem(self):
+        targetSystem = 'unknown'
+        
+        try:
+            packageConf = configparser.ConfigParser()
+            packageConf.optionxform=str
+            packageConf.read(self.packageConfig, 'utf-8')
+            targetSystem = packageConf['Package']['targetSystem'].strip()
+        except:
+            pass
+
+        return targetSystem
+
     def programVersion(self):
         if 'DAILY_BUILD' in os.environ:
             branch = ''

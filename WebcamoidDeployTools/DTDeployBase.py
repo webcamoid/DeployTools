@@ -62,7 +62,7 @@ class DeployBase(DTUtils.Utils):
         self.rootDir = rootDir
         self.buildDir = os.environ['BUILD_PATH'] if 'BUILD_PATH' in os.environ else self.rootDir
         self.installDir = os.environ['INSTALL_PATH'] if 'INSTALL_PATH' in os.environ else \
-            os.path.join(self.rootDir, 'ports/deploy/temp_priv/root')
+            os.path.join(self.buildDir, 'ports/deploy/temp_priv/root')
         self.rootInstallDir = ''
         self.pkgsDir = os.path.join(self.rootDir,
                                     'ports/deploy/packages_auto',

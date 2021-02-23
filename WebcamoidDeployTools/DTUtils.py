@@ -76,18 +76,18 @@ class Utils:
 
         return pkgName
 
-    def targetSystem(self):
-        targetSystem = 'unknown'
+    def targetPlatform(self):
+        targetPlatform = 'unknown'
         
         try:
             packageConf = configparser.ConfigParser()
             packageConf.optionxform=str
             packageConf.read(self.packageConfig, 'utf-8')
-            targetSystem = packageConf['Package']['targetSystem'].strip()
+            targetPlatform = packageConf['Package']['targetPlatform'].strip()
         except:
             pass
 
-        return targetSystem
+        return targetPlatform
 
     def programVersion(self):
         if 'DAILY_BUILD' in os.environ:

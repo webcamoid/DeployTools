@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Webcamoid Deploy Tools.
-# Copyright (C) 2020  Gonzalo Exequiel Pedone
+# Copyright (C) 2021  Gonzalo Exequiel Pedone
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -21,8 +21,6 @@
 
 import os
 import platform
-import shutil
-import xml.etree.ElementTree as ET
 
 from . import DTBinary
 from . import DTGit
@@ -43,13 +41,11 @@ def sysInfo():
 
     return info
 
-def writeBuildInfo(globs, buildInfoFile, sourcesDir, androidCompileSdkVersion):
+def writeBuildInfo(globs, buildInfoFile, sourcesDir):
     outputDir = os.path.dirname(buildInfoFile)
 
     if not os.path.exists(outputDir):
         os.makedirs(outputDir)
-
-    # Write repository info.
 
     with open(buildInfoFile, 'w') as f:
         # Write repository info.
@@ -66,10 +62,12 @@ def writeBuildInfo(globs, buildInfoFile, sourcesDir, androidCompileSdkVersion):
 
         if 'TRAVIS_BUILD_WEB_URL' in os.environ:
             buildLogUrl = os.environ['TRAVIS_BUILD_WEB_URL']
-        elif 'APPVEYOR_ACCOUNT_NAME' in os.environ and 'APPVEYOR_PROJECT_NAME' in os.environ and 'APPVEYOR_JOB_ID' in os.environ:
+        elif 'APPVEYOR_ACCOUNT_NAME' in os.environ \
+            and 'APPVEYOR_PROJECT_NAME' in os.environ \
+            and 'APPVEYOR_JOB_ID' in os.environ:
             buildLogUrl = 'https://ci.appveyor.com/project/{}/{}/build/job/{}'.format(os.environ['APPVEYOR_ACCOUNT_NAME'],
-                                                                                        os.environ['APPVEYOR_PROJECT_SLUG'],
-                                                                                        os.environ['APPVEYOR_JOB_ID'])
+                                                                                      os.environ['APPVEYOR_PROJECT_SLUG'],
+                                                                                      os.environ['APPVEYOR_JOB_ID'])
 
         if len(buildLogUrl) > 0:
             print('    Build log URL: ' + buildLogUrl)
@@ -86,46 +84,6 @@ def writeBuildInfo(globs, buildInfoFile, sourcesDir, androidCompileSdkVersion):
             if len(line) > 0:
                 print('    ' + line)
                 f.write(line + '\n')
-
-        print()
-        f.write('\n')
-
-        # Write SDK and NDK info.
-
-        androidSDK = ''
-
-        if 'ANDROID_HOME' in os.environ:
-            androidSDK = os.environ['ANDROID_HOME']
-
-        androidNDK = ''
-
-        if 'ANDROID_NDK_ROOT' in os.environ:
-            androidNDK = os.environ['ANDROID_NDK_ROOT']
-        elif 'ANDROID_NDK' in os.environ:
-            androidNDK = os.environ['ANDROID_NDK']
-
-        sdkInfoFile = os.path.join(androidSDK, 'tools', 'source.properties')
-        ndkInfoFile = os.path.join(androidNDK, 'source.properties')
-
-        print('    Android Platform: {}'.format(androidCompileSdkVersion))
-        f.write('Android Platform: {}\n'.format(androidCompileSdkVersion))
-        print('    SDK Info: \n')
-        f.write('SDK Info: \n\n')
-
-        with open(sdkInfoFile) as sdkf:
-            for line in sdkf:
-                if len(line) > 0:
-                    print('        ' + line.strip())
-                    f.write('    ' + line)
-
-        print('\n    NDK Info: \n')
-        f.write('\nNDK Info: \n\n')
-
-        with open(ndkInfoFile) as ndkf:
-            for line in ndkf:
-                if len(line) > 0:
-                    print('        ' + line.strip())
-                    f.write('    ' + line)
 
         print()
         f.write('\n')
@@ -147,26 +105,42 @@ def writeBuildInfo(globs, buildInfoFile, sourcesDir, androidCompileSdkVersion):
             print('    ' + packge)
             f.write(packge + '\n')
 
-def removeUnneededFiles(path):
-    afiles = set()
+def createLauncher(globs, mainExecutable, dataDir, libDir):
+    programName = os.path.basename(mainExecutable)
+    launcherScript = os.path.join(dataDir, programName) + '.sh'
+    binDir = os.path.relpath(os.path.dirname(mainExecutable), dataDir)
+    libDir = os.path.relpath(libDir, dataDir)
 
-    for root, _, files in os.walk(path):
-        for f in files:
-            if f.endswith('.jar'):
-                afiles.add(os.path.join(root, f))
+    with open(launcherScript, 'w') as launcher:
+        launcher.write('#!/bin/sh\n')
+        launcher.write('\n')
+        launcher.write('path=$(realpath "$0")\n')
+        launcher.write('ROOTDIR=$(dirname "$path")\n')
+        launcher.write('export PATH="${{ROOTDIR}}/{}:$PATH"\n'.format(binDir))
+        launcher.write('export LD_LIBRARY_PATH="${{ROOTDIR}}/{}:$LD_LIBRARY_PATH"\n'.format(libDir))
 
-    for afile in afiles:
-        os.remove(afile)
+        if 'environment' in globs:
+            for env in globs['environment']:
+                if len(env[2]) > 0:
+                    launcher.write('# {}\n'.format(env[2]))
+
+                if env[3]:
+                    launcher.write('#')
+
+                launcher.write('export {}={}\n'.format(env[0], env[1]))
+
+        launcher.write('{} "$@"\n'.format(programName))
+
+    os.chmod(launcherScript, 0o744)
 
 def preRun(globs, configs, dataDir):
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     mainExecutable = configs.get('Package', 'mainExecutable', fallback='').strip()
     mainExecutable = os.path.join(dataDir, mainExecutable)
-    libDir = configs.get('Package', 'libDir', fallback='').strip()
+    libDir = configs.get('Package', 'libDir', fallback='lib').strip()
     libDir = os.path.join(dataDir, libDir)
-    defaultSysLibDir = '/opt/android-libs/{}/lib'.format(targetPlatform)
-    sysLibDir = configs.get('System', 'libDir', fallback=defaultSysLibDir)
+    sysLibDir = configs.get('System', 'libDir', fallback='')
     libs = set()
 
     for lib in sysLibDir.split(','):
@@ -191,16 +165,21 @@ def preRun(globs, configs, dataDir):
     print()
     print('Stripping symbols')
     solver.stripSymbols(dataDir)
-    print('Removing unnecessary files')
-    removeUnneededFiles(libDir)
+    print('Resetting file permissions')
+    solver.resetFilePermissions(dataDir, os.path.dirname(mainExecutable))
     print()
 
 def postRun(globs, configs, dataDir):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
+    mainExecutable = configs.get('Package', 'mainExecutable', fallback='').strip()
+    mainExecutable = os.path.join(dataDir, mainExecutable)
+    libDir = configs.get('Package', 'libDir', fallback='lib').strip()
+    libDir = os.path.join(dataDir, libDir)
     buildInfoFile = configs.get('Package', 'buildInfoFile', fallback='build-info.txt').strip()
     buildInfoFile = os.path.join(dataDir, buildInfoFile)
-    androidCompileSdkVersion = configs.get('System', 'androidCompileSdkVersion', fallback='24').strip()
 
+    print('Writting launcher file')
+    createLauncher(globs, mainExecutable, dataDir, libDir)
     print('Writting build system information')
     print()
-    writeBuildInfo(globs, buildInfoFile, sourcesDir, androidCompileSdkVersion)
+    writeBuildInfo(globs, buildInfoFile, sourcesDir)

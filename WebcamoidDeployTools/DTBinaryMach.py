@@ -23,160 +23,171 @@ import os
 import struct
 import sys
 
-from . import DTBinary
 
+# 32 bits magic number.
+MH_MAGIC = 0xfeedface # Native endian
+MH_CIGAM = 0xcefaedfe # Reverse endian
 
-class MachBinaryTools(DTBinary.BinaryTools):
-    def __init__(self):
-        super().__init__()
+# 64 bits magic number.
+MH_MAGIC_64 = 0xfeedfacf # Native endian
+MH_CIGAM_64 = 0xcffaedfe # Reverse endian
 
-        # 32 bits magic number.
-        self.MH_MAGIC = 0xfeedface # Native endian
-        self.MH_CIGAM = 0xcefaedfe # Reverse endian
-
-        # 64 bits magic number.
-        self.MH_MAGIC_64 = 0xfeedfacf # Native endian
-        self.MH_CIGAM_64 = 0xcffaedfe # Reverse endian
-
-    def isValid(self, path):
-        try:
-            with open(path, 'rb') as f:
-                # Read magic number.
-                magic = struct.unpack('I', f.read(4))[0]
-
-                if magic == self.MH_MAGIC \
-                    or magic == self.MH_CIGAM \
-                    or magic == self.MH_MAGIC_64 \
-                    or magic == self.MH_CIGAM_64:
-                    return True
-        except:
-            pass
-
-        return False
-
-    # https://github.com/aidansteele/osx-abi-macho-file-format-reference
-    def dump(self, binary):
-        # Commands definitions
-        LC_REQ_DYLD = 0x80000000
-        LC_LOAD_DYLIB = 0xc
-        LC_RPATH = 0x1c | LC_REQ_DYLD
-        LC_ID_DYLIB = 0xd
-
-        dylibImports = []
-        rpaths = []
-        dylibId = ''
-
-        with open(binary, 'rb') as f:
+def isValid(path):
+    try:
+        with open(path, 'rb') as f:
             # Read magic number.
             magic = struct.unpack('I', f.read(4))[0]
 
-            if magic == self.MH_MAGIC or magic == self.MH_CIGAM:
-                is32bits = True
-            elif magic == self.MH_MAGIC_64 or magic == self.MH_CIGAM_64:
-                is32bits = False
-            else:
-                return {}
+            if magic == MH_MAGIC \
+                or magic == MH_CIGAM \
+                or magic == MH_MAGIC_64 \
+                or magic == MH_CIGAM_64:
+                return True
+    except:
+        pass
 
-            # Read number of commands.
-            f.seek(12, os.SEEK_CUR)
-            ncmds = struct.unpack('I', f.read(4))[0]
+    return False
 
-            # Move to load commands
-            f.seek(8 if is32bits else 12, os.SEEK_CUR)
+def name(binary):
+    dep = os.path.basename(binary)
+    i = dep.find('.')
 
-            for _ in range(ncmds):
-                # Read a load command and store it's position in the file.
-                loadCommandStart = f.tell()
-                loadCommand = struct.unpack('II', f.read(8))
+    if i >= 0:
+        dep = dep[: dep.find('.')]
 
-                # If the command list a library
-                if loadCommand[0] in [LC_LOAD_DYLIB, LC_RPATH, LC_ID_DYLIB]:
-                    # Save the position of the next command.
-                    nextCommand = f.tell() + loadCommand[1] - 8
+    if 'Qt' in dep and not 'Qt5' in dep:
+        dep = dep.replace('Qt', 'Qt5')
 
-                    # Move to the string
-                    f.seek(loadCommandStart + struct.unpack('I', f.read(4))[0], os.SEEK_SET)
-                    dylib = b''
+    return dep
 
-                    # Read string until null character.
-                    while True:
-                        c = f.read(1)
+def init(targetPlatform, targetArch, sysLibDir):
+    pass
 
-                        if c == b'\x00':
-                            break
+def solveRefpath(path):
+    if not path.startswith('@'):
+        return path
 
-                        dylib += c
-                    s = dylib.decode(sys.getdefaultencoding())
+    searchPaths = []
 
-                    if loadCommand[0] == LC_LOAD_DYLIB:
-                        dylibImports.append(s)
-                    elif loadCommand[0] == LC_RPATH:
-                        rpaths.append(s)
-                    elif loadCommand[0] == LC_ID_DYLIB:
-                        dylibId = s
+    if 'DYLD_LIBRARY_PATH' in os.environ:
+        searchPaths += os.environ['DYLD_LIBRARY_PATH'].split(':')
 
-                    f.seek(nextCommand, os.SEEK_SET)
-                else:
-                    f.seek(loadCommand[1] - 8, os.SEEK_CUR)
+    if 'DYLD_FRAMEWORK_PATH' in os.environ:
+        searchPaths += os.environ['DYLD_FRAMEWORK_PATH'].split(':')
 
-        return {'imports': dylibImports, 'rpaths': rpaths, 'id': dylibId}
+    if path.endswith('.dylib'):
+        dep = os.path.basename(path)
+    else:
+        i = path.rfind(os.sep, 0, path.rfind('.framework'))
+        dep = path[i + 1:]
 
-    @staticmethod
-    def solveRefpath(path):
-        if not path.startswith('@'):
-            return path
+    for fpath in searchPaths:
+        realPath = os.path.join(fpath, dep)
 
-        searchPaths = []
+        if os.path.exists(realPath):
+            return realPath
 
-        if 'DYLD_LIBRARY_PATH' in os.environ:
-            searchPaths += os.environ['DYLD_LIBRARY_PATH'].split(':')
+    return ''
 
-        if 'DYLD_FRAMEWORK_PATH' in os.environ:
-            searchPaths += os.environ['DYLD_FRAMEWORK_PATH'].split(':')
+# https://github.com/aidansteele/osx-abi-macho-file-format-reference
+def dump(binary):
+    if not os.path.exists(binary):
+        return {}
 
-        if path.endswith('.dylib'):
-            dep = os.path.basename(path)
+    # Commands definitions
+    LC_REQ_DYLD = 0x80000000
+    LC_LOAD_DYLIB = 0xc
+    LC_RPATH = 0x1c | LC_REQ_DYLD
+    LC_ID_DYLIB = 0xd
+
+    dylibImports = []
+    rpaths = []
+    dylibId = ''
+
+    with open(binary, 'rb') as f:
+        # Read magic number.
+        magic = struct.unpack('I', f.read(4))[0]
+
+        if magic == MH_MAGIC or magic == MH_CIGAM:
+            is32bits = True
+        elif magic == MH_MAGIC_64 or magic == MH_CIGAM_64:
+            is32bits = False
         else:
-            i = path.rfind(os.sep, 0, path.rfind('.framework'))
-            dep = path[i + 1:]
+            return {}
 
-        for fpath in searchPaths:
-            realPath = os.path.join(fpath, dep)
+        # Read number of commands.
+        f.seek(12, os.SEEK_CUR)
+        ncmds = struct.unpack('I', f.read(4))[0]
 
-            if os.path.exists(realPath):
-                return realPath
+        # Move to load commands
+        f.seek(8 if is32bits else 12, os.SEEK_CUR)
 
+        for _ in range(ncmds):
+            # Read a load command and store it's position in the file.
+            loadCommandStart = f.tell()
+            loadCommand = struct.unpack('II', f.read(8))
+
+            # If the command list a library
+            if loadCommand[0] in [LC_LOAD_DYLIB, LC_RPATH, LC_ID_DYLIB]:
+                # Save the position of the next command.
+                nextCommand = f.tell() + loadCommand[1] - 8
+
+                # Move to the string
+                f.seek(loadCommandStart + struct.unpack('I', f.read(4))[0], os.SEEK_SET)
+                dylib = b''
+
+                # Read string until null character.
+                while True:
+                    c = f.read(1)
+
+                    if c == b'\x00':
+                        break
+
+                    dylib += c
+                s = dylib.decode(sys.getdefaultencoding())
+
+                if loadCommand[0] == LC_LOAD_DYLIB:
+                    dylibImports.append(s)
+                elif loadCommand[0] == LC_RPATH:
+                    rpaths.append(s)
+                elif loadCommand[0] == LC_ID_DYLIB:
+                    dylibId = s
+
+                f.seek(nextCommand, os.SEEK_SET)
+            else:
+                f.seek(loadCommand[1] - 8, os.SEEK_CUR)
+
+    return {'imports': dylibImports, 'rpaths': rpaths, 'id': dylibId}
+
+def dependencies(binary):
+    machInfo = dump(binary)
+
+    if not machInfo:
+        return []
+
+    libs = []
+
+    for mach in machInfo['imports']:
+        mach = solveRefpath(mach)
+
+        if len(mach) < 1:
+            continue
+
+        dirName = os.path.dirname(mach)
+        dirName = os.path.realpath(dirName)
+        baseName = os.path.basename(mach)
+        libs.append(os.path.join(dirName, baseName))
+
+    return libs
+
+def guess(mainExecutable, dependency):
+    dep = solveRefpath(dependency)
+
+    if len(dep) < 1:
         return ''
 
-    def dependencies(self, binary):
-        machInfo = self.dump(binary)
+    dirName = os.path.dirname(dep)
+    dirName = os.path.realpath(dirName)
+    baseName = os.path.basename(dep)
 
-        if not machInfo:
-            return []
-
-        libs = []
-
-        for mach in machInfo['imports']:
-            mach = self.solveRefpath(mach)
-
-            if mach == '' or self.isExcluded(mach) or not os.path.exists(mach):
-                continue
-
-            dirName = os.path.dirname(mach)
-            dirName = os.path.realpath(dirName)
-            baseName = os.path.basename(mach)
-            libs.append(os.path.join(dirName, baseName))
-
-        return libs
-
-    def name(self, binary):
-        dep = os.path.basename(binary)
-        i = dep.find('.')
-
-        if i >= 0:
-            dep = dep[: dep.find('.')]
-
-        if 'Qt' in dep and not 'Qt5' in dep:
-            dep = dep.replace('Qt', 'Qt5')
-
-        return dep
+    return os.path.join(dirName, baseName)

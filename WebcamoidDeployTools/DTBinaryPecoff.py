@@ -24,22 +24,21 @@ import os
 import struct
 import sys
 
-from . import DTBinary
+from . import DTUtils
 
 
-class PecoffBinaryTools(DTBinary.BinaryTools):
-    def __init__(self):
-        super().__init__()
+EXTRA_LIBRARY_PATH = []
 
-    def isValid(self, path):
-        mimetype, _ = mimetypes.guess_type(path)
+def isValid(path):
+    mimetype, _ = mimetypes.guess_type(path)
 
-        if mimetype == 'application/x-msdownload':
-            return True
+    if mimetype == 'application/x-msdownload':
+        return True
 
-        if mimetype != 'application/octet-stream':
-            return False
+    if mimetype != 'application/octet-stream':
+        return False
 
+    try:
         with open(path, 'rb') as f:
             if f.read(2) != b'MZ':
                 return []
@@ -49,131 +48,141 @@ class PecoffBinaryTools(DTBinary.BinaryTools):
             f.seek(peHeaderOffset[0], os.SEEK_SET)
             peSignatue = f.read(4)
 
-            if peSignatue != b'PE\x00\x00':
-                return False
+            if peSignatue == b'PE\x00\x00':
+                return True
+    except:
+        pass
 
-        return True
+    return False
 
-    # https://msdn.microsoft.com/en-us/library/windows/desktop/ms680547(v=vs.85).aspx
-    # https://upload.wikimedia.org/wikipedia/commons/1/1b/Portable_Executable_32_bit_Structure_in_SVG_fixed.svg
-    def dump(self, binary):
-        dllImports = set()
+def name(binary):
+    dep = os.path.basename(binary)
 
-        if not os.path.exists(binary) or not os.path.isfile(binary):
-            return dllImports
+    return dep[: dep.find('.')]
 
-        with open(binary, 'rb') as f:
-            # Check DOS header signature.
-            if f.read(2) != b'MZ':
-                return []
+def init(targetPlatform, targetArch, sysLibDir):
+    global EXTRA_LIBRARY_PATH
 
-            # Move to COFF header.
-            f.seek(0x3c, os.SEEK_SET)
-            peHeaderOffset = struct.unpack('I', f.read(4))
-            f.seek(peHeaderOffset[0], os.SEEK_SET)
-            peSignatue = f.read(4)
+    EXTRA_LIBRARY_PATH = sysLibDir
 
-            # Check COFF header signature.
-            if peSignatue != b'PE\x00\x00':
-                return []
+# https://msdn.microsoft.com/en-us/library/windows/desktop/ms680547(v=vs.85).aspx
+# https://upload.wikimedia.org/wikipedia/commons/1/1b/Portable_Executable_32_bit_Structure_in_SVG_fixed.svg
+def dump(binary):
+    dllImports = set()
 
-            # Read COFF header.
-            coffHeader = struct.unpack('HHIIIHH', f.read(20))
-            nSections = coffHeader[1]
-            sectionTablePos = coffHeader[5] + f.tell()
-
-            # Read magic signature in standard COFF fields.
-            peType = 'PE32' if f.read(2) == b'\x0b\x01' else 'PE32+'
-
-            # Move to data directories.
-            f.seek(102 if peType == 'PE32' else 118, os.SEEK_CUR)
-
-            # Read the import table.
-            importTablePos, importTableSize = struct.unpack('II', f.read(8))
-
-            # Move to Sections table.
-            f.seek(sectionTablePos, os.SEEK_SET)
-            sections = []
-            idataTablePhysical = -1
-
-            # Search for 'idata' section.
-            for _ in range(nSections):
-                # Read section.
-                section = struct.unpack('8pIIIIIIHHI', f.read(40))
-                sectionName = section[0].replace(b'\x00', b'')
-
-                # Save a reference to the sections.
-                sections += [section]
-
-                if sectionName == b'idata' or sectionName == b'rdata':
-                    idataTablePhysical = section[4]
-
-                    # If import table was defined calculate it's position in
-                    # the file in relation to the address given by 'idata'.
-                    if importTableSize > 0:
-                        idataTablePhysical += importTablePos - section[2]
-
-            if idataTablePhysical < 0:
-                return []
-
-            # Move to 'idata' section.
-            f.seek(idataTablePhysical, os.SEEK_SET)
-            dllList = set()
-
-            # Read 'idata' directory table.
-            while True:
-                # Read DLL entries.
-                try:
-                    dllImport = struct.unpack('IIIII', f.read(20))
-                except:
-                    break
-
-                # Null directory entry.
-                if dllImport[0] | dllImport[1] | dllImport[2] | dllImport[3] | dllImport[4] == 0:
-                    break
-
-                # Locate where is located the DLL name in relation to the
-                # sections.
-                for section in sections:
-                    if dllImport[3] >= section[2] \
-                        and dllImport[3] < section[1] + section[2]:
-                        dllList.add(dllImport[3] - section[2] + section[4])
-
-                        break
-
-            for dll in dllList:
-                # Move to DLL name.
-                f.seek(dll, os.SEEK_SET)
-                dllName = b''
-
-                # Read string until null character.
-                while True:
-                    c = f.read(1)
-
-                    if c == b'\x00':
-                        break
-
-                    dllName += c
-
-                try:
-                    dllImports.add(dllName.decode(sys.getdefaultencoding()))
-                except:
-                    pass
-
+    if not os.path.exists(binary) or not os.path.isfile(binary):
         return dllImports
 
-    def dependencies(self, binary):
-        deps = []
+    with open(binary, 'rb') as f:
+        # Check DOS header signature.
+        if f.read(2) != b'MZ':
+            return []
 
-        for dep in self.dump(binary):
-            depPath = self.whereBin(dep)
+        # Move to COFF header.
+        f.seek(0x3c, os.SEEK_SET)
+        peHeaderOffset = struct.unpack('I', f.read(4))
+        f.seek(peHeaderOffset[0], os.SEEK_SET)
+        peSignatue = f.read(4)
 
-            if len(depPath) > 0 and not self.isExcluded(depPath):
-                deps.append(depPath)
+        # Check COFF header signature.
+        if peSignatue != b'PE\x00\x00':
+            return []
 
-        return deps
+        # Read COFF header.
+        coffHeader = struct.unpack('HHIIIHH', f.read(20))
+        nSections = coffHeader[1]
+        sectionTablePos = coffHeader[5] + f.tell()
 
-    def name(self, binary):
-        dep = os.path.basename(binary)
+        # Read magic signature in standard COFF fields.
+        peType = 'PE32' if f.read(2) == b'\x0b\x01' else 'PE32+'
 
-        return dep[: dep.find('.')]
+        # Move to data directories.
+        f.seek(102 if peType == 'PE32' else 118, os.SEEK_CUR)
+
+        # Read the import table.
+        importTablePos, importTableSize = struct.unpack('II', f.read(8))
+
+        # Move to Sections table.
+        f.seek(sectionTablePos, os.SEEK_SET)
+        sections = []
+        idataTablePhysical = -1
+
+        # Search for 'idata' section.
+        for _ in range(nSections):
+            # Read section.
+            section = struct.unpack('8pIIIIIIHHI', f.read(40))
+            sectionName = section[0].replace(b'\x00', b'')
+
+            # Save a reference to the sections.
+            sections += [section]
+
+            if sectionName == b'idata' or sectionName == b'rdata':
+                idataTablePhysical = section[4]
+
+                # If import table was defined calculate it's position in
+                # the file in relation to the address given by 'idata'.
+                if importTableSize > 0:
+                    idataTablePhysical += importTablePos - section[2]
+
+        if idataTablePhysical < 0:
+            return []
+
+        # Move to 'idata' section.
+        f.seek(idataTablePhysical, os.SEEK_SET)
+        dllList = set()
+
+        # Read 'idata' directory table.
+        while True:
+            # Read DLL entries.
+            try:
+                dllImport = struct.unpack('IIIII', f.read(20))
+            except:
+                break
+
+            # Null directory entry.
+            if dllImport[0] | dllImport[1] | dllImport[2] | dllImport[3] | dllImport[4] == 0:
+                break
+
+            # Locate where is located the DLL name in relation to the
+            # sections.
+            for section in sections:
+                if dllImport[3] >= section[2] \
+                    and dllImport[3] < section[1] + section[2]:
+                    dllList.add(dllImport[3] - section[2] + section[4])
+
+                    break
+
+        for dll in dllList:
+            # Move to DLL name.
+            f.seek(dll, os.SEEK_SET)
+            dllName = b''
+
+            # Read string until null character.
+            while True:
+                c = f.read(1)
+
+                if c == b'\x00':
+                    break
+
+                dllName += c
+
+            try:
+                dllImports.add(dllName.decode(sys.getdefaultencoding()))
+            except:
+                pass
+
+    return dllImports
+
+def dependencies(binary):
+    deps = []
+
+    for dep in dump(binary):
+        depPath = DTUtils.whereBin(dep, EXTRA_LIBRARY_PATH)
+
+        if len(depPath) > 0:
+            deps.append(depPath)
+
+    return deps
+
+def guess(mainExecutable, dependency):
+    return DTUtils.whereBin(dependency, EXTRA_LIBRARY_PATH)

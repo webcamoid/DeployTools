@@ -20,388 +20,283 @@
 # Web-Site: http://github.com/webcamoid/DeployTools/
 
 import configparser
-import fnmatch
 import hashlib
+import math
 import multiprocessing
 import os
-import platform
 import shutil
-import subprocess # nosec
 import sys
 
-class Utils:
-    def __init__(self):
-        self.make = ''
+from . import DTGit
+from . import DTBinary
 
-        if os.name == 'posix' and sys.platform.startswith('darwin'):
-            self.system = 'mac'
-        elif os.name == 'nt' and sys.platform.startswith('win32'):
-            self.system = 'windows'
-        elif os.name == 'posix':
-            self.system = 'posix'
+
+def whereBin(binary, extraPaths=[]):
+    pathSep = ';' if hostPlatform() == 'windows' else ':'
+    sysPath = os.environ['PATH'].split(pathSep) if 'PATH' in os.environ else []
+    paths = extraPaths + sysPath
+
+    for path in paths:
+        path = os.path.join(path, binary)
+
+        if os.path.exists(path):
+            return path
+        elif hostPlatform() == 'windows' \
+            and not path.endswith('.exe') \
+            and os.path.exists(path + '.exe'):
+                return path + '.exe'
+
+    return ''
+
+def copy(src, dst='.', copyReals=False, overwrite=True):
+    if not os.path.exists(src):
+        return False
+
+    if os.path.isdir(src):
+        if os.path.isfile(dst):
+            return False
+
+        for root, dirs, files in os.walk(src):
+            for f in files:
+                fromF = os.path.join(root, f)
+                toF = os.path.relpath(fromF, src)
+                toF = os.path.join(dst, toF)
+                toF = os.path.normpath(toF)
+                copy(fromF, toF, copyReals, overwrite)
+
+            for d in dirs:
+                fromD = os.path.join(root, d)
+                toD = os.path.relpath(fromD, src)
+                toD = os.path.join(dst, toD)
+
+                try:
+                    os.makedirs(os.path.normpath(toD))
+                except:
+                    pass
+    elif os.path.isfile(src):
+        if os.path.isdir(dst):
+            dst = os.path.realpath(dst)
+            dst = os.path.join(dst, os.path.basename(src))
+
+        dirname = os.path.dirname(dst)
+
+        if not os.path.exists(dirname):
+            try:
+                os.makedirs(dirname)
+            except:
+                return False
+
+        if os.path.exists(dst):
+            if not overwrite:
+                return True
+
+            try:
+                os.remove(dst)
+            except:
+                return False
+
+        if copyReals and os.path.islink(src):
+            realpath = os.path.realpath(src)
+            basename = os.path.basename(realpath)
+            os.symlink(os.path.join('.', basename), dst)
+            copy(realpath,
+                 os.path.join(dirname, basename),
+                 copyReals,
+                 overwrite)
         else:
-            self.system = ''
-
-        self.arch = platform.architecture()[0]
-        self.targetArch = self.arch
-        self.targetSystem = self.system
-        pathSep = ';' if self.system == 'windows' else ':'
-        self.sysBinsPath = []
-
-        if 'PATH' in os.environ:
-            self.sysBinsPath += \
-                [path.strip() for path in os.environ['PATH'].split(pathSep)]
-
-        self.njobs = multiprocessing.cpu_count()
-
-        if self.njobs < 4:
-            self.njobs = 4
-
-    def detectTargetArch(self, binary=''):
-        if binary == '':
-            binary = self.mainBinary
-
-        self.targetArch = platform.architecture(binary)[0]
-        
-    def packageName(self):
-        pkgName = 'package'
-        
-        try:
-            packageConf = configparser.ConfigParser()
-            packageConf.optionxform=str
-            packageConf.read(self.packageConfig, 'utf-8')
-            pkgName = packageConf['Package']['packageName'].strip()
-        except:
-            pass
-
-        return pkgName
-
-    def targetPlatform(self):
-        targetPlatform = 'unknown'
-        
-        try:
-            packageConf = configparser.ConfigParser()
-            packageConf.optionxform=str
-            packageConf.read(self.packageConfig, 'utf-8')
-            targetPlatform = packageConf['Package']['targetPlatform'].strip()
-        except:
-            pass
-
-        return targetPlatform
-
-    def programVersion(self):
-        if 'DAILY_BUILD' in os.environ:
-            branch = ''
-
-            if 'TRAVIS_BRANCH' in os.environ:
-                branch = os.environ['TRAVIS_BRANCH']
-            elif 'APPVEYOR_REPO_BRANCH' in os.environ:
-                branch = os.environ['APPVEYOR_REPO_BRANCH']
-            else:
-                branch = self.gitBranch(self.rootDir)
-
-            count = self.gitCommitCount(self.rootDir)
-
-            return 'daily-{}-{}'.format(branch, count)
-
-        version = '0.0.0'
-        
-        try:
-            packageConf = configparser.ConfigParser()
-            packageConf.optionxform=str
-            packageConf.read(self.packageConfig, 'utf-8')
-            version = packageConf['Package']['version'].strip()
-        except:
-            pass
-
-        return version
-
-    def whereBin(self, binary):
-        for path in self.sysBinsPath:
-            path = os.path.join(path, binary)
-
-            if os.path.exists(path):
-                return path
-
-        return ''
-
-    def copy(self, src, dst='.', copyReals=False, overwrite=True):
-        if not os.path.exists(src):
-            return False
-
-        if os.path.isdir(src):
-            if os.path.isfile(dst):
+            try:
+                if hostPlatform() == 'windows':
+                    shutil.copy(src, dst)
+                else:
+                    shutil.copy(src, dst, follow_symlinks=False)
+            except:
                 return False
 
-            for root, dirs, files in os.walk(src):
-                for f in files:
-                    fromF = os.path.join(root, f)
-                    toF = os.path.relpath(fromF, src)
-                    toF = os.path.join(dst, toF)
-                    toF = os.path.normpath(toF)
-                    self.copy(fromF, toF, copyReals, overwrite)
+    return True
 
-                for d in dirs:
-                    fromD = os.path.join(root, d)
-                    toD = os.path.relpath(fromD, src)
-                    toD = os.path.join(dst, toD)
+def move(src, dst='.', moveReals=False):
+    if not os.path.exists(src):
+        return False
 
-                    try:
-                        os.makedirs(os.path.normpath(toD))
-                    except:
-                        pass
-        elif os.path.isfile(src):
-            if os.path.isdir(dst):
-                dst = os.path.realpath(dst)
-                dst = os.path.join(dst, os.path.basename(src))
-
-            dirname = os.path.dirname(dst)
-
-            if not os.path.exists(dirname):
-                try:
-                    os.makedirs(dirname)
-                except:
-                    return False
-
-            if os.path.exists(dst):
-                if not overwrite:
-                    return True
-
-                try:
-                    os.remove(dst)
-                except:
-                    return False
-
-            if copyReals and os.path.islink(src):
-                realpath = os.path.realpath(src)
-                basename = os.path.basename(realpath)
-                os.symlink(os.path.join('.', basename), dst)
-                self.copy(realpath,
-                          os.path.join(dirname, basename),
-                          copyReals,
-                          overwrite)
-            else:
-                try:
-                    if self.system == 'windows':
-                        shutil.copy(src, dst)
-                    else:
-                        shutil.copy(src, dst, follow_symlinks=False)
-                except:
-                    return False
-
-        return True
-
-
-    def move(self, src, dst='.', moveReals=False):
-        if not os.path.exists(src):
+    if os.path.isdir(src):
+        if os.path.isfile(dst):
             return False
 
-        if os.path.isdir(src):
-            if os.path.isfile(dst):
+        for root, dirs, files in os.walk(src):
+            for f in files:
+                fromF = os.path.join(root, f)
+                toF = os.path.relpath(fromF, src)
+                toF = os.path.join(dst, toF)
+                toF = os.path.normpath(toF)
+                move(fromF, toF, moveReals)
+
+            for d in dirs:
+                fromD = os.path.join(root, d)
+                toD = os.path.relpath(fromD, src)
+                toD = os.path.join(dst, toD)
+
+                try:
+                    os.makedirs(os.path.normpath(toD))
+                except:
+                    pass
+    elif os.path.isfile(src):
+        if os.path.isdir(dst):
+            dst = os.path.realpath(dst)
+            dst = os.path.join(dst, os.path.basename(src))
+
+        dirname = os.path.dirname(dst)
+
+        if len(dirname) < 1:
+            dirname = os.getcwd()
+
+        if not os.path.exists(dirname):
+            try:
+                os.makedirs(dirname)
+            except:
                 return False
 
-            for root, dirs, files in os.walk(src):
-                for f in files:
-                    fromF = os.path.join(root, f)
-                    toF = os.path.relpath(fromF, src)
-                    toF = os.path.join(dst, toF)
-                    toF = os.path.normpath(toF)
-                    self.move(fromF, toF, moveReals)
+        if os.path.exists(dst):
+            try:
+                os.remove(dst)
+            except:
+                return False
 
-                for d in dirs:
-                    fromD = os.path.join(root, d)
-                    toD = os.path.relpath(fromD, src)
-                    toD = os.path.join(dst, toD)
+        if moveReals and os.path.islink(src):
+            realpath = os.path.realpath(src)
+            basename = os.path.basename(realpath)
+            os.symlink(os.path.join('.', basename), dst)
+            move(realpath, os.path.join(dirname, basename), moveReals)
+        else:
+            try:
+                shutil.move(src, dst)
+            except:
+                return False
 
-                    try:
-                        os.makedirs(os.path.normpath(toD))
-                    except:
-                        pass
-        elif os.path.isfile(src):
-            if os.path.isdir(dst):
-                dst = os.path.realpath(dst)
-                dst = os.path.join(dst, os.path.basename(src))
+    return True
 
-            dirname = os.path.dirname(dst)
+def sha256sum(fileName):
+    sha = hashlib.sha256()
 
-            if not os.path.exists(dirname):
-                try:
-                    os.makedirs(dirname)
-                except:
-                    return False
+    with open(fileName, 'rb') as f:
+        while True:
+            data = f.read(1024)
 
-            if os.path.exists(dst):
-                try:
-                    os.remove(dst)
-                except:
-                    return False
-
-            if moveReals and os.path.islink(src):
-                realpath = os.path.realpath(src)
-                basename = os.path.basename(realpath)
-                os.symlink(os.path.join('.', basename), dst)
-                self.move(realpath, os.path.join(dirname, basename), moveReals)
-            else:
-                try:
-                    shutil.move(src, dst)
-                except:
-                    return False
-
-        return True
-
-    def detectMake(self):
-        if 'MAKE_PATH' in os.environ:
-            self.make = os.environ['MAKE_PATH']
-
-            return
-
-        makes = ['mingw32-make', 'make'] if self.system == 'windows' else ['make']
-        ext = '.exe' if self.system == 'windows' else ''
-
-        for make in makes:
-            makePath = self.whereBin(make + ext)
-
-            if makePath != '':
-                self.make = makePath
-
+            if not data:
                 break
 
-    def makeInstall(self, buildDir, params={}):
-        previousDir = os.getcwd()
-        os.chdir(buildDir)
-        params_ = [key + '=' + params[key] for key in params]
-        process = subprocess.Popen([self.make, 'install'] + params_, # nosec
-                                    stdout=subprocess.PIPE)
+            sha.update(data)
 
-        process.communicate()
-        os.chdir(previousDir)
+    return sha.hexdigest()
 
-        return process.returncode
+def hrSize(size):
+    i = int(math.log(size) // math.log(1024))
 
-    @staticmethod
-    def sha256sum(fileName):
-        sha = hashlib.sha256()
+    if i < 1:
+        return '{} B'.format(size)
 
-        with open(fileName, 'rb') as f:
-            while True:
-                data = f.read(1024)
+    units = ['KiB', 'MiB', 'GiB', 'TiB']
+    sizeKiB = size / (1024 ** i)
 
-                if not data:
-                    break
+    return '{:.2f} {}'.format(sizeKiB, units[i - 1])
 
-                sha.update(data)
+def hostPlatform():
+    if os.name == 'posix' and sys.platform.startswith('darwin'):
+        return 'mac'
+    elif os.name == 'nt' and sys.platform.startswith('win32'):
+        return 'windows'
+    elif os.name == 'posix':
+        return 'posix'
 
-        return sha.hexdigest()
+    return ''
 
-    @staticmethod
-    def detectMakeFiles(makePath):
-        makeFiles = []
+def readConfigs(configFile):
+    try:
+        packageConf = configparser.ConfigParser()
+        packageConf.optionxform=str
+        packageConf.read(configFile, 'utf-8')
+        configs = packageConf
+    except:
+        pass
 
-        try:
-            for f in os.listdir(makePath):
-                path = os.path.join(makePath, f)
+    return configs
 
-                if os.path.isfile(path) and fnmatch.fnmatch(f.lower(), 'makefile*'):
-                    makeFiles += [path]
-        except:
-            pass
+def numThreads():
+    nthreads = multiprocessing.cpu_count()
 
-        return makeFiles
+    if nthreads < 4:
+        return 4
 
-    def gitCommitHash(self, path):
-        try:
-            process = subprocess.Popen(['git', 'rev-parse', 'HEAD'], # nosec
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        cwd=path)
-            stdout, _ = process.communicate()
+    return nthreads
 
-            if process.returncode != 0:
-                return ''
+def programVersion(configs, sourcesDir):
+    if 'DAILY_BUILD' in os.environ:
+        branch = ''
 
-            return stdout.decode(sys.getdefaultencoding()).strip()
-        except:
-            return ''
+        if 'TRAVIS_BRANCH' in os.environ:
+            branch = os.environ['TRAVIS_BRANCH']
+        elif 'APPVEYOR_REPO_BRANCH' in os.environ:
+            branch = os.environ['APPVEYOR_REPO_BRANCH']
+        else:
+            branch = DTGit.branch(sourcesDir)
 
-    def gitCommitShortHash(self, path):
-        try:
-            process = subprocess.Popen(['git', 'rev-parse', '--short', 'HEAD'], # nosec
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        cwd=path)
-            stdout, _ = process.communicate()
+        count = DTGit.commitCount(sourcesDir)
 
-            if process.returncode != 0:
-                return ''
+        return 'daily-{}-{}'.format(branch, count)
 
-            return stdout.decode(sys.getdefaultencoding()).strip()
-        except:
-            return ''
+    return configs.get('Package', 'version', fallback='0.0.0').strip()
 
-    def gitBranch(self, path):
-        try:
-            process = subprocess.Popen(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], # nosec
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        cwd=path)
-            stdout, _ = process.communicate()
+def solvedepsLibs(globs,
+                  mainExecutable,
+                  targetPlatform,
+                  targetArch,
+                  dataDir,
+                  libDir,
+                  sysLibDir,
+                  extraLibs):
+    solver = DTBinary.BinaryTools(hostPlatform(),
+                                  targetPlatform,
+                                  targetArch,
+                                  sysLibDir)
 
-            if process.returncode != 0:
-                return ''
+    if not 'dependencies' in globs:
+        globs['dependencies'] = set()
 
-            return stdout.decode(sys.getdefaultencoding()).strip()
-        except:
-            return ''
+    deps = set(solver.scanDependencies(dataDir))
 
-    def gitCommitCount(self, path):
-        try:
-            process = subprocess.Popen(['git', 'rev-list', '--count', 'HEAD'], # nosec
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        cwd=path)
-            stdout, _ = process.communicate()
+    for dep in extraLibs:
+        path = solver.guess(mainExecutable, dep)
 
-            if process.returncode != 0:
-                return ''
+        if path != '':
+            deps.add(path)
+            deps.update(solver.allDependencies(path))
 
-            return stdout.decode(sys.getdefaultencoding()).strip()
-        except:
-            return ''
+    deps = sorted(deps)
+    depsInstallDir = ''
 
-    def gitLastTag(self, path):
-        try:
-            process = subprocess.Popen(['git', 'describe', '--abbrev=0'], # nosec
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        cwd=path)
-            stdout, _ = process.communicate()
+    if targetPlatform == 'windows':
+        depsInstallDir = os.path.dirname(mainExecutable)
+    else:
+        depsInstallDir = libDir
 
-            if process.returncode != 0:
-                return ''
+    for dep in deps:
+        dep = dep.replace('\\', '/')
+        depPath = os.path.join(depsInstallDir, os.path.basename(dep))
+        depPath = depPath.replace('\\', '/')
 
-            return stdout.decode(sys.getdefaultencoding()).strip()
-        except:
-            return ''
+        if dep != depPath:
+            if hostPlatform() == 'windows':
+                dep = dep.replace('/', '\\')
+                depPath = depPath.replace('/', '\\')
 
-    def gitCommitCountSince(self, path, tag):
-        try:
-            process = subprocess.Popen(['git', 'rev-list', '--count', '{}..HEAD'.format(tag)], # nosec
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        cwd=path)
-            stdout, _ = process.communicate()
+            print('    {} -> {}'.format(dep, depPath))
+            copyReals = True
 
-            if process.returncode != 0:
-                return ''
+            if targetPlatform == 'windows':
+                copyReals = False
+            elif targetPlatform == 'mac':
+                copyReals = not dep.endswith('.framework')
 
-            return stdout.decode(sys.getdefaultencoding()).strip()
-        except:
-            return ''
+            copy(dep, depPath, copyReals)
+            globs['dependencies'].add(dep)
 
-    def gitCommitCountSinceLastTag(self, path):
-        tag = self.gitLastTag(path)
-            
-        if tag == '':
-            return '';
-        
-        return self.gitCommitCountSince(tag)
+    globs['libs'] = set(deps)

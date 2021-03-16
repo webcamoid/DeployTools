@@ -28,318 +28,350 @@ import sys
 from . import DTBinary
 
 
-class ElfBinaryTools(DTBinary.BinaryTools):
-    def __init__(self):
-        super().__init__()
-        self.ldLibraryPath = os.environ['LD_LIBRARY_PATH'].split(':') if 'LD_LIBRARY_PATH' in os.environ else []
-        self.libsSeachPaths = self.readLdconf() \
-                            + ['/usr/lib',
-                               '/usr/lib64',
-                               '/lib',
-                               '/lib64',
-                               '/usr/local/lib',
-                               '/usr/local/lib64']
-        self.emCodes = {3  : '386',
-                        40 : 'ARM',
-                        62 : 'X86_64',
-                        183: 'AARCH64'}
+LD_LIBRARY_PATH = []
+LIBS_SEARCH_PATHS = []
+ANDROID_ARCH_MAP = [('arm64-v8a'  , 'aarch64', 'aarch64-linux-android'),
+                    ('armeabi-v7a', 'arm'    , 'arm-linux-androideabi'),
+                    ('x86'        , 'i686'   , 'i686-linux-android'   ),
+                    ('x86_64'     , 'x86_64' , 'x86_64-linux-android' )]
 
-    def readLdconf(self, ldconf='/etc/ld.so.conf'):
-        if not os.path.exists(ldconf):
-            return []
-
-        confDir = os.path.dirname(ldconf)
-        libpaths = []
-
-        with open(ldconf) as f:
-            for line in f:
-                i = line.find('#')
-
-                if i == 0:
-                    continue
-
-                if i >= 0:
-                    line = line[: i]
-
-                line = line.strip()
-
-                if len(line) < 1:
-                    continue
-
-                if line.startswith('include'):
-                    conf = line.split()[1]
-
-                    if not conf.startswith('/'):
-                        conf = os.path.join(confDir, conf)
-
-                    dirname = os.path.dirname(conf)
-
-                    if os.path.exists(dirname):
-                        for f in os.listdir(dirname):
-                            path = os.path.join(dirname, f)
-
-                            if fnmatch.fnmatch(path, conf):
-                                libpaths += self.readLdconf(path)
-                else:
-                    libpaths.append(line)
-
-        return libpaths
-
-    def isValid(self, path):
+def isValid(path):
+    try:
         with open(path, 'rb') as f:
             return f.read(4) == b'\x7fELF'
+    except:
+        pass
 
-    @staticmethod
-    def readString(f):
-        s = b''
+    return False
 
-        while True:
-            c = f.read(1)
+def name(binary):
+    dep = os.path.basename(binary)[3:]
 
-            if c == b'\x00':
-                break
+    return dep[: dep.find('.')]
 
-            s += c
+def readLdconf(ldconf='/etc/ld.so.conf'):
+    if not os.path.exists(ldconf):
+        return []
 
-        return s
+    confDir = os.path.dirname(ldconf)
+    libpaths = []
 
-    @staticmethod
-    def readNumber(f, arch):
-        if arch == '32bits':
-            return struct.unpack('I', f.read(4))[0]
+    with open(ldconf) as f:
+        for line in f:
+            i = line.find('#')
 
-        return struct.unpack('Q', f.read(8))[0]
+            if i == 0:
+                continue
 
-    @staticmethod
-    def readDynamicEntry(f, arch):
-        if arch == '32bits':
-            return struct.unpack('iI', f.read(8))
+            if i >= 0:
+                line = line[: i]
 
-        return struct.unpack('qQ', f.read(16))
+            line = line.strip()
 
-    # https://refspecs.linuxfoundation.org/lsb.shtml (See Core, Generic)
-    # https://en.wikipedia.org/wiki/Executable_and_Linkable_Format
-    def dump(self, binary):
-        # ELF file magic
-        ELFMAGIC = b'\x7fELF'
+            if len(line) < 1:
+                continue
 
-        # Sections
-        SHT_STRTAB = 0x3
-        SHT_DYNAMIC = 0x6
+            if line.startswith('include'):
+                conf = line.split()[1]
 
-        # Dynamic section entries
-        DT_NULL = 0
-        DT_NEEDED = 1
-        DT_RPATH = 15
-        DT_RUNPATH = 0x1d
+                if not conf.startswith('/'):
+                    conf = os.path.join(confDir, conf)
 
-        with open(binary, 'rb') as f:
-            # Read magic signature.
-            magic = f.read(4)
+                dirname = os.path.dirname(conf)
 
-            if magic != ELFMAGIC:
-                return {}
+                if os.path.exists(dirname):
+                    for f in os.listdir(dirname):
+                        path = os.path.join(dirname, f)
 
-            # Read the data structure of the file.
-            eiClass = '32bits' if struct.unpack('B', f.read(1))[0] == 1 else '64bits'
-
-            # Read machine code.
-            f.seek(0x12, os.SEEK_SET)
-            machine = struct.unpack('H', f.read(2))[0]
-
-            # Get a pointer to the sections table.
-            sectionHeaderTable = 0
-
-            if eiClass == '32bits':
-                f.seek(0x20, os.SEEK_SET)
-                sectionHeaderTable = self.readNumber(f, eiClass)
-                f.seek(0x30, os.SEEK_SET)
+                        if fnmatch.fnmatch(path, conf):
+                            libpaths += readLdconf(path)
             else:
-                f.seek(0x28, os.SEEK_SET)
-                sectionHeaderTable = self.readNumber(f, eiClass)
-                f.seek(0x3c, os.SEEK_SET)
+                libpaths.append(line)
 
-            # Read the number of sections.
-            nSections = struct.unpack('H', f.read(2))[0]
+    return libpaths
 
-            # Read the index of the string table that stores sections names.
-            shstrtabIndex = struct.unpack('H', f.read(2))[0]
+def init(targetPlatform, targetArch, sysLibDir):
+    global LD_LIBRARY_PATH
+    global LIBS_SEARCH_PATHS
 
-            # Read sections.
-            f.seek(sectionHeaderTable, os.SEEK_SET)
-            neededPtr = []
-            rpathsPtr = []
-            runpathsPtr = []
-            strtabs = []
-            shstrtab = []
+    LD_LIBRARY_PATH = sysLibDir
 
-            for section in range(nSections):
-                sectionStart = f.tell()
+    if targetPlatform == 'android':
+        androidNDK = ''
 
-                # Read the a pointer to the virtual address in the string table
-                # that contains the name of this section.
-                sectionName = struct.unpack('I', f.read(4))[0]
+        if 'ANDROID_NDK_ROOT' in os.environ:
+            androidNDK = os.environ['ANDROID_NDK_ROOT']
+        elif 'ANDROID_NDK' in os.environ:
+            androidNDK = os.environ['ANDROID_NDK']
 
-                # Read the type of this section.
-                sectionType = struct.unpack('I', f.read(4))[0]
+        for arch in ANDROID_ARCH_MAP:
+            if targetArch == arch[0]:
+                LIBS_SEARCH_PATHS = \
+                    [os.path.join(androidNDK,
+                                  'toolchains',
+                                  'llvm',
+                                  'prebuilt',
+                                  'linux-x86_64',
+                                  'sysroot',
+                                  'usr',
+                                  'lib',
+                                  arch[1] + '-linux-android')]
+    else:
+        LIBS_SEARCH_PATHS = readLdconf() \
+                          + ['/usr/lib',
+                             '/usr/lib64',
+                             '/lib',
+                             '/lib64',
+                             '/usr/local/lib',
+                             '/usr/local/lib64']
 
-                # Read the virtual address of this section.
-                f.seek(sectionStart + (0x0c if eiClass == '32bits' else 0x10), os.SEEK_SET)
-                shAddr = self.readNumber(f, eiClass)
+def libPath(lib, machine, rpaths, runpaths):
+    # man ld.so
+    searchPaths = rpaths \
+                + LD_LIBRARY_PATH \
+                + runpaths \
+                + LIBS_SEARCH_PATHS
 
-                # Read the offset in file to this section.
-                shOffset = self.readNumber(f, eiClass)
-                f.seek(shOffset, os.SEEK_SET)
+    for libdir in searchPaths:
+        path = os.path.join(libdir, lib)
 
-                if sectionType == SHT_DYNAMIC:
-                    # Read dynamic sections.
-                    while True:
-                        # Read dynamic entries.
-                        dTag, dVal = self.readDynamicEntry(f, eiClass)
+        if os.path.exists(path):
+            depElfInfo = dump(path)
 
-                        if dTag == DT_NULL:
-                            # End of dynamic sections.
-                            break
-                        elif dTag == DT_NEEDED:
-                            # Dynamically imported libraries.
-                            neededPtr.append(dVal)
-                        elif dTag == DT_RPATH:
-                            # RPATHs.
-                            rpathsPtr.append(dVal)
-                        elif dTag == DT_RUNPATH:
-                            # RUNPATHs.
-                            runpathsPtr.append(dVal)
-                elif sectionType == SHT_STRTAB:
-                    # Read string tables.
-                    if section == shstrtabIndex:
-                        # We found the string table that stores sections names.
-                        shstrtab = [shAddr, shOffset]
-                    else:
-                        # Save string tables for later usage.
-                        strtabs += [[sectionName, shAddr, shOffset]]
+            if depElfInfo:
+                if 'machine' in depElfInfo and (machine == 0 or depElfInfo['machine'] == machine):
+                    return path
+                elif 'links' in depElfInfo and len(depElfInfo['links']) > 0:
+                    return path
 
-                # Move to next section.
-                f.seek(sectionStart + (0x28 if eiClass == '32bits' else 0x40), os.SEEK_SET)
+    return ''
 
-            # Libraries names and RUNPATHs are located in '.dynstr' table.
-            strtab = []
+def readString(f):
+    s = b''
 
-            for tab in strtabs:
-                f.seek(tab[0] - shstrtab[0] + shstrtab[1], os.SEEK_SET)
+    while True:
+        c = f.read(1)
 
-                if self.readString(f) == b'.dynstr':
-                    strtab = tab
+        if c == b'\x00':
+            break
 
-            # Read dynamically imported libraries.
-            needed = set()
+        s += c
 
-            for lib in neededPtr:
-                f.seek(lib + strtab[2], os.SEEK_SET)
-                needed.add(self.readString(f).decode(sys.getdefaultencoding()))
+    return s
 
-            # Read RPATHs
-            rpaths = set()
+def readNumber(f, arch):
+    if arch == '32bits':
+        return struct.unpack('I', f.read(4))[0]
 
-            for path in rpathsPtr:
-                f.seek(path + strtab[2], os.SEEK_SET)
-                rpaths.add(self.readString(f).decode(sys.getdefaultencoding()))
+    return struct.unpack('Q', f.read(8))[0]
 
-            # Read RUNPATHs
-            runpaths = set()
+def readDynamicEntry(f, arch):
+    if arch == '32bits':
+        return struct.unpack('iI', f.read(8))
 
-            for path in runpathsPtr:
-                f.seek(path + strtab[2], os.SEEK_SET)
-                runpaths.add(self.readString(f).decode(sys.getdefaultencoding()))
+    return struct.unpack('qQ', f.read(16))
 
-            return {'machine': machine,
-                    'imports': needed,
-                    'rpath': rpaths,
-                    'runpath': runpaths}
+def readRpaths(elfInfo, binDir):
+    rpaths = []
+    runpaths = []
 
-        return {}
+    # http://amir.rachum.com/blog/2016/09/17/shared-libraries/
+    for rpath in ['rpath', 'runpath']:
+        for path in elfInfo[rpath]:
+            if '$ORIGIN' in path:
+                path = path.replace('$ORIGIN', binDir)
 
-    @staticmethod
-    def readRpaths(elfInfo, binDir):
-        rpaths = []
-        runpaths = []
+            if not path.startswith('/'):
+                path = os.path.join(binDir, path)
 
-        # http://amir.rachum.com/blog/2016/09/17/shared-libraries/
-        for rpath in ['rpath', 'runpath']:
-            for path in elfInfo[rpath]:
-                if '$ORIGIN' in path:
-                    path = path.replace('$ORIGIN', binDir)
+            path = os.path.normpath(path)
 
-                if not path.startswith('/'):
-                    path = os.path.join(binDir, path)
+            if rpath == 'rpath':
+                rpaths.append(path)
+            else:
+                runpaths.append(path)
 
-                path = os.path.normpath(path)
+    return rpaths, runpaths
 
-                if rpath == 'rpath':
-                    rpaths.append(path)
+# https://refspecs.linuxfoundation.org/lsb.shtml (See Core, Generic)
+# https://en.wikipedia.org/wiki/Executable_and_Linkable_Format
+def dump(binary):
+    # ELF file magic
+    ELFMAGIC = b'\x7fELF'
+
+    # Sections
+    SHT_STRTAB = 0x3
+    SHT_DYNAMIC = 0x6
+
+    # Dynamic section entries
+    DT_NULL = 0
+    DT_NEEDED = 1
+    DT_RPATH = 15
+    DT_RUNPATH = 0x1d
+
+    with open(binary, 'rb') as f:
+        # Read magic signature.
+        magic = f.read(4)
+
+        if magic != ELFMAGIC:
+            return {}
+
+        # Read the data structure of the file.
+        eiClass = '32bits' if struct.unpack('B', f.read(1))[0] == 1 else '64bits'
+
+        # Read machine code.
+        f.seek(0x12, os.SEEK_SET)
+        machine = struct.unpack('H', f.read(2))[0]
+
+        # Get a pointer to the sections table.
+        sectionHeaderTable = 0
+
+        if eiClass == '32bits':
+            f.seek(0x20, os.SEEK_SET)
+            sectionHeaderTable = readNumber(f, eiClass)
+            f.seek(0x30, os.SEEK_SET)
+        else:
+            f.seek(0x28, os.SEEK_SET)
+            sectionHeaderTable = readNumber(f, eiClass)
+            f.seek(0x3c, os.SEEK_SET)
+
+        # Read the number of sections.
+        nSections = struct.unpack('H', f.read(2))[0]
+
+        # Read the index of the string table that stores sections names.
+        shstrtabIndex = struct.unpack('H', f.read(2))[0]
+
+        # Read sections.
+        f.seek(sectionHeaderTable, os.SEEK_SET)
+        neededPtr = []
+        rpathsPtr = []
+        runpathsPtr = []
+        strtabs = []
+        shstrtab = []
+
+        for section in range(nSections):
+            sectionStart = f.tell()
+
+            # Read the a pointer to the virtual address in the string table
+            # that contains the name of this section.
+            sectionName = struct.unpack('I', f.read(4))[0]
+
+            # Read the type of this section.
+            sectionType = struct.unpack('I', f.read(4))[0]
+
+            # Read the virtual address of this section.
+            f.seek(sectionStart + (0x0c if eiClass == '32bits' else 0x10), os.SEEK_SET)
+            shAddr = readNumber(f, eiClass)
+
+            # Read the offset in file to this section.
+            shOffset = readNumber(f, eiClass)
+            f.seek(shOffset, os.SEEK_SET)
+
+            if sectionType == SHT_DYNAMIC:
+                # Read dynamic sections.
+                while True:
+                    # Read dynamic entries.
+                    dTag, dVal = readDynamicEntry(f, eiClass)
+
+                    if dTag == DT_NULL:
+                        # End of dynamic sections.
+                        break
+                    elif dTag == DT_NEEDED:
+                        # Dynamically imported libraries.
+                        neededPtr.append(dVal)
+                    elif dTag == DT_RPATH:
+                        # RPATHs.
+                        rpathsPtr.append(dVal)
+                    elif dTag == DT_RUNPATH:
+                        # RUNPATHs.
+                        runpathsPtr.append(dVal)
+            elif sectionType == SHT_STRTAB:
+                # Read string tables.
+                if section == shstrtabIndex:
+                    # We found the string table that stores sections names.
+                    shstrtab = [shAddr, shOffset]
                 else:
-                    runpaths.append(path)
+                    # Save string tables for later usage.
+                    strtabs += [[sectionName, shAddr, shOffset]]
 
-        return rpaths, runpaths
+            # Move to next section.
+            f.seek(sectionStart + (0x28 if eiClass == '32bits' else 0x40), os.SEEK_SET)
 
-    def libPath(self, lib, machine, rpaths, runpaths):
-        # man ld.so
-        searchPaths = rpaths \
-                    + self.ldLibraryPath \
-                    + runpaths \
-                    + self.libsSeachPaths
+        # Libraries names and RUNPATHs are located in '.dynstr' table.
+        strtab = []
 
-        for libdir in searchPaths:
-            path = os.path.join(libdir, lib)
+        for tab in strtabs:
+            f.seek(tab[0] - shstrtab[0] + shstrtab[1], os.SEEK_SET)
 
-            if os.path.exists(path):
-                depElfInfo = self.dump(path)
+            if readString(f) == b'.dynstr':
+                strtab = tab
 
-                if depElfInfo:
-                    if 'machine' in depElfInfo and (machine == 0 or depElfInfo['machine'] == machine):
-                        return path
-                    elif 'links' in depElfInfo and len(depElfInfo['links']) > 0:
-                        return path
+        # Read dynamically imported libraries.
+        needed = set()
 
-        return ''
+        for lib in neededPtr:
+            f.seek(lib + strtab[2], os.SEEK_SET)
+            needed.add(readString(f).decode(sys.getdefaultencoding()))
 
-    def dependencies(self, binary):
-        elfInfo = self.dump(binary)
+        # Read RPATHs
+        rpaths = set()
 
-        if not elfInfo:
-            return []
+        for path in rpathsPtr:
+            f.seek(path + strtab[2], os.SEEK_SET)
+            rpaths.add(readString(f).decode(sys.getdefaultencoding()))
 
-        rpaths, runpaths = self.readRpaths(elfInfo, os.path.dirname(binary))
-        libs = []
-        deps = []
+        # Read RUNPATHs
+        runpaths = set()
 
-        if 'imports' in elfInfo:
-            deps = elfInfo['imports']
-        elif 'links' in elfInfo:
-            deps = elfInfo['links']
+        for path in runpathsPtr:
+            f.seek(path + strtab[2], os.SEEK_SET)
+            runpaths.add(readString(f).decode(sys.getdefaultencoding()))
 
-        machine = 0
+        return {'machine': machine,
+                'imports': needed,
+                'rpath': rpaths,
+                'runpath': runpaths}
 
-        if 'machine' in elfInfo:
-            machine = elfInfo['machine']
+    return {}
 
-        for lib in deps:
-            libpath = self.libPath(lib, machine, rpaths, runpaths)
+def dependencies(binary):
+    elfInfo = dump(binary)
 
-            if len(libpath) > 0 and not self.isExcluded(libpath):
-                libs.append(libpath)
+    if not elfInfo:
+        return []
 
-        return libs
+    rpaths, runpaths = readRpaths(elfInfo, os.path.dirname(binary))
+    libs = []
+    deps = []
 
-    def name(self, binary):
-        dep = os.path.basename(binary)[3:]
+    if 'imports' in elfInfo:
+        deps = elfInfo['imports']
+    elif 'links' in elfInfo:
+        deps = elfInfo['links']
 
-        return dep[: dep.find('.')]
+    machine = 0
 
-    def machineEMCode(self, binary):
-        info = self.dump(binary)
+    if 'machine' in elfInfo:
+        machine = elfInfo['machine']
 
-        if 'machine' in info:
-            if info['machine'] in self.emCodes:
-                return self.emCodes[info['machine']]
+    for lib in deps:
+        libpath = libPath(lib, machine, rpaths, runpaths)
 
-        return 'UNKNOWN'
+        if len(libpath) > 0:
+            libs.append(libpath)
+
+    return libs
+
+def guess(mainExecutable, dependency):
+    elfInfo = dump(mainExecutable)
+
+    if not elfInfo:
+        return []
+
+    rpaths, runpaths = readRpaths(elfInfo, os.path.dirname(mainExecutable))
+    machine = 0
+
+    if 'machine' in elfInfo:
+        machine = elfInfo['machine']
+
+    return libPath(dependency, machine, rpaths, runpaths)

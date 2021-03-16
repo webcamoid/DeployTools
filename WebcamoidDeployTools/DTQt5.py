@@ -20,6 +20,7 @@
 # Web-Site: http://github.com/webcamoid/DeployTools/
 
 import configparser
+import xml.etree.ElementTree as ET
 import json
 import os
 import platform
@@ -31,306 +32,140 @@ import time
 import xml.etree.ElementTree as ET
 
 from . import DTUtils
+from . import DTBinary
 
 
-class Qt5Tools(DTUtils.Utils):
-    def __init__(self):
-        super().__init__()
-        self.qmake = ''
-        self.qtIFW = ''
-        self.qtIFWVersion = ''
-        self.qtInstallBins = ''
-        self.qtInstallQml = ''
-        self.qtInstallPlugins = ''
-        self.qmlRootDirs = []
-        self.qmlInstallDir = ''
-        self.dependencies = []
-        self.binarySolver = None
-        self.installerConfig = ''
-        self.appIcon = ''
-        self.installerRunProgram = ''
-        self.adminRights = False
-
-    def detectQt(self, path=''):
-        self.detectQmake(path)
-        self.qtInstallBins = self.qmakeQuery(var='QT_INSTALL_BINS')
-        self.qtInstallQml = self.qmakeQuery(var='QT_INSTALL_QML')
-        self.qtInstallPlugins = self.qmakeQuery(var='QT_INSTALL_PLUGINS')
-        self.detectQtIFW()
-        self.detectQtIFWVersion()
-
-    def detectQmake(self, path=''):
-        for makeFile in self.detectMakeFiles(path):
-            with open(makeFile) as f:
-                for line in f:
-                    if line.startswith('QMAKE') and '=' in line:
-                        self.qmake = line.split('=')[1].strip()
-
-                        return
-
-        if 'QMAKE_PATH' in os.environ:
-            self.qmake = os.environ['QMAKE_PATH']
-
-    def detectTargetBinaryFromQt5Make(self, path=''):
-        for makeFile in self.detectMakeFiles(path):
-            with open(makeFile) as f:
-                for line in f:
-                    if line.startswith('TARGET') and '=' in line:
-                        return os.path.join(path, line.split('=')[1].strip())
-
-        return ''
-
-    def qmakeQuery(self, qmake='', var=''):
-        if qmake == '':
-            if 'QMAKE_PATH' in os.environ:
-                qmake = os.environ['QMAKE_PATH']
-            else:
-                qmake = self.qmake
-
-        try:
-            args = [qmake, '-query']
-
-            if var != '':
-                args += [var]
-
-            process = subprocess.Popen(args, # nosec
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE)
-            stdout, _ = process.communicate()
-
-            return stdout.strip().decode(sys.getdefaultencoding())
-        except:
-            pass
-
-        return ''
-
-    def detectQtIFW(self):
-        if 'BINARYCREATOR' in os.environ:
-            self.qtIFW = os.environ['BINARYCREATOR']
-
-            return
-
-        # Try official Qt binarycreator first because it is statically linked.
-
-        if self.targetSystem == 'windows':
-            homeQt = 'C:\\Qt'
-        elif self.targetSystem == 'posix_windows':
-            if 'WINEPREFIX' in os.environ:
-                homeQt = os.path.expanduser(os.path.join(os.environ['WINEPREFIX'],
-                                                         'drive_c/Qt'))
-            else:
-                homeQt = os.path.expanduser('~/.wine/drive_c/Qt')
-        else:
-            homeQt = os.path.expanduser('~/Qt')
-
-        binCreator = 'binarycreator'
-
-        if self.targetSystem == 'windows' or self.targetSystem == 'posix_windows':
-            binCreator += '.exe'
-
-        for root, _, files in os.walk(homeQt):
-            for f in files:
-                if f == binCreator:
-                    self.qtIFW = os.path.join(root, f)
-
-                    return
-
-        # binarycreator offered by the system is most probably dynamically
-        # linked, so it's useful for test purposes only, but not recommended
-        # for distribution.
-        self.qtIFW = self.whereBin(binCreator)
+def libBaseName(lib):
+    basename = os.path.basename(lib)
 
-    def detectQtIFWVersion(self):
-        self.qtIFWVersion = ''
+    return basename[3: len(basename) - 3]
 
-        if self.qtIFW == '':
-            return
-
-        installerBase = os.path.join(os.path.dirname(self.qtIFW),
-                                     'installerbase')
-
-        if self.targetSystem == 'windows' or self.targetSystem == 'posix_windows':
-            installerBase += '.exe'
+def fixLibsXml(globs, targetArch, dataDir):
+    bundledInAssets = []
+    assetsDir = os.path.join(dataDir, 'assets')
 
-        self.qtIFWVersion = '2.0.0'
-
-        if not os.path.exists(installerBase):
-            return
-
-        if self.targetSystem == 'posix_windows':
-            installerBase = 'Z:' + installerBase.replace('/', '\\')
-            process = subprocess.Popen(['wine', # nosec
-                                        installerBase,
-                                        '--version'],
-                                    stdin=subprocess.PIPE,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-            stdout, _ = process.communicate(input=b'\n')
-        else:
-            process = subprocess.Popen([installerBase, # nosec
-                                        '--version'],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-            stdout, _ = process.communicate()
-
-        for line in stdout.split(b'\n'):
-            if b'IFW Version:' in line:
-                self.qtIFWVersion = line.split(b' ')[2].replace(b'"', b'').replace(b',', b'').decode(sys.getdefaultencoding())
-
-                return
-
-    @staticmethod
-    def listQmlFiles(path):
-        qmlFiles = set()
-
-        if os.path.isfile(path):
-            baseName = os.path.basename(path)
-
-            if baseName == 'qmldir' or path.endswith('.qml'):
-                qmlFiles.add(path)
-        else:
-            for root, _, files in os.walk(path):
-                for f in files:
-                    if f == 'qmldir' or f.endswith('.qml'):
-                        qmlFiles.add(os.path.join(root, f))
-
-        return list(qmlFiles)
-
-    @staticmethod
-    def modulePath(importLine):
-        imp = importLine.strip().split()
-        path = imp[1].replace('.', '/')
-        majorVersion = imp[2].split('.')[0]
-
-        if int(majorVersion) > 1:
-            path += '.{}'.format(majorVersion)
-
-        return path
-
-    def scanImports(self, path):
-        if not os.path.isfile(path):
-            return []
-
-        fileName = os.path.basename(path)
-        imports = set()
-
-        if fileName.endswith('.qml'):
-            with open(path, 'rb') as f:
-                for line in f:
-                    if re.match(b'^import \\w+' , line):
-                        imports.add(self.modulePath(line.strip().decode(sys.getdefaultencoding())))
-        elif fileName == 'qmldir':
-            with open(path, 'rb') as f:
-                for line in f:
-                    if re.match(b'^depends ' , line):
-                        imports.add(self.modulePath(line.strip().decode(sys.getdefaultencoding())))
-
-        return list(imports)
-
-    def solvedepsQml(self):
-        qmlFiles = set()
-
-        for path in self.qmlRootDirs:
-            path = os.path.join(self.rootDir, path)
-
-            for f in self.listQmlFiles(path):
-                qmlFiles.add(f)
-
-        solved = set()
-        solvedImports = set()
-
-        while len(qmlFiles) > 0:
-            qmlFile = qmlFiles.pop()
-
-            for imp in self.scanImports(qmlFile):
-                if imp in solvedImports:
-                    continue
-
-                sysModulePath = os.path.join(self.qtInstallQml, imp)
-                installModulePath = os.path.join(self.qmlInstallDir, imp)
-
-                if os.path.exists(sysModulePath):
-                    print('    {} -> {}'.format(sysModulePath, installModulePath))
-                    self.copy(sysModulePath, installModulePath)
-                    solvedImports.add(imp)
-                    self.dependencies.append(os.path.join(sysModulePath, 'qmldir'))
-
-                    for f in self.listQmlFiles(sysModulePath):
-                        if not f in solved:
-                            qmlFiles.add(f)
-
-            solved.add(qmlFile)
-
-    def solvedepsPlugins(self):
-        pluginsMap = {
-            'Qt53DRenderer': ['sceneparsers', 'geometryloaders'],
-            'Qt53DQuickRenderer': ['renderplugins'],
-            'Qt5Declarative': ['qml1tooling'],
-            'Qt5EglFSDeviceIntegration': ['egldeviceintegrations'],
-            'Qt5Gui': ['accessible',
-                       'generic',
-                       'iconengines',
-                       'imageformats',
-                       'platforms',
-                       'platforminputcontexts',
-                       'styles'],
-            'Qt5Location': ['geoservices'],
-            'Qt5Multimedia': ['audio', 'mediaservice', 'playlistformats'],
-            'Qt5Network': ['bearer'],
-            'Qt5Positioning': ['position'],
-            'Qt5PrintSupport': ['printsupport'],
-            'Qt5QmlTooling': ['qmltooling'],
-            'Qt5Quick': ['scenegraph', 'qmltooling'],
-            'Qt5Sensors': ['sensors', 'sensorgestures'],
-            'Qt5SerialBus': ['canbus'],
-            'Qt5Sql': ['sqldrivers'],
-            'Qt5TextToSpeech': ['texttospeech'],
-            'Qt5WebEngine': ['qtwebengine'],
-            'Qt5WebEngineCore': ['qtwebengine'],
-            'Qt5WebEngineWidgets': ['qtwebengine'],
-            'Qt5WebView': ['webview'],
-            'Qt5XcbQpa': ['xcbglintegrations']
-        }
-
-        pluginsMap.update({lib + 'd': pluginsMap[lib] for lib in pluginsMap})
-
-        if self.targetSystem == 'android':
-            pluginsMap.update({lib + '_' + self.targetArch: pluginsMap[lib] for lib in pluginsMap})
-
-        plugins = []
-
-        for dep in self.binarySolver.scanDependencies(self.installDir):
-            libName = self.binarySolver.name(dep)
-
-            if not libName in pluginsMap:
-                continue
-
-            for plugin in pluginsMap[libName]:
-                if not plugin in plugins:
-                    sysPluginPath = os.path.join(self.qtInstallPlugins, plugin)
-                    pluginPath = os.path.join(self.pluginsInstallDir, plugin)
-
-                    if not os.path.exists(sysPluginPath):
-                        continue
-
-                    print('    {} -> {}'.format(sysPluginPath, pluginPath))
-                    self.copy(sysPluginPath, pluginPath)
-                    plugins.append(plugin)
-                    self.dependencies.append(sysPluginPath)
-
-    def solvedepsAndroid(self):
-        installPrefix = self.qmakeQuery(var='QT_INSTALL_PREFIX')
-        qtLibsPath = self.qmakeQuery(var='QT_INSTALL_LIBS')
-        jars = []
-        permissions = set()
-        features = set()
-        initClasses = set()
-        libs = set()
-
-        for f in os.listdir(self.libInstallDir):
-            basename = os.path.basename(f)[3:]
-            basename = os.path.splitext(basename)[0]
-            depFile = os.path.join(qtLibsPath,
+    for root, dirs, files in os.walk(assetsDir):
+        for f in files:
+            srcPath = os.path.join(root.replace(assetsDir, '')[1:], f)
+            dstPath = os.path.sep.join(srcPath.split(os.path.sep)[1:])
+
+            if (len(dstPath) > 0):
+                bundledInAssets += [(srcPath, dstPath)]
+
+    libsXml = os.path.join(dataDir, 'res', 'values', 'libs.xml')
+    libsXmlTemp = os.path.join(dataDir, 'res', 'values', 'libsTemp.xml')
+
+    tree = ET.parse(libsXml)
+    root = tree.getroot()
+    oldFeatures = set()
+    oldPermissions = set()
+    resources = {}
+
+    for array in root:
+        if not array.attrib['name'] in resources:
+            resources[array.attrib['name']] = set()
+
+        for item in array:
+            if item.text:
+                lib = item.text.strip()
+
+                if len(lib) > 0:
+                    lib = '<item>{}</item>'.format(lib)
+                    resources[array.attrib['name']].add(lib)
+
+    libs = []
+
+    if 'libs' in globs:
+        libs = globs['libs']
+
+    qtLibs = set(['<item>{};{}</item>'.format(targetArch, libBaseName(lib)) for lib in libs])
+
+    if 'qt_libs' in resources:
+        qtLibs -= resources['qt_libs']
+
+    qtLibs = '\n'.join(sorted(list(qtLibs)))
+    bundledInLib = []
+
+    if 'bundledInLib' in globs:
+        bundledInLib = globs['bundledInLib']
+
+    bundledInLib = set(['<item>{}:{}</item>'.format(lib[0], lib[1]) for lib in bundledInLib])
+
+    if 'bundled_in_lib' in resources:
+        bundledInLib -= resources['bundled_in_lib']
+
+    bundledInLib = '\n'.join(sorted(list(bundledInLib)))
+    bundledInAssets = set(['<item>{}:{}</item>'.format(lib[0], lib[1]) for lib in bundledInAssets])
+
+    if 'bundled_in_assets' in resources:
+        bundledInAssets -= resources['bundled_in_assets']
+
+    bundledInAssets = '\n'.join(sorted(list(bundledInAssets)))
+    localLibs = []
+
+    if 'localLibs' in globs:
+        localLibs = sorted(list(globs['localLibs']))
+
+    localLibs = {'<item>{};{}</item>'.format(targetArch, ':'.join(localLibs))}
+
+    if 'load_local_libs' in resources:
+        localLibs -= resources['load_local_libs']
+
+    localLibs = '\n'.join(sorted(list(localLibs)))
+
+    replace = {'<!-- %%INSERT_EXTRA_LIBS%% -->'       : '',
+               '<!-- %%INSERT_QT_LIBS%% -->'          : qtLibs,
+               '<!-- %%INSERT_BUNDLED_IN_LIB%% -->'   : bundledInLib,
+               '<!-- %%INSERT_BUNDLED_IN_ASSETS%% -->': bundledInAssets,
+               '<!-- %%INSERT_LOCAL_LIBS%% -->'       : localLibs}
+
+    with open(libsXml) as inFile:
+        with open(libsXmlTemp, 'w') as outFile:
+            for line in inFile:
+                for key in replace:
+                    line = line.replace(key, replace[key])
+
+                outFile.write(line)
+
+    os.remove(libsXml)
+    shutil.move(libsXmlTemp, libsXml)
+
+def copyAndroidTemplates(dataDir,
+                         qtSourcesDir,
+                         sdkBuildToolsRevision,
+                         androidCompileSdkVersion):
+    templates = [os.path.join(qtSourcesDir, '3rdparty/gradle'),
+                 os.path.join(qtSourcesDir, 'android/templates')]
+
+    for template in templates:
+        DTUtils.copy(template, dataDir, overwrite=False)
+
+    properties = os.path.join(dataDir, 'gradle.properties')
+    javaDir = os.path.join(qtSourcesDir, 'android','java')
+
+    with open(properties, 'w') as f:
+        if len(sdkBuildToolsRevision) > 0:
+            f.write('androidBuildToolsVersion={}\n'.format(sdkBuildToolsRevision))
+
+        f.write('androidCompileSdkVersion={}\n'.format(androidCompileSdkVersion))
+        f.write('qtMinSdkVersion={}\n'.format(androidCompileSdkVersion))
+        f.write('qtTargetSdkVersion={}\n'.format(androidCompileSdkVersion))
+        f.write('buildDir=build\n')
+        f.write('qt5AndroidDir={}\n'.format(javaDir))
+
+def solvedepsAndroid(globs, dataDir, libDir, sysLibDir):
+    jars = []
+    permissions = set()
+    features = set()
+    initClasses = set()
+    libs = set()
+
+    for f in os.listdir(libDir):
+        basename = os.path.basename(f)[3:]
+        basename = os.path.splitext(basename)[0]
+
+        for ldir in sysLibDir:
+            depFile = os.path.join(ldir,
                                    basename + '-android-dependencies.xml')
 
             if os.path.exists(depFile):
@@ -353,318 +188,465 @@ class Qt5Tools(DTUtils.Utils):
                     if 'file' in lib.attrib:
                         libs.add(lib.attrib['file'])
 
-        self.localLibs = [os.path.basename(lib) for lib in libs]
 
-        print('Copying jar files\n')
+    if not 'localLibs' in globs:
+        globs['localLibs'] = set()
 
-        for jar in sorted(jars):
-            srcPath = os.path.join(installPrefix, jar)
-            dstPath = os.path.join(self.rootInstallDir,
-                                   'libs',
-                                   os.path.basename(jar))
-            print('    {} -> {}'.format(srcPath, dstPath))
-            self.copy(srcPath, dstPath)
+    for lib in libs:
+        globs['localLibs'].add(os.path.basename(lib))
 
-        manifest = os.path.join(self.rootInstallDir, 'AndroidManifest.xml')
-        manifestTemp = os.path.join(self.rootInstallDir, 'AndroidManifestTemp.xml')
-        tree = ET.parse(manifest)
-        root = tree.getroot()
-        oldFeatures = set()
-        oldPermissions = set()
+    print('Copying jar files')
 
-        for element in root:
-            if element.tag == 'uses-feature':
-                for key in element.attrib:
-                    if key.endswith('name'):
-                        oldFeatures.add(element.attrib[key])
-            elif element.tag == 'uses-permission':
-                for key in element.attrib:
-                    if key.endswith('name'):
-                        oldPermissions.add(element.attrib[key])
+    for jar in sorted(jars):
+        for ldir in sysLibDir:
+            srcPath = os.path.join(ldir, jar)
 
-        features -= oldFeatures
-        permissions -= oldPermissions
-        featuresWritten = len(features) < 1
-        permissionsWritten = len(permissions) < 1
-        replace = {'-- %%INSERT_INIT_CLASSES%% --' : ':'.join(sorted(initClasses)),
-                   '-- %%BUNDLE_LOCAL_QT_LIBS%% --': '1',
-                   '-- %%USE_LOCAL_QT_LIBS%% --'   : '1',
-                   '-- %%INSERT_LOCAL_LIBS%% --'   : ':'.join(sorted(libs)),
-                   '-- %%INSERT_LOCAL_JARS%% --'   : ':'.join(sorted(jars))}
+            if os.path.exists(srcPath):
+                dstPath = os.path.join(dataDir,
+                                    'libs',
+                                    os.path.basename(jar))
+                print('    {} -> {}'.format(srcPath, dstPath))
+                DTUtils.copy(srcPath, dstPath)
 
-        with open(manifest) as inFile:
-            with open(manifestTemp, 'w') as outFile:
-                for line in inFile:
-                    for key in replace:
-                        line = line.replace(key, replace[key])
+    manifest = os.path.join(dataDir, 'AndroidManifest.xml')
+    manifestTemp = os.path.join(dataDir, 'AndroidManifestTemp.xml')
+    tree = ET.parse(manifest)
+    root = tree.getroot()
+    oldFeatures = set()
+    oldPermissions = set()
 
-                    outFile.write(line)
-                    spaces = len(line)
-                    line = line.lstrip()
-                    spaces -= len(line)
+    for element in root:
+        if element.tag == 'uses-feature':
+            for key in element.attrib:
+                if key.endswith('name'):
+                    oldFeatures.add(element.attrib[key])
+        elif element.tag == 'uses-permission':
+            for key in element.attrib:
+                if key.endswith('name'):
+                    oldPermissions.add(element.attrib[key])
 
-                    if line.startswith('<uses-feature') and not featuresWritten:
-                        print('\nUpdating features\n')
+    features -= oldFeatures
+    permissions -= oldPermissions
+    featuresWritten = len(features) < 1
+    permissionsWritten = len(permissions) < 1
+    replace = {'-- %%INSERT_INIT_CLASSES%% --' : ':'.join(sorted(initClasses)),
+                '-- %%BUNDLE_LOCAL_QT_LIBS%% --': '1',
+                '-- %%USE_LOCAL_QT_LIBS%% --'   : '1',
+                '-- %%INSERT_LOCAL_LIBS%% --'   : ':'.join(sorted(libs)),
+                '-- %%INSERT_LOCAL_JARS%% --'   : ':'.join(sorted(jars))}
 
-                        for feature in features:
-                            print('    ' + feature)
-                            outFile.write(spaces * ' ' + '<uses-feature android:name="{}"/>\n'.format(feature))
+    with open(manifest) as inFile:
+        with open(manifestTemp, 'w') as outFile:
+            for line in inFile:
+                for key in replace:
+                    line = line.replace(key, replace[key])
 
-                        featuresWritten = True
+                outFile.write(line)
+                spaces = len(line)
+                line = line.lstrip()
+                spaces -= len(line)
 
-                    if line.startswith('<uses-permission') and not permissionsWritten:
-                        print('\nUpdating permissions\n')
+                if line.startswith('<uses-feature') and not featuresWritten:
+                    print('\nUpdating features\n')
 
-                        for permission in permissions:
-                            print('    ' + permission)
-                            outFile.write(spaces * ' ' + '<uses-permission android:name="{}"/>\n'.format(permission))
+                    for feature in features:
+                        print('    ' + feature)
+                        outFile.write(spaces * ' ' + '<uses-feature android:name="{}"/>\n'.format(feature))
 
-                        permissionsWritten = True
+                    featuresWritten = True
 
-        os.remove(manifest)
-        shutil.move(manifestTemp, manifest)
+                if line.startswith('<uses-permission') and not permissionsWritten:
+                    print('\nUpdating permissions\n')
 
-    def writeQtConf(self):
-        prefix = self.binaryInstallDir
-        paths = {'Plugins': os.path.relpath(self.pluginsInstallDir, prefix).replace('\\', '/'),
-                 'Imports': os.path.relpath(self.qmlInstallDir, prefix).replace('\\', '/'),
-                 'Qml2Imports': os.path.relpath(self.qmlInstallDir, prefix).replace('\\', '/')}
-        confPath = os.path.dirname(self.qtConf)
+                    for permission in permissions:
+                        print('    ' + permission)
+                        outFile.write(spaces * ' ' + '<uses-permission android:name="{}"/>\n'.format(permission))
 
-        if not os.path.exists(confPath):
-            os.makedirs(confPath)
+                    permissionsWritten = True
 
+    os.remove(manifest)
+    shutil.move(manifestTemp, manifest)
+
+def createRccBundle(outputAssetsDir):
+    assetsDir = os.path.abspath(os.path.join(outputAssetsDir, '..'))
+    assetsFolder = os.path.relpath(outputAssetsDir, assetsDir)
+    qrcFile = os.path.join(outputAssetsDir, assetsFolder + '.qrc')
+
+    params = ['rcc',
+              '--project',
+              '-o', qrcFile]
+    process = subprocess.Popen(params, # nosec
+                               cwd=outputAssetsDir,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    process.communicate()
+
+    params = ['rcc',
+              '--root=/{}'.format(assetsFolder),
+              '--binary',
+              '-o', outputAssetsDir + '.rcc',
+              qrcFile]
+    process = subprocess.Popen(params, # nosec
+                               cwd=assetsDir,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    process.communicate()
+
+    shutil.rmtree(outputAssetsDir, True)
+
+def fixQtLibs(globs, libDir, outputQtPluginsDir, outputAssetsDir):
+    if not 'bundledInLib' in globs:
+        globs['bundledInLib'] = set()
+
+    for root, dirs, files in os.walk(outputAssetsDir):
+        for f in files:
+            if f.endswith('.so'):
+                srcPath = os.path.join(root, f)
+                relPath = root.replace(outputAssetsDir, '')[1:]
+                prefix = 'lib' + relPath.replace(os.path.sep, '_') + '_'
+                lib = ''
+
+                if f.startswith(prefix):
+                    lib = f
+                else:
+                    lib = prefix + f
+
+                dstPath = os.path.join(libDir, lib)
+                print('    {} -> {}'.format(srcPath, dstPath))
+                DTUtils.move(srcPath, dstPath)
+                globs['bundledInLib'].add((lib, os.path.join(relPath, f)))
+
+    try:
+        shutil.rmtree(outputQtPluginsDir)
+    except:
+        pass
+
+def qmakeQuery(var=''):
+    try:
+        args = ['qmake', '-query']
+
+        if var != '':
+            args += [var]
+
+        process = subprocess.Popen(args, # nosec
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+        stdout, _ = process.communicate()
+
+        return stdout.strip().decode(sys.getdefaultencoding())
+    except:
+        pass
+
+    return ''
+
+def modulePath(importLine):
+    imp = importLine.strip().split()
+    path = imp[1].replace('.', '/')
+    majorVersion = imp[2].split('.')[0]
+
+    if int(majorVersion) > 1:
+        path += '.{}'.format(majorVersion)
+
+    return path
+
+def scanImports(path):
+    if not os.path.isfile(path):
+        return []
+
+    fileName = os.path.basename(path)
+    imports = set()
+
+    if fileName.endswith('.qml'):
+        with open(path, 'rb') as f:
+            for line in f:
+                if re.match(b'^import \\w+' , line):
+                    imports.add(modulePath(line.strip().decode(sys.getdefaultencoding())))
+    elif fileName == 'qmldir':
+        with open(path, 'rb') as f:
+            for line in f:
+                if re.match(b'^depends ' , line):
+                    imports.add(modulePath(line.strip().decode(sys.getdefaultencoding())))
+
+    return list(imports)
+
+def listQmlFiles(path):
+    qmlFiles = set()
+
+    if os.path.isfile(path):
+        baseName = os.path.basename(path)
+
+        if baseName == 'qmldir' or path.endswith('.qml'):
+            qmlFiles.add(path)
+    else:
+        for root, _, files in os.walk(path):
+            for f in files:
+                if f == 'qmldir' or f.endswith('.qml'):
+                    qmlFiles.add(os.path.join(root, f))
+
+    return list(qmlFiles)
+
+def solvedepsQml(globs, sourcesQmlDirs, outputQmlDir, qtQmlDir):
+    qmlFiles = set()
+
+    for path in sourcesQmlDirs:
+        for f in listQmlFiles(path):
+            qmlFiles.add(f)
+
+    solved = set()
+    solvedImports = set()
+
+    if not 'dependencies' in globs:
+        globs['dependencies'] = set()
+
+    while len(qmlFiles) > 0:
+        qmlFile = qmlFiles.pop()
+
+        for imp in scanImports(qmlFile):
+            if imp in solvedImports:
+                continue
+
+            sysModulePath = os.path.join(qtQmlDir, imp)
+            installModulePath = os.path.join(outputQmlDir, imp)
+
+            if os.path.exists(sysModulePath):
+                print('    {} -> {}'.format(sysModulePath, installModulePath))
+                DTUtils.copy(sysModulePath, installModulePath)
+                solvedImports.add(imp)
+                globs['dependencies'].add(os.path.join(sysModulePath, 'qmldir'))
+
+                for f in listQmlFiles(sysModulePath):
+                    if not f in solved:
+                        qmlFiles.add(f)
+
+        solved.add(qmlFile)
+
+def solvedepsPlugins(globs,
+                     targetPlatform,
+                     targetArch,
+                     dataDir,
+                     outputQtPluginsDir,
+                     qtPluginsDir,
+                     sysLibDir):
+    pluginsMap = {
+        'Qt53DRenderer': ['sceneparsers', 'geometryloaders'],
+        'Qt53DQuickRenderer': ['renderplugins'],
+        'Qt5Declarative': ['qml1tooling'],
+        'Qt5EglFSDeviceIntegration': ['egldeviceintegrations'],
+        'Qt5Gui': ['accessible',
+                    'generic',
+                    'iconengines',
+                    'imageformats',
+                    'platforms',
+                    'platforminputcontexts',
+                    'styles'],
+        'Qt5Location': ['geoservices'],
+        'Qt5Multimedia': ['audio', 'mediaservice', 'playlistformats'],
+        'Qt5Network': ['bearer'],
+        'Qt5Positioning': ['position'],
+        'Qt5PrintSupport': ['printsupport'],
+        'Qt5QmlTooling': ['qmltooling'],
+        'Qt5Quick': ['scenegraph', 'qmltooling'],
+        'Qt5Sensors': ['sensors', 'sensorgestures'],
+        'Qt5SerialBus': ['canbus'],
+        'Qt5Sql': ['sqldrivers'],
+        'Qt5TextToSpeech': ['texttospeech'],
+        'Qt5WebEngine': ['qtwebengine'],
+        'Qt5WebEngineCore': ['qtwebengine'],
+        'Qt5WebEngineWidgets': ['qtwebengine'],
+        'Qt5WebView': ['webview'],
+        'Qt5XcbQpa': ['xcbglintegrations']
+    }
+
+    pluginsMap.update({lib + 'd': pluginsMap[lib] for lib in pluginsMap})
+
+    if targetPlatform == 'android':
+        pluginsMap.update({lib + '_' + targetArch: pluginsMap[lib] for lib in pluginsMap})
+
+    if not 'dependencies' in globs:
+        globs['dependencies'] = set()
+
+    solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
+                                  targetPlatform,
+                                  targetArch,
+                                  sysLibDir)
+    plugins = []
+
+    for dep in solver.scanDependencies(dataDir):
+        libName = solver.name(dep)
+
+        if not libName in pluginsMap:
+            continue
+
+        for plugin in pluginsMap[libName]:
+            if not plugin in plugins:
+                sysPluginPath = os.path.join(qtPluginsDir, plugin)
+                pluginPath = os.path.join(outputQtPluginsDir, plugin)
+
+                if not os.path.exists(sysPluginPath):
+                    continue
+
+                print('    {} -> {}'.format(sysPluginPath, pluginPath))
+                DTUtils.copy(sysPluginPath, pluginPath)
+                plugins.append(plugin)
+                globs['dependencies'].add(sysPluginPath)
+
+def removeDebugs(dataDir):
+    dbgFiles = set()
+    libQtInstallDir = \
+        qmakeQuery('QT_INSTALL_ARCHDATA') \
+            .replace(qmakeQuery('QT_INSTALL_PREFIX'), dataDir)
+
+    for root, _, files in os.walk(libQtInstallDir):
+        for f in files:
+            if f.endswith('.dll'):
+                fname, ext = os.path.splitext(f)
+                dbgFile = os.path.join(root, '{}d{}'.format(fname, ext))
+
+                if os.path.exists(dbgFile):
+                    dbgFiles.add(dbgFile)
+
+    for f in dbgFiles:
+        os.remove(f)
+
+def removeInvalidAndroidArchs(targetArch, assetsDir):
+    suffix = '_{}.so'.format(targetArch)
+
+    for root, dirs, files in os.walk(assetsDir):
+        for f in files:
+            if f.endswith('.so') and not f.endswith(suffix):
+                os.remove(os.path.join(root, f))
+
+def writeQtConf(qtConfFile,
+                mainExecutable,
+                targetPlatform,
+                outputQmlDir,
+                outputQtPluginsDir):
+    prefix = os.path.dirname(mainExecutable)
+
+    if targetPlatform == 'mac':
+        prefix = os.path.abspath(os.path.join(prefix, '..'))
+
+    paths = {'Plugins': os.path.relpath(outputQtPluginsDir, prefix).replace('\\', '/'),
+             'Imports': os.path.relpath(outputQmlDir, prefix).replace('\\', '/'),
+             'Qml2Imports': os.path.relpath(outputQmlDir, prefix).replace('\\', '/')}
+    confPath = os.path.dirname(qtConfFile)
+
+    if not os.path.exists(confPath):
+        os.makedirs(confPath)
+
+    with open(qtConfFile, 'w') as qtconf:
+        qtconf.write('[Paths]\n')
+        print('[Paths]')
+
+        for path in paths:
+            qtconf.write('{} = {}\n'.format(path, paths[path]))
+            print('{} = {}'.format(path, paths[path]))
+
+def preRun(globs, configs, dataDir):
+    targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
+    targetArch = configs.get('Package', 'targetArch', fallback='').strip()
+    sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
+    libDir = configs.get('Package', 'libDir', fallback='').strip()
+    libDir = os.path.join(dataDir, libDir)
+    defaultSysLibDir = ''
+
+    if targetPlatform == 'android':
+        defaultSysLibDir = '/opt/android-libs/{}/lib'.format(targetPlatform)
+    elif targetPlatform == 'mac':
+        defaultSysLibDir = '/usr/local/lib'
+
+    sysLibDir = configs.get('System', 'libDir', fallback=defaultSysLibDir)
+    libs = set()
+
+    for lib in sysLibDir.split(','):
+        libs.add(lib.strip())
+
+    sysLibDir = list(libs)
+    sourcesQmlDirs = configs.get('Qt5', 'sourcesQmlDirs', fallback='').split(',')
+    sourcesQmlDirs = [os.path.join(sourcesDir, module.strip()) for module in sourcesQmlDirs]
+    outputQmlDir = configs.get('Qt5', 'outputQmlDir', fallback='qml').strip()
+    outputQmlDir = os.path.join(dataDir, outputQmlDir)
+    defaultQtQmlDir = qmakeQuery('QT_INSTALL_QML')
+    qtQmlDir = configs.get('Qt5', 'qtQmlDir', fallback=defaultQtQmlDir).strip()
+    outputQtPluginsDir = configs.get('Qt5', 'outputQtPluginsDir', fallback='plugins').strip()
+    outputQtPluginsDir = os.path.join(dataDir, outputQtPluginsDir)
+    defaultQtPluginsDir = qmakeQuery('QT_INSTALL_PLUGINS')
+    qtPluginsDir = configs.get('Qt5', 'qtPluginsDir', fallback=defaultQtPluginsDir).strip()
+    outputAssetsDir = configs.get('Android', 'outputAssetsDir', fallback='assets').strip()
+    outputAssetsDir = os.path.join(dataDir, outputAssetsDir)
+    mainExecutable = configs.get('Package', 'mainExecutable', fallback='').strip()
+    mainExecutable = os.path.join(dataDir, mainExecutable)
+    qtConfFile = configs.get('Qt5', 'qtConfFile', fallback='qt.conf').strip()
+    qtConfFile = os.path.join(dataDir, qtConfFile)
+
+    print('Copying Qml modules')
+    print()
+    solvedepsQml(globs, sourcesQmlDirs, outputQmlDir, qtQmlDir)
+    print()
+    print('Copying required plugins')
+    print()
+    solvedepsPlugins(globs,
+                     targetPlatform,
+                     targetArch,
+                     dataDir,
+                     outputQtPluginsDir,
+                     qtPluginsDir,
+                     sysLibDir)
+    print()
+
+    if targetPlatform == 'windows':
+        print('Removing Qt debug libraries')
+        removeDebugs(dataDir)
+    elif targetPlatform == 'android':
+        assetsDir = configs.get('Package', 'assetsDir', fallback='assets').strip()
+        assetsDir = os.path.join(dataDir, assetsDir)
+        qtSourcesDir = configs.get('Qt5', 'sourcesDir', fallback='').strip()
+        sdkBuildToolsRevision = configs.get('System', 'sdkBuildToolsRevision', fallback='').strip()
+        androidCompileSdkVersion = configs.get('System', 'androidCompileSdkVersion', fallback='').strip()
+
+        print('Removing unused architectures')
+        removeInvalidAndroidArchs(targetArch, assetsDir)
+        print('Fixing Android libs')
+        fixQtLibs(globs, libDir, outputQtPluginsDir, outputAssetsDir)
         print()
+        print('Solving Android dependencies')
+        solvedepsAndroid(globs, dataDir, libDir, sysLibDir)
+        print('Copying Android build templates')
+        copyAndroidTemplates(dataDir,
+                             qtSourcesDir,
+                             sdkBuildToolsRevision,
+                             androidCompileSdkVersion)
 
-        with open(self.qtConf, 'w') as qtconf:
-            qtconf.write('[Paths]\n')
-            print('[Paths]')
-
-            for path in paths:
-                qtconf.write('{} = {}\n'.format(path, paths[path]))
-                print('{} = {}'.format(path, paths[path]))
-
+    if targetPlatform != 'android':
+        print('Writting qt.conf file')
         print()
+        writeQtConf(qtConfFile,
+                    mainExecutable,
+                    targetPlatform,
+                    outputQmlDir,
+                    outputQtPluginsDir)
 
-    @staticmethod
-    def readChangeLog(changeLog, appName, version):
-        if os.path.exists(changeLog):
-            with open(changeLog) as f:
-                for line in f:
-                    if not line.startswith('{0} {1}:'.format(appName, version)):
-                        continue
+    print()
 
-                    # Skip first line.
-                    f.readline()
-                    changeLogText = ''
+    if not 'environment' in globs:
+        globs['environment'] = set()
 
-                    for line_ in f:
-                        if re.match('{} \d+\.\d+\.\d+:'.format(appName), line):
-                            # Remove last line.
-                            i = changeLogText.rfind('\n')
+    if targetPlatform == 'windows':
+        globs['environment'].add(('QT_OPENGL', 'angle', 'Default values: desktop | angle | software', True))
+        globs['environment'].add(('QT_ANGLE_PLATFORM', 'd3d11', 'Default values: d3d11 | d3d9 | warp', True))
+        globs['environment'].add(('QT_QUICK_BACKEND', '', 'Default values: software | d3d12 | openvg', True))
 
-                            if i >= 0:
-                                changeLogText = changeLogText[: i]
+    globs['environment'].add(('QT_DEBUG_PLUGINS', 1, 'Enable plugin debugging', True))
 
-                            return changeLogText
+def postRun(globs, configs, dataDir):
+    targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
+    targetArch = configs.get('Package', 'targetArch', fallback='').strip()
+    outputAssetsDir = configs.get('Android', 'outputAssetsDir', fallback='assets').strip()
+    outputAssetsDir = os.path.join(dataDir, outputAssetsDir)
 
-                        changeLogText += line_
-
-        return ''
-
-    def createInstaller(self):
-        if not os.path.exists(self.qtIFW):
-            return False
-
-        # Read package config
-        packageConf = configparser.ConfigParser()
-        packageConf.optionxform=str
-        packageConf.read(self.packageConfig, 'utf-8')
-
-        # Create layout
-        componentName = 'com.{0}prj.{0}'.format(self.programName)
-        packageDir = os.path.join(self.installerPackages, componentName)
-
-        if not os.path.exists(self.installerConfig):
-            os.makedirs(self.installerConfig)
-
-        dataDir = os.path.join(packageDir, 'data')
-        metaDir = os.path.join(packageDir, 'meta')
-
-        if not os.path.exists(dataDir):
-            os.makedirs(dataDir)
-
-        if not os.path.exists(metaDir):
-            os.makedirs(metaDir)
-
-        iconName = ''
-
-        if self.appIcon != '' and os.path.exists(self.appIcon):
-            self.copy(self.appIcon, self.installerConfig)
-            iconName = os.path.splitext(os.path.basename(self.appIcon))[0]
-
-        licenseOutFile = os.path.basename(self.licenseFile)
-
-        if not '.' in licenseOutFile and \
-            (self.targetSystem == 'windows' or \
-                self.targetSystem == 'posix_windows'):
-            licenseOutFile += '.txt'
-
-        self.copy(self.licenseFile, os.path.join(metaDir, licenseOutFile))
-        self.copy(self.rootInstallDir, dataDir)
-
-        configXml = os.path.join(self.installerConfig, 'config.xml')
-        appName = packageConf['Package']['appName'].strip()
-
-        with open(configXml, 'w') as config:
-            config.write('<?xml version="1.0" encoding="UTF-8"?>\n')
-            config.write('<Installer>\n')
-            config.write('    <Name>{}</Name>\n'.format(appName))
-
-            if 'DAILY_BUILD' in os.environ:
-                config.write('    <Version>0.0.0</Version>\n')
-            else:
-                config.write('    <Version>{}</Version>\n'.format(packageConf['Package']['version'].strip()))
-
-            config.write('    <Title>{}</Title>\n'.format(packageConf['Package']['description'].strip()))
-            config.write('    <Publisher>{}</Publisher>\n'.format(appName))
-            config.write('    <ProductUrl>{}</ProductUrl>\n'.format(packageConf['Package']['url'].strip()))
-
-            if iconName != '':
-                config.write('    <InstallerWindowIcon>{}</InstallerWindowIcon>\n'.format(iconName))
-                config.write('    <InstallerApplicationIcon>{}</InstallerApplicationIcon>\n'.format(iconName))
-                config.write('    <Logo>{}</Logo>\n'.format(iconName))
-
-            if self.installerRunProgram != '':
-                config.write('    <RunProgram>{}</RunProgram>\n'.format(self.installerRunProgram))
-                config.write('    <RunProgramDescription>{}</RunProgramDescription>\n'.format(packageConf['Package']['runMessage'].strip()))
-                config.write('    <StartMenuDir>{}</StartMenuDir>\n'.format(appName))
-
-            config.write('    <MaintenanceToolName>{}Uninstall</MaintenanceToolName>\n'.format(appName))
-            config.write('    <AllowNonAsciiCharacters>true</AllowNonAsciiCharacters>\n')
-            config.write('    <TargetDir>{}</TargetDir>\n'.format(self.installerTargetDir))
-            config.write('</Installer>\n')
-
-        self.copy(self.installerScript,
-                  os.path.join(metaDir, 'installscript.qs'))
-
-        with open(os.path.join(metaDir, 'package.xml'), 'w') as f:
-            f.write('<?xml version="1.0"?>\n')
-            f.write('<Package>\n')
-            f.write('    <DisplayName>{}</DisplayName>\n'.format(appName))
-            f.write('    <Description>{}</Description>\n'.format(packageConf['Package']['description'].strip()))
-
-            if 'DAILY_BUILD' in os.environ:
-                f.write('    <Version>0.0.0</Version>\n')
-            else:
-                f.write('    <Version>{}</Version>\n'.format(packageConf['Package']['version'].strip()))
-
-            f.write('    <ReleaseDate>{}</ReleaseDate>\n'.format(time.strftime('%Y-%m-%d')))
-            f.write('    <Name>{}</Name>\n'.format(componentName))
-            f.write('    <Licenses>\n')
-            f.write('        <License name="{0}" file="{1}" />\n'.format(packageConf['Package']['licenseDescription'].strip(),
-                                                                         licenseOutFile))
-            f.write('    </Licenses>\n')
-            f.write('    <Script>installscript.qs</Script>\n')
-            f.write('    <UpdateText>\n')
-
-            if not 'DAILY_BUILD' in os.environ:
-                f.write(self.readChangeLog(self.changeLog,
-                                           appName,
-                                           packageConf['Package']['version'].strip()))
-
-            f.write('    </UpdateText>\n')
-            f.write('    <Default>true</Default>\n')
-            f.write('    <ForcedInstallation>true</ForcedInstallation>\n')
-            f.write('    <Essential>false</Essential>\n')
-
-            if self.adminRights:
-                f.write('    <RequiresAdminRights>true</RequiresAdminRights>\n')
-
-            f.write('</Package>\n')
-
-        # Remove old file
-        if not os.path.exists(self.pkgsDir):
-            os.makedirs(self.pkgsDir)
-
-        if os.path.exists(self.outPackage):
-            os.remove(self.outPackage)
-
-        params = []
-
-        if self.targetSystem == 'posix_windows':
-            params = ['wine']
-
-        params += [self.qtIFW,
-                   '-c', configXml,
-                   '-p', self.installerPackages,
-                   self.outPackage]
-        process = subprocess.Popen(params, # nosec
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
-        process.communicate()
-
-        return True
-
-    def copyAndroidTemplates(self):
-        installPrefix = self.qmakeQuery(var='QT_INSTALL_PREFIX')
-        sourcesPath = os.path.join(installPrefix, 'src')
-        templates = [os.path.join(sourcesPath, '3rdparty/gradle'),
-                     os.path.join(sourcesPath, 'android/templates')]
-
-        for template in templates:
-            self.copy(template, self.rootInstallDir, overwrite=False)
-
-        deploymentSettingsPath = ''
-
-        for f in os.listdir(self.standAloneDir):
-            if re.match('^android-.+-deployment-settings.json$' , f):
-                deploymentSettingsPath = os.path.join(self.standAloneDir, f)
-
-                break
-
-        if len(deploymentSettingsPath) < 1:
-            return
-
-        with open(deploymentSettingsPath) as f:
-            deploymentSettings = json.load(f)
-
-        properties = os.path.join(self.rootInstallDir, 'gradle.properties')
-        platform = self.androidPlatform.replace('android-', '')
-        javaDir = os.path.join(sourcesPath, 'android','java')
-
-        with open(properties, 'w') as f:
-            if 'sdkBuildToolsRevision' in deploymentSettings:
-                f.write('androidBuildToolsVersion={}\n'.format(deploymentSettings['sdkBuildToolsRevision']))
-
-            f.write('androidCompileSdkVersion={}\n'.format(platform))
-            f.write('buildDir=build\n')
-            f.write('qt5AndroidDir={}\n'.format(javaDir))
-
-    def createRccBundle(self):
-        rcc = os.path.join(os.path.dirname(self.qmake), 'rcc')
-        assetsDir = os.path.abspath(os.path.join(self.assetsIntallDir, '..'))
-        assetsFolder = os.path.relpath(self.assetsIntallDir, assetsDir)
-        qrcFile = os.path.join(self.assetsIntallDir, assetsFolder + '.qrc')
-
-        params = [rcc,
-                  '--project',
-                  '-o', qrcFile]
-        process = subprocess.Popen(params, # nosec
-                                   cwd=self.assetsIntallDir,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
-        process.communicate()
-
-        params = [rcc,
-                  '--root=/{}'.format(assetsFolder),
-                  '--binary',
-                  '-o', self.assetsIntallDir + '.rcc',
-                  qrcFile]
-        process = subprocess.Popen(params, # nosec
-                                   cwd=assetsDir,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
-        process.communicate()
-
-        shutil.rmtree(self.assetsIntallDir, True)
+    if targetPlatform == 'android':
+        print('Fixing libs.xml file')
+        fixLibsXml(globs, targetArch, dataDir)
+        print('Creating .rcc bundle file')
+        createRccBundle(outputAssetsDir)
+        print()

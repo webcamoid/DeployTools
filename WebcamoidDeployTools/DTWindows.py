@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Webcamoid Deploy Tools.
-# Copyright (C) 2020  Gonzalo Exequiel Pedone
+# Copyright (C) 2021  Gonzalo Exequiel Pedone
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -20,9 +20,8 @@
 # Web-Site: http://github.com/webcamoid/DeployTools/
 
 import os
-import platform
-import shutil
-import xml.etree.ElementTree as ET
+import subprocess
+import sys
 
 from . import DTBinary
 from . import DTGit
@@ -33,23 +32,19 @@ from . import DTUtils
 def sysInfo():
     info = ''
 
-    for f in os.listdir('/etc'):
-        if f.endswith('-release'):
-            with open(os.path.join('/etc' , f)) as releaseFile:
-                info += releaseFile.read()
-
-    if len(info) < 1:
-        info = ' '.join(platform.uname())
+    if DTUtils.hostPlatform() == 'posix':
+        for f in os.listdir('/etc'):
+            if f.endswith('-release'):
+                with open(os.path.join('/etc' , f)) as releaseFile:
+                    info += releaseFile.read()
 
     return info
 
-def writeBuildInfo(globs, buildInfoFile, sourcesDir, androidCompileSdkVersion):
+def writeBuildInfo(globs, buildInfoFile, sourcesDir):
     outputDir = os.path.dirname(buildInfoFile)
 
     if not os.path.exists(outputDir):
         os.makedirs(outputDir)
-
-    # Write repository info.
 
     with open(buildInfoFile, 'w') as f:
         # Write repository info.
@@ -78,57 +73,56 @@ def writeBuildInfo(globs, buildInfoFile, sourcesDir, androidCompileSdkVersion):
         print()
         f.write('\n')
 
-        # Write host info.
+        if DTUtils.hostPlatform() == 'posix':
+            # Write host info.
 
-        info = sysInfo()
+            info = sysInfo()
 
-        for line in info.split('\n'):
-            if len(line) > 0:
-                print('    ' + line)
-                f.write(line + '\n')
-
-        print()
-        f.write('\n')
-
-        # Write SDK and NDK info.
-
-        androidSDK = ''
-
-        if 'ANDROID_HOME' in os.environ:
-            androidSDK = os.environ['ANDROID_HOME']
-
-        androidNDK = ''
-
-        if 'ANDROID_NDK_ROOT' in os.environ:
-            androidNDK = os.environ['ANDROID_NDK_ROOT']
-        elif 'ANDROID_NDK' in os.environ:
-            androidNDK = os.environ['ANDROID_NDK']
-
-        sdkInfoFile = os.path.join(androidSDK, 'tools', 'source.properties')
-        ndkInfoFile = os.path.join(androidNDK, 'source.properties')
-
-        print('    Android Platform: {}'.format(androidCompileSdkVersion))
-        f.write('Android Platform: {}\n'.format(androidCompileSdkVersion))
-        print('    SDK Info: \n')
-        f.write('SDK Info: \n\n')
-
-        with open(sdkInfoFile) as sdkf:
-            for line in sdkf:
+            for line in info.split('\n'):
                 if len(line) > 0:
-                    print('        ' + line.strip())
-                    f.write('    ' + line)
+                    print('    ' + line)
+                    f.write(line + '\n')
 
-        print('\n    NDK Info: \n')
-        f.write('\nNDK Info: \n\n')
+            print()
+            f.write('\n')
 
-        with open(ndkInfoFile) as ndkf:
-            for line in ndkf:
-                if len(line) > 0:
-                    print('        ' + line.strip())
-                    f.write('    ' + line)
+            # Write Wine version and emulated system info.
 
-        print()
-        f.write('\n')
+            wineVersion = ''
+
+            try:
+                process = subprocess.Popen(['wine', '--version'], # nosec
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE)
+                stdout, _ = process.communicate()
+                wineVersion = stdout.decode(sys.getdefaultencoding()).strip()
+            except:
+                pass
+
+            if len(wineVersion) < 1:
+                wineVersion = 'Unknown'
+
+            print('    Wine Version: {}'.format(wineVersion))
+            f.write('Wine Version: {}\n'.format(wineVersion))
+
+            fakeWindowsVersion = ''
+
+            try:
+                process = subprocess.Popen(['wine', 'cmd', '/c', 'ver'], # nosec
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE)
+                stdout, _ = process.communicate()
+                fakeWindowsVersion = stdout.decode(sys.getdefaultencoding()).strip()
+            except:
+                pass
+
+            if len(fakeWindowsVersion) < 1:
+                fakeWindowsVersion = 'Unknown'
+
+            print('    Windows Version: {}'.format(fakeWindowsVersion))
+            f.write('Windows Version: {}\n'.format(fakeWindowsVersion))
+            print()
+            f.write('\n')
 
         # Write binary dependencies info.
 
@@ -152,11 +146,39 @@ def removeUnneededFiles(path):
 
     for root, _, files in os.walk(path):
         for f in files:
-            if f.endswith('.jar'):
+            if f.endswith('.a') \
+                or f.endswith('.static.prl') \
+                or f.endswith('.pdb') \
+                or f.endswith('.lib'):
                 afiles.add(os.path.join(root, f))
 
     for afile in afiles:
         os.remove(afile)
+
+def createLauncher(globs, mainExecutable, programArgs, dataDir):
+    programName = os.path.basename(mainExecutable)
+    launcherScript = os.path.join(dataDir, programName) + '.bat'
+    binDir = os.path.relpath(os.path.dirname(mainExecutable), dataDir)
+
+    with open(launcherScript, 'w') as launcher:
+        launcher.write('@echo off\n')
+
+        if 'environment' in globs:
+            for env in globs['environment']:
+                if len(env[2]) > 0:
+                    launcher.write('rem {}\n'.format(env[2]))
+
+                if env[3]:
+                    launcher.write('rem ')
+
+                launcher.write('set {}={}\n'.format(env[0], env[1]))
+
+        launcher.write('start /b "" "%~dp0{}\\{}"'.format(binDir, programName))
+
+        if len(programArgs) > 0:
+            launcher.write(' ' + programArgs)
+
+        launcher.write('\n')
 
 def preRun(globs, configs, dataDir):
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
@@ -165,14 +187,20 @@ def preRun(globs, configs, dataDir):
     mainExecutable = os.path.join(dataDir, mainExecutable)
     libDir = configs.get('Package', 'libDir', fallback='').strip()
     libDir = os.path.join(dataDir, libDir)
-    defaultSysLibDir = '/opt/android-libs/{}/lib'.format(targetPlatform)
-    sysLibDir = configs.get('System', 'libDir', fallback=defaultSysLibDir)
+    sysLibDir = configs.get('System', 'libDir', fallback='')
     libs = set()
 
     for lib in sysLibDir.split(','):
         libs.add(lib.strip())
 
     sysLibDir = list(libs)
+    extraLibs = ['libeay32.dll',
+                 'ssleay32.dll',
+                 'libEGL.dll',
+                 'libGLESv2.dll',
+                 'D3DCompiler_43.dll',
+                 'D3DCompiler_46.dll',
+                 'D3DCompiler_47.dll']
     solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
@@ -187,20 +215,23 @@ def preRun(globs, configs, dataDir):
                           dataDir,
                           libDir,
                           sysLibDir,
-                          [])
+                          extraLibs)
     print()
     print('Stripping symbols')
     solver.stripSymbols(dataDir)
     print('Removing unnecessary files')
-    removeUnneededFiles(libDir)
-    print()
+    removeUnneededFiles(dataDir)
 
 def postRun(globs, configs, dataDir):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
+    mainExecutable = configs.get('Package', 'mainExecutable', fallback='').strip()
+    mainExecutable = os.path.join(dataDir, mainExecutable)
+    programArgs = configs.get('Package', 'programArgs', fallback='').strip()
     buildInfoFile = configs.get('Package', 'buildInfoFile', fallback='build-info.txt').strip()
     buildInfoFile = os.path.join(dataDir, buildInfoFile)
-    androidCompileSdkVersion = configs.get('System', 'androidCompileSdkVersion', fallback='24').strip()
 
+    print('Writting launcher file')
+    createLauncher(globs, mainExecutable, programArgs, dataDir)
     print('Writting build system information')
     print()
-    writeBuildInfo(globs, buildInfoFile, sourcesDir, androidCompileSdkVersion)
+    writeBuildInfo(globs, buildInfoFile, sourcesDir)

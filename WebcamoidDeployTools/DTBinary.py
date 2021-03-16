@@ -19,6 +19,7 @@
 #
 # Web-Site: http://github.com/webcamoid/DeployTools/
 
+import importlib
 import os
 import re
 import subprocess # nosec
@@ -28,14 +29,27 @@ import time
 from . import DTUtils
 
 
-class BinaryTools(DTUtils.Utils):
-    def __init__(self):
+class BinaryTools:
+    def __init__(self, hostPlatform, targetPlatform, targetArch, sysLibDir):
         super().__init__()
-        self.detectStrip()
-        self.excludes = []
+        self.hostPlatform = hostPlatform
+        self.targetPlatform = targetPlatform
+        self.stripBin = DTUtils.whereBin('strip')
+        self.solver = None
 
-    def isValid(self, path):
-        return False
+        if targetPlatform == 'mac':
+            self.solver = importlib.import_module('WebcamoidDeployTools.DTBinaryMach')
+        elif targetPlatform == 'windows':
+            self.solver = importlib.import_module('WebcamoidDeployTools.DTBinaryPecoff')
+        else:
+            self.solver = importlib.import_module('WebcamoidDeployTools.DTBinaryElf')
+
+        self.solver.init(targetPlatform, targetArch, sysLibDir)
+        self.excludes = []
+        self.readExcludes()
+
+    def name(self, binary):
+        return self.solver.name(binary)
 
     def find(self, path):
         binaries = []
@@ -44,29 +58,26 @@ class BinaryTools(DTUtils.Utils):
             for f in files:
                 binaryPath = os.path.join(root, f)
 
-                if not os.path.islink(binaryPath) and self.isValid(binaryPath):
+                if not os.path.islink(binaryPath) and self.solver.isValid(binaryPath):
                     binaries.append(binaryPath)
 
         return binaries
 
     def dump(self, binary):
-        return {}
-
-    def dependencies(self, binary):
-        return []
+        return self.solver.dump(binary)
 
     def allDependencies(self, binary):
-        deps = self.dependencies(binary)
+        deps = self.filterDependencies(self.solver.dependencies(binary))
         solved = set()
 
         while len(deps) > 0:
             dep = deps.pop()
 
-            for binDep in self.dependencies(dep):
+            for binDep in self.filterDependencies(self.solver.dependencies(dep)):
                 if binDep != dep and not binDep in solved:
                     deps.append(binDep)
 
-            if self.system == 'mac':
+            if self.hostPlatform == 'mac':
                 i = dep.rfind('.framework/')
 
                 if i >= 0:
@@ -85,11 +96,8 @@ class BinaryTools(DTUtils.Utils):
 
         return sorted(deps)
 
-    def name(self, binary):
-        return ''
-
-    def detectStrip(self):
-        self.stripBin = self.whereBin('strip.exe' if self.system == 'windows' else 'strip')
+    def guess(self, mainExecutable, dependency):
+        return self.solver.guess(mainExecutable, dependency)
 
     def strip(self, binary):
         if self.stripBin == '':
@@ -107,7 +115,7 @@ class BinaryTools(DTUtils.Utils):
             thread = threading.Thread(target=self.strip, args=(binary,))
             threads.append(thread)
 
-            while threading.active_count() >= self.njobs:
+            while threading.active_count() >= DTUtils.numThreads():
                 time.sleep(0.25)
 
             thread.start()
@@ -115,10 +123,9 @@ class BinaryTools(DTUtils.Utils):
         for thread in threads:
             thread.join()
 
-    def readExcludes(self, name, platform):
+    def readExcludes(self):
         curDir = os.path.dirname(os.path.realpath(__file__))
-        excludeFile = '{}_{}.txt'.format(name, platform)
-        self.readExcludeList(os.path.join(curDir, 'exclude', excludeFile))
+        self.readExcludeList(os.path.join(curDir, 'exclude', self.targetPlatform + '.txt'))
 
     def readExcludeList(self, excludeList):
         self.excludes = []
@@ -141,7 +148,7 @@ class BinaryTools(DTUtils.Utils):
 
     def isExcluded(self, path):
         for exclude in self.excludes:
-            if self.targetSystem == 'windows' or self.targetSystem == 'posix_windows':
+            if self.targetPlatform == 'windows':
                 path = path.lower().replace('\\', '/')
                 exclude = exclude.lower()
 
@@ -150,13 +157,22 @@ class BinaryTools(DTUtils.Utils):
 
         return False
 
+    def filterDependencies(self, deps):
+        outDeps = []
+
+        for dep in deps:
+            if not self.isExcluded(dep):
+                outDeps.append(dep)
+
+        return outDeps
+
     def resetFilePermissions(self, rootPath, binariesPath):
         for root, dirs, files in os.walk(rootPath):
             for d in dirs:
                 permissions = 0o755
                 path = os.path.join(root, d)
 
-                if self.system == 'mac':
+                if self.hostPlatform == 'mac':
                     os.chmod(path, permissions, follow_symlinks=False)
                 else:
                     os.chmod(path, permissions)
@@ -165,10 +181,10 @@ class BinaryTools(DTUtils.Utils):
                 permissions = 0o644
                 path = os.path.join(root, f)
 
-                if root == binariesPath and self.isValid(path):
+                if root == binariesPath and self.solver.isValid(path):
                     permissions = 0o744
 
-                if self.system == 'mac':
+                if self.hostPlatform == 'mac':
                     os.chmod(path, permissions, follow_symlinks=False)
                 else:
                     os.chmod(path, permissions)

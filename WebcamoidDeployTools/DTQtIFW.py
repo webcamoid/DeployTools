@@ -256,8 +256,12 @@ def run(globs, configs, dataDir, outputDir, mutex):
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
-    icon = configs.get('QtIFW', 'icon', fallback='app.png').strip()
-    icon = os.path.join(sourcesDir, icon)
+
+    icon = configs.get('QtIFW', 'icon', fallback='').strip()
+
+    if icon != '':
+        icon = os.path.join(sourcesDir, icon)
+    
     title = configs.get('QtIFW', 'title', fallback='').strip()
     description = configs.get('QtIFW', 'description', fallback='').strip()
     licenseFile = configs.get('QtIFW', 'license', fallback='COPYING').strip()
@@ -273,17 +277,16 @@ def run(globs, configs, dataDir, outputDir, mutex):
     changeLog = configs.get('QtIFW', 'changeLog', fallback='').strip()
     changeLog = os.path.join(sourcesDir, changeLog)
     requiresAdminRights = configs.get('QtIFW', 'requiresAdminRights', fallback='false').strip()
-
-    if requiresAdminRights.lower() in ['true', 'yes', '1']:
-        requiresAdminRights = True
-    else:
-        requiresAdminRights = False
-
-    outPackage = \
-        os.path.join(outputDir,
-                     '{}-{}-{}'.format(packageName,
-                                       version,
-                                       targetArch))
+    requiresAdminRights = DTUtils.toBool(requiresAdminRights)
+    defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
+    defaultHideArch = DTUtils.toBool(defaultHideArch)
+    defaultHideArch = 'true' if defaultHideArch else 'false'
+    hideArch = configs.get('QtIFW', 'hideArch', fallback=defaultHideArch).strip()
+    hideArch = DTUtils.toBool(hideArch)
+    outPackage = os.path.join(outputDir, '{}-{}'.format(packageName, version))
+                     
+    if not hideArch:
+        outPackage += '-' + targetArch
 
     if targetPlatform == 'mac':
         outPackage += '.dmg'

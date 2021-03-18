@@ -122,11 +122,17 @@ def run(globs, configs, dataDir, outputDir, mutex):
     desktopIcon = os.path.join(sourcesDir, desktopIcon)
     dirIcon = configs.get('AppImage', 'dirIcon', fallback='app.png').strip()
     dirIcon = os.path.join(sourcesDir, dirIcon)
-    outPackage = \
-        os.path.join(outputDir,
-                     '{}-{}-{}.AppImage'.format(packageName,
-                                                version,
-                                                targetArch))
+    defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
+    defaultHideArch = DTUtils.toBool(defaultHideArch)
+    defaultHideArch = 'true' if defaultHideArch else 'false'
+    hideArch = configs.get('AppImage', 'hideArch', fallback=defaultHideArch).strip()
+    hideArch = DTUtils.toBool(hideArch)
+    outPackage = os.path.join(outputDir, '{}-{}'.format(packageName, version))
+                     
+    if not hideArch:
+        outPackage += '-' + targetArch
+        
+    outPackage += '.AppImage'
 
     # Remove old file
     if os.path.exists(outPackage):

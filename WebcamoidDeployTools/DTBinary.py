@@ -30,11 +30,16 @@ from . import DTUtils
 
 
 class BinaryTools:
-    def __init__(self, hostPlatform, targetPlatform, targetArch, sysLibDir):
+    def __init__(self, 
+                 hostPlatform, 
+                 targetPlatform, 
+                 targetArch, 
+                 sysLibDir,
+                 stripCmd='strip'):
         super().__init__()
         self.hostPlatform = hostPlatform
         self.targetPlatform = targetPlatform
-        self.stripBin = DTUtils.whereBin('strip')
+        self.stripBin = DTUtils.whereBin(stripCmd)
         self.solver = None
 
         if targetPlatform == 'mac':

@@ -141,16 +141,27 @@ def preRun(globs, configs, dataDir):
     libDir = configs.get('Package', 'libDir', fallback='lib').strip()
     libDir = os.path.join(dataDir, libDir)
     sysLibDir = configs.get('System', 'libDir', fallback='')
+    stripCmd = configs.get('System', 'stripCmd', fallback='strip').strip()
     libs = set()
 
-    for lib in sysLibDir.split(','):
-        libs.add(lib.strip())
+    if sysLibDir != '':
+        for lib in sysLibDir.split(','):
+            libs.add(lib.strip())
 
     sysLibDir = list(libs)
+    extraLibs = configs.get('System', 'extraLibs', fallback='')
+    elibs = set()
+
+    if extraLibs != '':
+        for lib in extraLibs.split(','):
+            elibs.add(lib.strip())
+
+    extraLibs = list(elibs)
     solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
-                                  sysLibDir)
+                                  sysLibDir,
+                                  stripCmd)
 
     print('Copying required libs')
     print()
@@ -161,7 +172,8 @@ def preRun(globs, configs, dataDir):
                           dataDir,
                           libDir,
                           sysLibDir,
-                          [])
+                          extraLibs,
+                          stripCmd)
     print()
     print('Stripping symbols')
     solver.stripSymbols(dataDir)
@@ -172,14 +184,19 @@ def preRun(globs, configs, dataDir):
 def postRun(globs, configs, dataDir):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     mainExecutable = configs.get('Package', 'mainExecutable', fallback='').strip()
-    mainExecutable = os.path.join(dataDir, mainExecutable)
+
+    if mainExecutable != '':
+        mainExecutable = os.path.join(dataDir, mainExecutable)
+
     libDir = configs.get('Package', 'libDir', fallback='lib').strip()
     libDir = os.path.join(dataDir, libDir)
     buildInfoFile = configs.get('Package', 'buildInfoFile', fallback='build-info.txt').strip()
     buildInfoFile = os.path.join(dataDir, buildInfoFile)
 
-    print('Writting launcher file')
-    createLauncher(globs, mainExecutable, dataDir, libDir)
+    if mainExecutable != '':
+        print('Writting launcher file')
+        createLauncher(globs, mainExecutable, dataDir, libDir)
+
     print('Writting build system information')
     print()
     writeBuildInfo(globs, buildInfoFile, sourcesDir)

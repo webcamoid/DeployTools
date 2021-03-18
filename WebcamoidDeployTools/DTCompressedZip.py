@@ -34,9 +34,17 @@ def run(globs, configs, dataDir, outputDir, mutex):
     version = configs.get('Package', 'version', fallback='1.0.0').strip()
     packageName = configs.get('CompressedZip', 'name', fallback=name).strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
-    outPackage = \
-        os.path.join(outputDir,
-                     '{}-{}-{}.zip'.format(packageName, version, targetArch))
+    defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
+    defaultHideArch = DTUtils.toBool(defaultHideArch)
+    defaultHideArch = 'true' if defaultHideArch else 'false'
+    hideArch = configs.get('CompressedZip', 'hideArch', fallback=defaultHideArch).strip()
+    hideArch = DTUtils.toBool(hideArch)
+    outPackage = os.path.join(outputDir, '{}-{}'.format(packageName, version))
+                     
+    if not hideArch:
+        outPackage += '-' + targetArch
+        
+    outPackage += '.zip'
 
     # Remove old file
     if os.path.exists(outPackage):

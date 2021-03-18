@@ -31,6 +31,12 @@ from . import DTGit
 from . import DTBinary
 
 
+def toBool(string):
+    if string.lower() in ['true', 'yes', '1']:
+        return True
+
+    return False
+
 def whereBin(binary, extraPaths=[]):
     pathSep = ';' if hostPlatform() == 'windows' else ':'
     sysPath = os.environ['PATH'].split(pathSep) if 'PATH' in os.environ else []
@@ -252,23 +258,26 @@ def solvedepsLibs(globs,
                   dataDir,
                   libDir,
                   sysLibDir,
-                  extraLibs):
+                  extraLibs,
+                  stripCmd='strip'):
     solver = DTBinary.BinaryTools(hostPlatform(),
                                   targetPlatform,
                                   targetArch,
-                                  sysLibDir)
+                                  sysLibDir,
+                                  stripCmd)
 
     if not 'dependencies' in globs:
         globs['dependencies'] = set()
 
     deps = set(solver.scanDependencies(dataDir))
 
-    for dep in extraLibs:
-        path = solver.guess(mainExecutable, dep)
+    if mainExecutable != '':
+        for dep in extraLibs:
+            path = solver.guess(mainExecutable, dep)
 
-        if path != '':
-            deps.add(path)
-            deps.update(solver.allDependencies(path))
+            if path != '':
+                deps.add(path)
+                deps.update(solver.allDependencies(path))
 
     deps = sorted(deps)
     depsInstallDir = ''

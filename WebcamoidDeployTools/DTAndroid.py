@@ -167,16 +167,27 @@ def preRun(globs, configs, dataDir):
     libDir = os.path.join(dataDir, libDir)
     defaultSysLibDir = '/opt/android-libs/{}/lib'.format(targetPlatform)
     sysLibDir = configs.get('System', 'libDir', fallback=defaultSysLibDir)
+    stripCmd = configs.get('System', 'stripCmd', fallback='strip').strip()
     libs = set()
 
-    for lib in sysLibDir.split(','):
-        libs.add(lib.strip())
+    if sysLibDir != '':
+        for lib in sysLibDir.split(','):
+            libs.add(lib.strip())
 
     sysLibDir = list(libs)
+    extraLibs = configs.get('System', 'extraLibs', fallback='')
+    elibs = set()
+
+    if extraLibs != '':
+        for lib in extraLibs.split(','):
+            elibs.add(lib.strip())
+
+    extraLibs = list(elibs)
     solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
-                                  sysLibDir)
+                                  sysLibDir,
+                                  stripCmd)
 
     print('Copying required libs')
     print()
@@ -187,7 +198,8 @@ def preRun(globs, configs, dataDir):
                           dataDir,
                           libDir,
                           sysLibDir,
-                          [])
+                          extraLibs,
+                          stripCmd)
     print()
     print('Stripping symbols')
     solver.stripSymbols(dataDir)

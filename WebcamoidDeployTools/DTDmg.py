@@ -175,11 +175,17 @@ def run(globs, configs, dataDir, outputDir, mutex):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     icon = configs.get('Dmg', 'icon', fallback='app.icns').strip()
     icon = os.path.join(sourcesDir, icon)
-    outPackage = \
-        os.path.join(outputDir,
-                     '{}-{}-{}.dmg'.format(packageName,
-                                           version,
-                                           targetArch))
+    defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
+    defaultHideArch = DTUtils.toBool(defaultHideArch)
+    defaultHideArch = 'true' if defaultHideArch else 'false'
+    hideArch = configs.get('Dmg', 'hideArch', fallback=defaultHideArch).strip()
+    hideArch = DTUtils.toBool(hideArch)
+    outPackage = os.path.join(outputDir, '{}-{}'.format(packageName, version))
+                     
+    if not hideArch:
+        outPackage += '-' + targetArch
+        
+    outPackage += '.dmg'
 
     # Remove old file
     if os.path.exists(outPackage):

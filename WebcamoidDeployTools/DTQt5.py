@@ -426,7 +426,8 @@ def solvedepsPlugins(globs,
                      dataDir,
                      outputQtPluginsDir,
                      qtPluginsDir,
-                     sysLibDir):
+                     sysLibDir,
+                     stripCmd='strip'):
     pluginsMap = {
         'Qt53DRenderer': ['sceneparsers', 'geometryloaders'],
         'Qt53DQuickRenderer': ['renderplugins'],
@@ -468,7 +469,8 @@ def solvedepsPlugins(globs,
     solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
-                                  sysLibDir)
+                                  sysLibDir,
+                                  stripCmd)
     plugins = []
 
     for dep in solver.scanDependencies(dataDir):
@@ -578,6 +580,7 @@ def preRun(globs, configs, dataDir):
     mainExecutable = os.path.join(dataDir, mainExecutable)
     qtConfFile = configs.get('Qt5', 'qtConfFile', fallback='qt.conf').strip()
     qtConfFile = os.path.join(dataDir, qtConfFile)
+    stripCmd = configs.get('System', 'stripCmd', fallback='strip').strip()
 
     print('Copying Qml modules')
     print()
@@ -591,7 +594,8 @@ def preRun(globs, configs, dataDir):
                      dataDir,
                      outputQtPluginsDir,
                      qtPluginsDir,
-                     sysLibDir)
+                     sysLibDir,
+                     stripCmd)
     print()
 
     if targetPlatform == 'windows':

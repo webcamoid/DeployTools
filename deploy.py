@@ -110,8 +110,13 @@ if __name__ =='__main__':
 
     if not options.package_only or \
         (options.prepare_only and options.package_only):
-        modules = configs.get('Package', 'modules', fallback='').split(',')
-        modules = [module.strip() for module in modules]
+        modules = configs.get('Package', 'modules', fallback='')
+
+        if modules == '':
+            modules = []
+        else:
+            modules = [module.strip() for module in modules.split(',')]
+        
         modules.append(targetPlatform.capitalize())
 
         for module in modules:
@@ -130,9 +135,13 @@ if __name__ =='__main__':
 
     if not options.prepare_only or \
         (options.prepare_only and options.package_only):
-        outputFormats = configs.get('Package', 'outputFormats', fallback='').split(',')
-        outputFormats = [format.strip() for format in outputFormats]
-
+        outputFormats = configs.get('Package', 'outputFormats', fallback='')
+        
+        if outputFormats == '':
+            outputFormats = []
+        else:
+            outputFormats = [fmt.strip() for fmt in outputFormats.split(',')]
+        
         packagingTools = []
 
         for format in outputFormats:

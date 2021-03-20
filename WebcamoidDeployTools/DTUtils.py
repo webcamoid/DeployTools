@@ -194,6 +194,20 @@ def sha256sum(fileName):
 
     return sha.hexdigest()
 
+def md5sum(fileName):
+    sha = hashlib.md5()
+
+    with open(fileName, 'rb') as f:
+        while True:
+            data = f.read(1024)
+
+            if not data:
+                break
+
+            sha.update(data)
+
+    return sha.hexdigest()
+
 def hrSize(size):
     i = int(math.log(size) // math.log(1024))
 
@@ -309,3 +323,18 @@ def solvedepsLibs(globs,
             globs['dependencies'].add(dep)
 
     globs['libs'] = set(deps)
+
+def pathSize(path):
+    if os.path.isfile(path):
+        return os.path.getsize(path)
+
+    size = 0
+
+    for root, _, files in os.walk(path):
+        for f in files:
+            fpath = os.path.join(root, f)
+
+            if not os.path.islink(fpath):
+                size += os.path.getsize(fpath)
+
+    return size

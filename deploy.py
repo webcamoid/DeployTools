@@ -116,7 +116,7 @@ if __name__ =='__main__':
             modules = []
         else:
             modules = [module.strip() for module in modules.split(',')]
-        
+
         modules.append(targetPlatform.capitalize())
 
         for module in modules:
@@ -149,14 +149,17 @@ if __name__ =='__main__':
             print('    ' + os.path.relpath(f, options.data_dir))
 
         print()
+        size = DTUtils.pathSize(options.data_dir)
+        print('Packaged data size:', DTUtils.hrSize(size))
+        print()
 
         outputFormats = configs.get('Package', 'outputFormats', fallback='')
-        
+
         if outputFormats == '':
             outputFormats = []
         else:
             outputFormats = [fmt.strip() for fmt in outputFormats.split(',')]
-        
+
         packagingTools = []
 
         for format in outputFormats:
@@ -197,7 +200,7 @@ if __name__ =='__main__':
 
                 for package in globs['outputPackages']:
                     print('   ', os.path.basename(package), DTUtils.hrSize(os.path.getsize(package)))
-                    print('        sha256sum:', DTUtils.sha256sum(package))
+                    print('        md5sum:', DTUtils.md5sum(package))
 
             else:
                 print('No packages were created')

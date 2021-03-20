@@ -248,20 +248,19 @@ def isAvailable(configs):
     return True
 
 def run(globs, configs, dataDir, outputDir, mutex):
+    sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     name = configs.get('Package', 'name', fallback='app').strip()
-    version = configs.get('Package', 'version', fallback='1.0.0').strip()
+    version = DTUtils.programVersion(configs, sourcesDir)
     packageName = configs.get('QtIFW', 'name', fallback=name).strip()
     appName = configs.get('QtIFW', 'appName', fallback=name).strip()
     organization = configs.get('QtIFW', 'organization', fallback='project').strip()
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
-    sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
-
     icon = configs.get('QtIFW', 'icon', fallback='').strip()
 
     if icon != '':
         icon = os.path.join(sourcesDir, icon)
-    
+
     title = configs.get('QtIFW', 'title', fallback='').strip()
     description = configs.get('QtIFW', 'description', fallback='').strip()
     licenseFile = configs.get('QtIFW', 'license', fallback='COPYING').strip()
@@ -284,7 +283,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     hideArch = configs.get('QtIFW', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
     outPackage = os.path.join(outputDir, '{}-{}'.format(packageName, version))
-                     
+
     if not hideArch:
         outPackage += '-' + targetArch
 

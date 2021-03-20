@@ -22,6 +22,8 @@
 import os
 import tarfile
 
+from . import DTUtils
+
 
 def platforms():
     return ['mac', 'posix', 'windows']
@@ -30,8 +32,9 @@ def isAvailable(configs):
     return True
 
 def run(globs, configs, dataDir, outputDir, mutex):
+    sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     name = configs.get('Package', 'name', fallback='app').strip()
-    version = configs.get('Package', 'version', fallback='1.0.0').strip()
+    version = DTUtils.programVersion(configs, sourcesDir)
     packageName = configs.get('CompressedTarGz', 'name', fallback=name).strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
@@ -40,10 +43,10 @@ def run(globs, configs, dataDir, outputDir, mutex):
     hideArch = configs.get('CompressedTarGz', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
     outPackage = os.path.join(outputDir, '{}-{}'.format(packageName, version))
-                     
+
     if not hideArch:
         outPackage += '-' + targetArch
-        
+
     outPackage += '.tar.gz'
 
     # Remove old file

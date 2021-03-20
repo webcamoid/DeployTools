@@ -261,8 +261,9 @@ def isAvailable(configs):
     return True
 
 def run(globs, configs, dataDir, outputDir, mutex):
+    sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     name = configs.get('Package', 'name', fallback='app').strip()
-    version = configs.get('Package', 'version', fallback='1.0.0').strip()
+    version = DTUtils.programVersion(configs, sourcesDir)
     androidCompileSdkVersion = configs.get('System', 'androidCompileSdkVersion', fallback='24').strip()
     packageName = configs.get('AndroidAPK', 'name', fallback=name).strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
@@ -272,10 +273,10 @@ def run(globs, configs, dataDir, outputDir, mutex):
     hideArch = configs.get('AndroidAPK', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
     outPackage = os.path.join(outputDir, '{}-{}'.format(packageName, version))
-                     
+
     if not hideArch:
         outPackage += '-' + targetArch
-        
+
     outPackage += '.apk'
 
     # Remove old file

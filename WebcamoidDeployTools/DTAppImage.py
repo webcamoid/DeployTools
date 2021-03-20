@@ -109,11 +109,11 @@ def isAvailable(configs):
     return True
 
 def run(globs, configs, dataDir, outputDir, mutex):
+    sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     name = configs.get('Package', 'name', fallback='app').strip()
-    version = configs.get('Package', 'version', fallback='1.0.0').strip()
+    version = DTUtils.programVersion(configs, sourcesDir)
     packageName = configs.get('AppImage', 'name', fallback=name).strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
-    sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     launcher = configs.get('AppImage', 'launcher', fallback='AppRun').strip()
     launcher = os.path.join(dataDir, launcher)
     desktopFile = configs.get('AppImage', 'desktopFile', fallback='app.desktop').strip()
@@ -128,10 +128,10 @@ def run(globs, configs, dataDir, outputDir, mutex):
     hideArch = configs.get('AppImage', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
     outPackage = os.path.join(outputDir, '{}-{}'.format(packageName, version))
-                     
+
     if not hideArch:
         outPackage += '-' + targetArch
-        
+
     outPackage += '.AppImage'
 
     # Remove old file

@@ -68,10 +68,13 @@ def init(targetPlatform, targetArch, sysLibDir):
 # https://msdn.microsoft.com/en-us/library/windows/desktop/ms680547(v=vs.85).aspx
 # https://upload.wikimedia.org/wikipedia/commons/1/1b/Portable_Executable_32_bit_Structure_in_SVG_fixed.svg
 def dump(binary):
+    # Characteristics flags
+    IMAGE_FILE_EXECUTABLE_IMAGE = 0x2
+    
     dllImports = set()
 
     if not os.path.exists(binary) or not os.path.isfile(binary):
-        return dllImports
+        return {}
 
     with open(binary, 'rb') as f:
         # Check DOS header signature.
@@ -92,6 +95,7 @@ def dump(binary):
         coffHeader = struct.unpack('HHIIIHH', f.read(20))
         nSections = coffHeader[1]
         sectionTablePos = coffHeader[5] + f.tell()
+        fileType = 'executable' if coffHeader[6] & IMAGE_FILE_EXECUTABLE_IMAGE != 0 else 'library'
 
         # Read magic signature in standard COFF fields.
         peType = 'PE32' if f.read(2) == b'\x0b\x01' else 'PE32+'
@@ -171,12 +175,18 @@ def dump(binary):
             except:
                 pass
 
-    return dllImports
+    return {'imports': dllImports,
+            'type': fileType}
 
 def dependencies(binary):
+    info = dump(binary)
+
+    if not 'imports' in info:
+        return []
+
     deps = []
 
-    for dep in dump(binary):
+    for dep in info['imports']:
         depPath = DTUtils.whereBin(dep, EXTRA_LIBRARY_PATH)
 
         if len(depPath) > 0:

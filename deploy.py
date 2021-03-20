@@ -135,6 +135,21 @@ if __name__ =='__main__':
 
     if not options.prepare_only or \
         (options.prepare_only and options.package_only):
+        print('Packaged data:')
+        print()
+        packagedFiles = []
+
+        for root, _, files in os.walk(options.data_dir):
+            for f in files:
+                packagedFiles.append(os.path.join(root, f))
+
+        packagedFiles = sorted(packagedFiles)
+
+        for f in packagedFiles:
+            print('    ' + os.path.relpath(f, options.data_dir))
+
+        print()
+
         outputFormats = configs.get('Package', 'outputFormats', fallback='')
         
         if outputFormats == '':

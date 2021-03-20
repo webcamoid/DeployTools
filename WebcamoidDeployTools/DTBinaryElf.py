@@ -199,6 +199,9 @@ def dump(binary):
     # ELF file magic
     ELFMAGIC = b'\x7fELF'
 
+    # File types.
+    ET_EXEC = 2
+
     # Sections
     SHT_STRTAB = 0x3
     SHT_DYNAMIC = 0x6
@@ -218,6 +221,11 @@ def dump(binary):
 
         # Read the data structure of the file.
         eiClass = '32bits' if struct.unpack('B', f.read(1))[0] == 1 else '64bits'
+
+        # Read file type.
+        f.seek(0x10, os.SEEK_SET)
+        fileType = struct.unpack('H', f.read(2))[0]
+        fileType = 'executable' if fileType == ET_EXEC else 'library'
 
         # Read machine code.
         f.seek(0x12, os.SEEK_SET)
@@ -330,7 +338,8 @@ def dump(binary):
         return {'machine': machine,
                 'imports': needed,
                 'rpath': rpaths,
-                'runpath': runpaths}
+                'runpath': runpaths,
+                'type': fileType}
 
     return {}
 

@@ -32,6 +32,9 @@ MH_CIGAM = 0xcefaedfe # Reverse endian
 MH_MAGIC_64 = 0xfeedfacf # Native endian
 MH_CIGAM_64 = 0xcffaedfe # Reverse endian
 
+# File types.
+MH_EXECUTE = 0x2 # Executable file
+
 def isValid(path):
     try:
         with open(path, 'rb') as f:
@@ -115,8 +118,12 @@ def dump(binary):
         else:
             return {}
 
+        # Read file type.
+        f.seek(8, os.SEEK_CUR)
+        fileType = struct.unpack('I', f.read(4))[0]
+        fileType = 'executable' if fileType == MH_EXECUTE else 'library'
+
         # Read number of commands.
-        f.seek(12, os.SEEK_CUR)
         ncmds = struct.unpack('I', f.read(4))[0]
 
         # Move to load commands
@@ -157,7 +164,10 @@ def dump(binary):
             else:
                 f.seek(loadCommand[1] - 8, os.SEEK_CUR)
 
-    return {'imports': dylibImports, 'rpaths': rpaths, 'id': dylibId}
+    return {'imports': dylibImports,
+            'rpaths': rpaths,
+            'id': dylibId,
+            'type': fileType}
 
 def dependencies(binary):
     machInfo = dump(binary)

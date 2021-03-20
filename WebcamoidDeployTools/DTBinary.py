@@ -71,6 +71,14 @@ class BinaryTools:
     def dump(self, binary):
         return self.solver.dump(binary)
 
+    def isExecutable(self, binary):
+        info = self.solver.dump(binary)
+
+        if 'type' in info and info['type'] == 'executable':
+            return True
+
+        return False
+
     def allDependencies(self, binary):
         deps = self.filterDependencies(self.solver.dependencies(binary))
         solved = set()
@@ -171,7 +179,7 @@ class BinaryTools:
 
         return outDeps
 
-    def resetFilePermissions(self, rootPath, binariesPath):
+    def resetFilePermissions(self, rootPath):
         for root, dirs, files in os.walk(rootPath):
             for d in dirs:
                 permissions = 0o755
@@ -186,7 +194,7 @@ class BinaryTools:
                 permissions = 0o644
                 path = os.path.join(root, f)
 
-                if root == binariesPath and self.solver.isValid(path):
+                if self.isExecutable(path):
                     permissions = 0o744
 
                 if self.hostPlatform == 'mac':

@@ -230,6 +230,8 @@ def preRun(globs, configs, dataDir):
 def postRun(globs, configs, dataDir):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     mainExecutable = configs.get('Package', 'mainExecutable', fallback='').strip()
+    writeLauncher = configs.get('Package', 'writeLauncher', fallback='true').strip()
+    writeLauncher = DTUtils.toBool(writeLauncher)
 
     if mainExecutable != '':
         mainExecutable = os.path.join(dataDir, mainExecutable)
@@ -238,7 +240,7 @@ def postRun(globs, configs, dataDir):
     buildInfoFile = configs.get('Package', 'buildInfoFile', fallback='build-info.txt').strip()
     buildInfoFile = os.path.join(dataDir, buildInfoFile)
 
-    if mainExecutable != '':
+    if writeLauncher and mainExecutable != '':
         print('Writting launcher file')
         createLauncher(globs, mainExecutable, programArgs, dataDir)
 

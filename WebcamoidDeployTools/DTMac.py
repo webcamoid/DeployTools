@@ -59,65 +59,101 @@ def removeUnneededFiles(path):
         except:
             pass
 
-def fixLibRpath(solver, mutex, mach, mainExecutable, libDir, sysLibDir):
-    binDir = os.path.dirname(mainExecutable)
-    rpath = os.path.join('@executable_path', os.path.relpath(libDir, binDir))
-    log = '\tFixed {}\n\n'.format(mach)
+def fixLibRpath(solver, mutex, mach, binDir, libDir):
+    log = '\tFixing {}\n\n'.format(mach)
     machInfo = solver.dump(mach)
+    machDir = os.path.dirname(mach)
+    machId = ''
+    rpaths = []
+
+    if machDir.startswith(binDir):
+        if machInfo['type'] == 'executable':
+            machId = ''
+            rpaths = [os.path.join('@executable_path',
+                                   os.path.relpath(libDir, machDir))]
+        else:
+            machId = os.path.join('@rpath', os.path.basename(mach))
+            rpaths = []
+    elif machDir.startswith(libDir):
+        machId = os.path.join('@rpath', os.path.relpath(libDir, mach))
+
+        if mach.startswith('.dylib'):
+            rpaths = ['@loader_path']
+        else:
+            ldir = os.path.basename(libDir)
+            rpaths = [os.path.join('@executable_path',
+                                   os.path.relpath(libDir, machDir)),
+                      os.path.join('@loader_path', ldir),
+                      os.path.join('@loader_path',
+                                   os.path.relpath(libDir, machDir))]
+    else:
+        if machInfo['type'] == 'executable':
+            machId = ''
+            rpaths = [os.path.join('@executable_path',
+                                   os.path.relpath(libDir, machDir))]
+        else:
+            machId = os.path.basename(mach)
+            rpaths = [os.path.join('@executable_path',
+                                   os.path.relpath(libDir, binDir))]
+
+    # Change ID
+
+    if machId != machInfo['id']:
+        log += '\t\tChanging ID from {} to {}\n'.format(machInfo['id'], machId)
+
+        process = subprocess.Popen(['install_name_tool', # nosec
+                                    '-id', machId, mach],
+                                    stdout=subprocess.PIPE)
+        process.communicate()
 
     # Change rpath
-    if mach.startswith(binDir):
-        log += '\t\tChanging rpath to {}\n'.format(rpath)
 
-        for oldRpath in machInfo['rpaths']:
+    if rpaths != machInfo['rpaths']:
+        log += '\t\tChanging rpaths from {} to {}\n'.format(machInfo['rpaths'], rpaths)
+
+        for rpath in machInfo['rpaths']:
             process = subprocess.Popen(['install_name_tool', # nosec
-                                        '-delete_rpath', oldRpath, mach],
+                                        '-delete_rpath', rpath, mach],
                                         stdout=subprocess.PIPE)
             process.communicate()
 
-        process = subprocess.Popen(['install_name_tool', # nosec
-                                    '-add_rpath', rpath, mach],
-                                    stdout=subprocess.PIPE)
-        process.communicate()
-
-    # Change ID
-    if mach.startswith(binDir):
-        newMachId = machInfo['id']
-    elif mach.startswith(libDir):
-        newMachId = mach.replace(sysLibDir, rpath)
-    else:
-        newMachId = os.path.basename(mach)
-
-    if newMachId != machInfo['id']:
-        log += '\t\tChanging ID to {}\n'.format(newMachId)
-
-        process = subprocess.Popen(['install_name_tool', # nosec
-                                    '-id', newMachId, mach],
-                                    stdout=subprocess.PIPE)
-        process.communicate()
+        for rpath in rpaths:
+            process = subprocess.Popen(['install_name_tool', # nosec
+                                        '-add_rpath', rpath, mach],
+                                        stdout=subprocess.PIPE)
+            process.communicate()
 
     # Change library links
+
     for dep in machInfo['imports']:
-        if dep.startswith(rpath):
+        ignore = False
+
+        for rpath in rpaths:
+            if dep.startswith(rpath):
+                ignore = True
+
+                break
+
+        if ignore:
             continue
 
         if solver.isExcluded(dep):
             continue
 
-        basename = os.path.basename(dep)
-        framework = ''
-        inFrameworkPath = ''
+        newDepPath = ''
 
-        if not basename.endswith('.dylib'):
+        if dep.endswith('.dylib'):
+            newDepPath = os.path.join('@rpath', os.path.basename(dep))
+        else:
             frameworkPath = dep[: dep.rfind('.framework')] + '.framework'
             framework = os.path.basename(frameworkPath)
             inFrameworkPath = os.path.join(framework, dep.replace(frameworkPath + '/', ''))
-
-        newDepPath = os.path.join(rpath, basename if len(framework) < 1 else inFrameworkPath)
+            framework = os.path.join(libDir, inFrameworkPath)
+            newDepPath = os.path.join('@executable_path',
+                                      os.path.relpath(framework, binDir))
 
         if dep != newDepPath:
             log += '\t\t{} -> {}\n'.format(dep, newDepPath)
-
             process = subprocess.Popen(['install_name_tool', # nosec
                                         '-change', dep, newDepPath, mach],
                                         stdout=subprocess.PIPE)
@@ -127,7 +163,7 @@ def fixLibRpath(solver, mutex, mach, mainExecutable, libDir, sysLibDir):
     print(log)
     mutex.release()
 
-def fixRpaths(solver, dataDir, mainExecutable, libDir, sysLibDir):
+def fixRpaths(solver, dataDir, binDir, libDir):
     mutex = threading.Lock()
     threads = []
 
@@ -136,9 +172,8 @@ def fixRpaths(solver, dataDir, mainExecutable, libDir, sysLibDir):
                                   args=(solver,
                                         mutex,
                                         mach,
-                                        mainExecutable,
-                                        libDir,
-                                        sysLibDir, ))
+                                        binDir,
+                                        libDir,))
         threads.append(thread)
 
         while threading.active_count() >= DTUtils.numThreads():
@@ -272,11 +307,14 @@ def preRun(globs, configs, dataDir):
     print('Stripping symbols')
     solver.stripSymbols(dataDir)
     print('Resetting file permissions')
-    solver.resetFilePermissions(dataDir, os.path.dirname(mainExecutable))
+    solver.resetFilePermissions(dataDir)
     print('Removing unnecessary files')
     removeUnneededFiles(dataDir)
     print('Fixing rpaths\n')
-    fixRpaths(solver, dataDir, mainExecutable, libDir, sysLibDir)
+    fixRpaths(solver, 
+              dataDir,
+              os.path.dirname(mainExecutable),
+              libDir)
 
 def postRun(globs, configs, dataDir):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()

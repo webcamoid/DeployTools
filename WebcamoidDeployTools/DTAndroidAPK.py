@@ -241,6 +241,14 @@ def platforms():
     return ['android']
 
 def isAvailable(configs):
+    androidCompileSdkVersion = configs.get('System', 'androidCompileSdkVersion', fallback='24').strip()
+
+    print('gradle ', DTUtils.whereBin('gradle'))
+    print('keytool ', keytool())
+    print('jarsigner ', jarsigner())
+    print('apksigner ', apksigner(androidCompileSdkVersion))
+    print('zipalign ', zipalign(androidCompileSdkVersion))
+
     if len(DTUtils.whereBin('gradle')) < 1:
         return False
 
@@ -249,8 +257,6 @@ def isAvailable(configs):
 
     if len(jarsigner()) < 1:
         return False
-
-    androidCompileSdkVersion = configs.get('System', 'androidCompileSdkVersion', fallback='24').strip()
 
     if len(apksigner(androidCompileSdkVersion)) < 1:
         return False

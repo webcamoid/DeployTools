@@ -109,7 +109,12 @@ def dump(binary):
 
     with open(binary, 'rb') as f:
         # Read magic number.
-        magic = struct.unpack('I', f.read(4))[0]
+        magic = 0
+
+        try:
+            magic = struct.unpack('I', f.read(4))[0]
+        except:
+            return {}
 
         if magic == MH_MAGIC or magic == MH_CIGAM:
             is32bits = True

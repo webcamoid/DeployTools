@@ -157,6 +157,7 @@ def removeUnneededFiles(path):
 
 def createLauncher(globs, mainExecutable, programArgs, dataDir):
     programName = os.path.basename(mainExecutable)
+    programName = os.path.splitext(programName)[0]
     launcherScript = os.path.join(dataDir, programName) + '.bat'
     binDir = os.path.relpath(os.path.dirname(mainExecutable), dataDir)
 

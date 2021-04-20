@@ -242,10 +242,7 @@ def platforms():
 def isAvailable(configs):
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
 
-    if len(binarycreator(targetPlatform)) < 1:
-        return False
-
-    return True
+    return binarycreator(targetPlatform) != ''
 
 def run(globs, configs, dataDir, outputDir, mutex):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()

@@ -102,11 +102,9 @@ def platforms():
 
 def isAvailable(configs):
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
+    print('AppImageTool: ', appimagetool(targetArch))
 
-    if len(appimagetool(targetArch)) < 1:
-        return False
-
-    return True
+    return appimagetool(targetArch) != ''
 
 def run(globs, configs, dataDir, outputDir, mutex):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()

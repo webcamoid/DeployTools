@@ -102,7 +102,6 @@ def platforms():
 
 def isAvailable(configs):
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
-    print('AppImageTool: ', appimagetool(targetArch))
 
     return appimagetool(targetArch) != ''
 

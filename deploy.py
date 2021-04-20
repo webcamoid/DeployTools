@@ -180,7 +180,7 @@ if __name__ =='__main__':
             mutex = threading.Lock()
             threads = []
 
-            for format in outputFormats:
+            for format in packagingTools:
                 mod = importlib.import_module('WebcamoidDeployTools.DT' + format)
                 threads.append(threading.Thread(target=mod.run,
                                                 args=(globs,

@@ -108,8 +108,8 @@ if __name__ =='__main__':
     print('Program version:', DTUtils.programVersion(configs, sourcesDir))
     print()
 
-    if not options.package_only or \
-        (options.prepare_only and options.package_only):
+    if options.prepare_only or \
+        (not options.prepare_only and not options.package_only):
         modules = configs.get('Package', 'modules', fallback='')
 
         if modules == '':
@@ -133,8 +133,8 @@ if __name__ =='__main__':
 
         print()
 
-    if not options.prepare_only or \
-        (options.prepare_only and options.package_only):
+    if options.package_only or \
+        (not options.prepare_only and not options.package_only):
         print('Packaged data:')
         print()
         packagedFiles = []

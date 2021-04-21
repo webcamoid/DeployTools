@@ -49,11 +49,11 @@ def jarsigner():
 
     return DTUtils.whereBin('jarsigner')
 
-def apksigner(sdkVersion):
+def apksigner(buildToolsVersion):
     if 'ANDROID_HOME' in os.environ:
         apksign = os.path.join(os.environ['ANDROID_HOME'],
                                'build-tools',
-                               sdkVersion,
+                               buildToolsVersion,
                                'apksigner')
 
         if DTUtils.hostPlatform() == 'windows':
@@ -64,11 +64,11 @@ def apksigner(sdkVersion):
 
     return DTUtils.whereBin('apksigner')
 
-def zipalign(sdkVersion):
+def zipalign(buildToolsVersion):
     if 'ANDROID_HOME' in os.environ:
         zalign = os.path.join(os.environ['ANDROID_HOME'],
                               'build-tools',
-                              sdkVersion,
+                              buildToolsVersion,
                               'zipalign')
 
         if DTUtils.hostPlatform() == 'windows':
@@ -79,8 +79,8 @@ def zipalign(sdkVersion):
 
     return DTUtils.whereBin('zipalign')
 
-def alignPackage(package, androidCompileSdkVersion):
-    zalign = zipalign(androidCompileSdkVersion)
+def alignPackage(package, sdkBuildToolsRevision):
+    zalign = zipalign(sdkBuildToolsRevision)
 
     if len(zalign) < 1:
         return False
@@ -103,11 +103,11 @@ def alignPackage(package, androidCompileSdkVersion):
 
     return True
 
-def apkSignPackage(package, keystore, androidCompileSdkVersion):
-    if not alignPackage(package, androidCompileSdkVersion):
+def apkSignPackage(package, keystore, sdkBuildToolsRevision):
+    if not alignPackage(package, sdkBuildToolsRevision):
         return False
 
-    apksign = apksigner(androidCompileSdkVersion)
+    apksign = apksigner(sdkBuildToolsRevision)
 
     if len(apksign) < 1:
         return False
@@ -156,7 +156,7 @@ def jarSignPackage(package, keystore):
 
     return alignPackage(package)
 
-def signPackage(package, dataDir, androidCompileSdkVersion):
+def signPackage(package, dataDir, sdkBuildToolsRevision):
     ktool = keytool()
 
     if len(ktool) < 1:
@@ -192,7 +192,7 @@ def signPackage(package, dataDir, androidCompileSdkVersion):
         if process.returncode != 0:
             return False
 
-    if apkSignPackage(package, keystore, androidCompileSdkVersion):
+    if apkSignPackage(package, keystore, sdkBuildToolsRevision):
         return True
 
     return jarSignPackage(package, keystore)
@@ -201,7 +201,7 @@ def createApk(globs,
               mutex,
               dataDir,
               outPackage,
-              androidCompileSdkVersion):
+              sdkBuildToolsRevision):
     gradleSript = os.path.join(dataDir, 'gradlew')
 
     if DTUtils.hostPlatform() == 'windows':
@@ -223,7 +223,7 @@ def createApk(globs,
                        'apk',
                        'release',
                        '{}-release-unsigned.apk'.format(name))
-    signPackage(apk, dataDir, androidCompileSdkVersion)
+    signPackage(apk, dataDir, sdkBuildToolsRevision)
     DTUtils.copy(apk, outPackage)
 
     if not os.path.exists(outPackage):
@@ -241,13 +241,7 @@ def platforms():
     return ['android']
 
 def isAvailable(configs):
-    androidCompileSdkVersion = configs.get('System', 'androidCompileSdkVersion', fallback='24').strip()
-
-    print('gradle ', DTUtils.whereBin('gradle'))
-    print('keytool ', keytool())
-    print('jarsigner ', jarsigner())
-    print('apksigner ', apksigner(androidCompileSdkVersion))
-    print('zipalign ', zipalign(androidCompileSdkVersion))
+    sdkBuildToolsRevision = configs.get('System', 'sdkBuildToolsRevision', fallback='30.0.3').strip()
 
     if len(DTUtils.whereBin('gradle')) < 1:
         return False
@@ -258,10 +252,10 @@ def isAvailable(configs):
     if len(jarsigner()) < 1:
         return False
 
-    if len(apksigner(androidCompileSdkVersion)) < 1:
+    if len(apksigner(sdkBuildToolsRevision)) < 1:
         return False
 
-    if len(zipalign(androidCompileSdkVersion)) < 1:
+    if len(zipalign(sdkBuildToolsRevision)) < 1:
         return False
 
     return True
@@ -270,7 +264,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     name = configs.get('Package', 'name', fallback='app').strip()
     version = DTUtils.programVersion(configs, sourcesDir)
-    androidCompileSdkVersion = configs.get('System', 'androidCompileSdkVersion', fallback='24').strip()
+    sdkBuildToolsRevision = configs.get('System', 'sdkBuildToolsRevision', fallback='30.0.3').strip()
     packageName = configs.get('AndroidAPK', 'name', fallback=name).strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
@@ -293,4 +287,4 @@ def run(globs, configs, dataDir, outputDir, mutex):
               mutex,
               dataDir,
               outPackage,
-              androidCompileSdkVersion)
+              sdkBuildToolsRevision)

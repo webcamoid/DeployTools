@@ -50,7 +50,7 @@ def binarycreator(targetPlatform):
 
     for root, _, files in os.walk(homeQt):
         for f in files:
-            if f == binCreator:
+            if f.lower() == binCreator:
                 return os.path.join(root, f)
 
     # binarycreator offered by the system is most probably dynamically

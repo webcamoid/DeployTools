@@ -238,7 +238,12 @@ def createInstaller(globs,
                 f.write('#include "{#INSTALL_SCRIPT}"\n')
 
         optmrk = '/'
-        params = [iscc(isccVersion)]
+        params = []
+
+        if DTUtils.hostPlatform() != 'windows':
+            params = ['wine']
+
+        params += [iscc(isccVersion)]
 
         for key in installerVars:
             params += [optmrk + 'D{}={}'.format(key, installerVars[key])]

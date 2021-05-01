@@ -383,7 +383,14 @@ def createInstaller(globs,
         if DTUtils.hostPlatform() != 'windows':
             optmrk = '-'
 
-        params = [makensis(), optmrk + 'V4']
+        params = []
+        makensisbin = makensis()
+
+        if DTUtils.hostPlatform() != 'windows' \
+            and makensisbin.lower().endswith('.exe'):
+            params = ['wine']
+
+        params += [makensisbin, optmrk + 'V4']
 
         for key in installerVars:
             params += [optmrk + 'D{}={}'.format(key, installerVars[key])]

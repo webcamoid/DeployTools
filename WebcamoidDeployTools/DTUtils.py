@@ -29,6 +29,7 @@ import sys
 
 from . import DTGit
 from . import DTBinary
+from . import DTMac
 
 
 def toBool(string):
@@ -312,14 +313,13 @@ def solvedepsLibs(globs,
                 depPath = depPath.replace('/', '\\')
 
             print('    {} -> {}'.format(dep, depPath))
-            copyReals = True
 
-            if targetPlatform == 'windows':
-                copyReals = False
-            elif targetPlatform == 'mac':
-                copyReals = not dep.endswith('.framework')
+            if hostPlatform() == 'mac' and dep.endswith('.framework'):
+                DTMac.copyBundle(dep, depPath)
+            else:
+                copyReals = targetPlatform != 'windows'
+                copy(dep, depPath, copyReals)
 
-            copy(dep, depPath, copyReals)
             globs['dependencies'].add(dep)
 
     globs['libs'] = set(deps)

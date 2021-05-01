@@ -420,7 +420,7 @@ def isAvailable(configs):
 def run(globs, configs, dataDir, outputDir, mutex):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     name = configs.get('Package', 'name', fallback='app').strip()
-    version = configs.get('Package', 'version', fallback='0.0.0').strip()
+    version = DTUtils.programVersion(configs, sourcesDir)
     productVersion = configs.get('Nsis', 'productVersion', fallback='0.0.0.0').strip()
     packageName = configs.get('Nsis', 'name', fallback=name).strip()
     appName = configs.get('Nsis', 'appName', fallback=name).strip()

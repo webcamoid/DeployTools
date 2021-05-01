@@ -30,6 +30,50 @@ from . import DTGit
 from . import DTSystemPackages
 from . import DTUtils
 
+def copyBundle(frameworkSrcDir, frameworkDstDir):
+    # Copy library link
+
+    fwName = os.path.basename(frameworkSrcDir).replace('.framework', '')
+    fwSrcPath = os.path.join(frameworkSrcDir, fwName)
+    fwDstPath = os.path.join(frameworkDstDir, fwName)
+    DTUtils.copy(fwSrcPath, fwDstPath, False)
+
+    # Copy library
+
+    if os.path.islink(fwSrcPath):
+        rfwSrcPath = os.path.realpath(fwSrcPath)
+        rfwDstPath = os.path.join(frameworkDstDir, 
+                                  os.path.relpath(rfwSrcPath, 
+                                                  frameworkSrcDir))
+        DTUtils.copy(rfwSrcPath, rfwDstPath, False)
+
+    # Copy versions
+
+    curVersion = 'Versions/Current'
+    curVersionSrcPath = os.path.join(frameworkSrcDir, curVersion)
+    rcurVersionSrcPath = os.path.realpath(curVersionSrcPath)
+    relCurVersionSrcPath = os.path.relpath(rcurVersionSrcPath, 
+                                           os.path.dirname(curVersionSrcPath))
+    curVersionDstPath = os.path.join(frameworkDstDir, curVersion)
+    os.symlink(relCurVersionSrcPath, curVersionDstPath)
+
+    # Copy resources link
+
+    resources = 'Resources'
+    resourcesSrcPath = os.path.join(frameworkSrcDir, resources)
+    rresourcesSrcPath = os.path.realpath(resourcesSrcPath)
+    relResourcesSrcPath = os.path.relpath(rresourcesSrcPath, 
+                                          os.path.dirname(resourcesSrcPath))
+    resourcesDstPath = os.path.join(frameworkDstDir, resources)
+    os.symlink(relResourcesSrcPath, resourcesDstPath)
+
+    # Copy resources
+
+    realResourcesSrcPath = os.path.realpath(resourcesSrcPath)
+    realResourcesDstPath = os.path.join(frameworkDstDir, 
+                                        os.path.relpath(realResourcesSrcPath, 
+                                                        frameworkSrcDir))
+    DTUtils.copy(realResourcesSrcPath, realResourcesDstPath, False)
 
 def removeUnneededFiles(path):
     adirs = set()

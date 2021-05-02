@@ -21,12 +21,28 @@
 
 import os
 import re
+import sys
 import subprocess
 import tempfile
 import time
 
 from . import DTUtils
 
+
+def winPath(path):
+    if DTUtils.hostPlatform() != 'windows':
+        params = ['winepath', '-w', path]
+        process = subprocess.Popen(params, # nosec
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        stdout, _ = process.communicate()
+        
+        if process.returncode != 0:
+            return ''
+        
+        return stdout.decode(sys.getdefaultencoding()).strip()
+    
+    return path
 
 def isccDataDir(isccVersion):
     issCompiler = 'iscc'
@@ -135,19 +151,19 @@ def createInstaller(globs,
 
     with tempfile.TemporaryDirectory() as tmpdir:
         installerVars = {
-            'DATA_DIR': dataDir,
+            'DATA_DIR': winPath(dataDir),
             'OUT_PACKAGE_NAME': os.path.splitext(os.path.basename(outPackage))[0],
-            'OUT_PACKAGE_DIR': os.path.dirname(outPackage),
+            'OUT_PACKAGE_DIR': winPath(os.path.dirname(outPackage)),
             'APP_NAME': appName,
             'VERSION': version,
             'PRODUCT_VERSION': productVersion,
             'DESCRIPTION': description,
             'ORGANIZATION': organization,
             'COPYRIGHT': copyright,
-            'LICENSE_FILE': licenseFile,
-            'RUN_PROGRAM': runProgram,
+            'LICENSE_FILE': winPath(licenseFile),
+            'RUN_PROGRAM': runProgram.replace('/', '\\'),
             'RUN_PROGRAM_DESCRIPTION': runProgramDescription,
-            'ICON': icon,
+            'ICON': winPath(icon),
             'INSTALL_SCRIPT': os.path.basename(installScript),
             'TARGET_DIR': targetDir,
             'PUBLISHER_URL': url,
@@ -248,7 +264,7 @@ def createInstaller(globs,
         for key in installerVars:
             params += [optmrk + 'D{}={}'.format(key, installerVars[key])]
 
-        params += [issScript]
+        params += [winPath(issScript)]
         process = None
 
         if verbose:

@@ -21,12 +21,29 @@
 
 import os
 import re
+import sys
 import subprocess
 import tempfile
 import time
 
 from . import DTUtils
 
+
+def winPath(path):
+    if DTUtils.hostPlatform() != 'windows' \
+        and DTUtils.whereBin('makensis') == '':
+        params = ['winepath', '-w', path]
+        process = subprocess.Popen(params, # nosec
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        stdout, _ = process.communicate()
+        
+        if process.returncode != 0:
+            return ''
+        
+        return stdout.decode(sys.getdefaultencoding()).strip()
+    
+    return path
 
 def nsisDataDir():
     makeNSIS = 'makensis'
@@ -158,18 +175,18 @@ def createInstaller(globs,
 
     with tempfile.TemporaryDirectory() as tmpdir:
         installerVars = {
-            'DATA_DIR': dataDir,
-            'OUT_PACKAGE': outPackage,
+            'DATA_DIR': winPath(dataDir),
+            'OUT_PACKAGE': winPath(outPackage),
             'APP_NAME': appName,
             'VERSION': version,
             'PRODUCT_VERSION': productVersion,
             'DESCRIPTION': description,
             'ORGANIZATION': organization,
             'COPYRIGHT': copyright,
-            'LICENSE_FILE': licenseFile,
-            'RUN_PROGRAM': runProgram,
-            'ICON': icon,
-            'INSTALL_SCRIPT': os.path.basename(installScript),
+            'LICENSE_FILE': winPath(licenseFile),
+            'RUN_PROGRAM': runProgram.replace('/', '\\'),
+            'ICON': winPath(icon),
+            'INSTALL_SCRIPT': os.path.basename(installScript),        
             'TARGET_DIR': targetDir
         }
 
@@ -395,7 +412,7 @@ def createInstaller(globs,
         for key in installerVars:
             params += [optmrk + 'D{}={}'.format(key, installerVars[key])]
 
-        params += [nsiScript]
+        params += [winPath(nsiScript)]
         process = None
 
         if verbose:

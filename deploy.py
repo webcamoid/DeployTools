@@ -139,7 +139,11 @@ if __name__ =='__main__':
         print()
         packagedFiles = []
 
-        for root, _, files in os.walk(options.data_dir):
+        for root, dirs, files in os.walk(options.data_dir):
+            for d in dirs:
+                if os.path.islink(d):
+                    packagedFiles.append(os.path.join(root, d))
+
             for f in files:
                 packagedFiles.append(os.path.join(root, f))
 

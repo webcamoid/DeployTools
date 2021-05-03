@@ -59,65 +59,91 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
     if not os.path.exists(src):
         return False
 
-    if os.path.isdir(src):
-        if os.path.isfile(dst):
-            return False
+    if hostPlatform() == 'windows':
+        copyReals = True
 
-        for root, dirs, files in os.walk(src):
-            for f in files:
-                fromF = os.path.join(root, f)
-                toF = os.path.relpath(fromF, src)
-                toF = os.path.join(dst, toF)
-                toF = os.path.normpath(toF)
-                copy(fromF, toF, copyReals, overwrite)
+    if os.path.isfile(src):
+        dstdir = os.path.dirname(dst)
+        dstfile = dst
 
-            for d in dirs:
-                fromD = os.path.join(root, d)
-                toD = os.path.relpath(fromD, src)
-                toD = os.path.join(dst, toD)
+        if os.path.isdir(dst):
+            dstdirs = dst
+            dstfile = os.path.join(dst, os.path.basename(src))
 
+        if not os.path.exists(dstdir):
+            try:
+                os.makedirs(os.path.normpath(dstdir))
+            except:
+                return False
+
+        if os.path.exists(dstfile) or os.path.islink(dstfile):
+            os.remove(dstfile)
+
+        if overwrite:
+            try:
+                shutil.copy2(src, dstfile, follow_symlinks=copyReals)
+            except:
+                return False
+
+        if os.path.islink(src) and not copyReals:
+            realsrc = os.path.realpath(src)
+            realsrcdir = os.path.dirname(realsrc)
+            srcdir = os.path.dirname(src)
+            relsrcdir = os.path.relpath(realsrcdir, srcdir)
+            dstfile = os.path.join(dstdir, relsrcdir, os.path.basename(realsrc))
+            copy(realsrc, dstfile, copyReals, overwrite)
+
+        return True
+
+    if os.path.isfile(dst):
+        return False
+
+    for root, dirs, files in os.walk(src):
+        for f in files:
+            srcfile = os.path.join(root, f)
+            relsrcfile = os.path.relpath(srcfile, src)
+            dstfile = os.path.join(dst, relsrcfile)
+            copy(srcfile, dstfile, copyReals, overwrite)
+
+        for d in dirs:
+            srcdir = os.path.join(root, d)
+            relsrcdir = os.path.relpath(srcdir, src)
+            dstdir = os.path.join(dst, relsrcdir)
+
+            if os.path.exists(dstdir):
+                if os.path.islink(dstdir):
+                    try:
+                        os.unlink(dstdir)
+                    except:
+                        return False
+                elif os.path.isfile(dstdir):
+                    try:
+                        os.remove(dstdir)
+                    except:
+                        return False
+                elif os.path.islink(srcdir):
+                    try:
+                        shutil.rmtree(dstdir)
+                    except:
+                        return False
+
+            if os.path.islink(srcdir):
+                if copyReals:
+                    copy(srcdir, dstdir, copyReals, overwrite)
+                else:
+                    realsrcdir = os.path.realpath(srcdir)
+                    relsrcdir = os.path.relpath(realsrcdir,
+                                                os.path.dirname(srcdir))
+
+                    try:
+                        os.symlink(relsrcdir, dstdir)
+                    except:
+                        pass
+            else:
                 try:
-                    os.makedirs(os.path.normpath(toD))
+                    os.makedirs(dstdir)
                 except:
                     pass
-    elif os.path.isfile(src):
-        if os.path.isdir(dst):
-            dst = os.path.realpath(dst)
-            dst = os.path.join(dst, os.path.basename(src))
-
-        dirname = os.path.dirname(dst)
-
-        if not os.path.exists(dirname):
-            try:
-                os.makedirs(dirname)
-            except:
-                return False
-
-        if os.path.exists(dst):
-            if not overwrite:
-                return True
-
-            try:
-                os.remove(dst)
-            except:
-                return False
-
-        if copyReals and os.path.islink(src):
-            realpath = os.path.realpath(src)
-            basename = os.path.basename(realpath)
-            os.symlink(os.path.join('.', basename), dst)
-            copy(realpath,
-                 os.path.join(dirname, basename),
-                 copyReals,
-                 overwrite)
-        else:
-            try:
-                if hostPlatform() == 'windows':
-                    shutil.copy(src, dst)
-                else:
-                    shutil.copy(src, dst, follow_symlinks=False)
-            except:
-                return False
 
     return True
 

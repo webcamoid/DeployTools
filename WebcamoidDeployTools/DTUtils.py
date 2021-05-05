@@ -81,7 +81,7 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
 
         if overwrite:
             try:
-                shutil.copy2(src, dstfile, follow_symlinks=copyReals)
+                shutil.copy(src, dstfile, follow_symlinks=copyReals)
             except:
                 return False
 

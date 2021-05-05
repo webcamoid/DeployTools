@@ -37,12 +37,12 @@ def winPath(path):
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         stdout, _ = process.communicate()
-        
+
         if process.returncode != 0:
             return ''
-        
+
         return stdout.decode(sys.getdefaultencoding()).strip()
-    
+
     return path
 
 def nsisDataDir():
@@ -186,7 +186,7 @@ def createInstaller(globs,
             'LICENSE_FILE': winPath(licenseFile),
             'RUN_PROGRAM': runProgram.replace('/', '\\'),
             'ICON': winPath(icon),
-            'INSTALL_SCRIPT': os.path.basename(installScript),        
+            'INSTALL_SCRIPT': os.path.basename(installScript),
             'TARGET_DIR': targetDir
         }
 
@@ -293,6 +293,9 @@ def createInstaller(globs,
             f.write('\n')
             f.write('Section "${APP_NAME}"\n')
             f.write('SectionIn RO\n')
+            f.write('!ifmacrodef INSTALL_SCRIPT_BEFORE_INSTALL\n')
+            f.write('!insertmacro INSTALL_SCRIPT_BEFORE_INSTALL\n')
+            f.write('!endif\n')
 
             for root, dirs, files in os.walk(dataDir):
                 outPath = ''
@@ -320,6 +323,9 @@ def createInstaller(globs,
             else:
                 f.write('CreateShortCut "$SMPROGRAMS\${APP_NAME}\\Uninstall.lnk" "$INSTDIR\\uninstall.exe"\n')
 
+            f.write('!ifmacrodef INSTALL_SCRIPT_AFTER_INSTALL\n')
+            f.write('!insertmacro INSTALL_SCRIPT_AFTER_INSTALL\n')
+            f.write('!endif\n')
             f.write('SectionEnd\n')
             f.write('\n')
             f.write('Function .onInit\n')

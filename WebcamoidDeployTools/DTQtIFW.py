@@ -104,7 +104,8 @@ def createInstaller(globs,
                     runProgramDescription,
                     installScript,
                     changeLog,
-                    requiresAdminRights):
+                    requiresAdminRights,
+                    verbose):
     with tempfile.TemporaryDirectory() as tmpdir:
         # Create layout
         componentName = '{}.{}'.format(organization, name)
@@ -220,6 +221,15 @@ def createInstaller(globs,
                    '-p', installerPackages,
                    '-v',
                    outPackage]
+        process = None
+
+        if verbose:
+            process = subprocess.Popen(params) # nosec
+        else:
+            process = subprocess.Popen(params, # nosec
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+
         process = subprocess.Popen(params, # nosec
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
@@ -274,6 +284,8 @@ def run(globs, configs, dataDir, outputDir, mutex):
     changeLog = os.path.join(sourcesDir, changeLog)
     requiresAdminRights = configs.get('QtIFW', 'requiresAdminRights', fallback='false').strip()
     requiresAdminRights = DTUtils.toBool(requiresAdminRights)
+    verbose = configs.get('QtIFW', 'verbose', fallback='false').strip()
+    verbose = DTUtils.toBool(verbose)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
     defaultHideArch = DTUtils.toBool(defaultHideArch)
     defaultHideArch = 'true' if defaultHideArch else 'false'
@@ -315,4 +327,5 @@ def run(globs, configs, dataDir, outputDir, mutex):
                     runProgramDescription,
                     installScript,
                     changeLog,
-                    requiresAdminRights)
+                    requiresAdminRights,
+                    verbose)

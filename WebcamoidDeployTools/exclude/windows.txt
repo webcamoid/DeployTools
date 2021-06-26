@@ -1,2 +1,10 @@
+# Windows
+
 C:/Windows/System32/.*
 C:/Program Files/.*
+C:/hostedtoolcache/.*
+
+# MSYS
+
+/c/Windows/System32/.*
+/c/Program Files/.*

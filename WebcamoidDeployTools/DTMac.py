@@ -42,8 +42,8 @@ def copyBundle(frameworkSrcDir, frameworkDstDir):
 
     if os.path.islink(fwSrcPath):
         rfwSrcPath = os.path.realpath(fwSrcPath)
-        rfwDstPath = os.path.join(frameworkDstDir, 
-                                  os.path.relpath(rfwSrcPath, 
+        rfwDstPath = os.path.join(frameworkDstDir,
+                                  os.path.relpath(rfwSrcPath,
                                                   frameworkSrcDir))
         DTUtils.copy(rfwSrcPath, rfwDstPath, False)
 
@@ -52,7 +52,7 @@ def copyBundle(frameworkSrcDir, frameworkDstDir):
     curVersion = 'Versions/Current'
     curVersionSrcPath = os.path.join(frameworkSrcDir, curVersion)
     rcurVersionSrcPath = os.path.realpath(curVersionSrcPath)
-    relCurVersionSrcPath = os.path.relpath(rcurVersionSrcPath, 
+    relCurVersionSrcPath = os.path.relpath(rcurVersionSrcPath,
                                            os.path.dirname(curVersionSrcPath))
     curVersionDstPath = os.path.join(frameworkDstDir, curVersion)
     os.symlink(relCurVersionSrcPath, curVersionDstPath)
@@ -62,7 +62,7 @@ def copyBundle(frameworkSrcDir, frameworkDstDir):
     resources = 'Resources'
     resourcesSrcPath = os.path.join(frameworkSrcDir, resources)
     rresourcesSrcPath = os.path.realpath(resourcesSrcPath)
-    relResourcesSrcPath = os.path.relpath(rresourcesSrcPath, 
+    relResourcesSrcPath = os.path.relpath(rresourcesSrcPath,
                                           os.path.dirname(resourcesSrcPath))
     resourcesDstPath = os.path.join(frameworkDstDir, resources)
     os.symlink(relResourcesSrcPath, resourcesDstPath)
@@ -70,8 +70,8 @@ def copyBundle(frameworkSrcDir, frameworkDstDir):
     # Copy resources
 
     realResourcesSrcPath = os.path.realpath(resourcesSrcPath)
-    realResourcesDstPath = os.path.join(frameworkDstDir, 
-                                        os.path.relpath(realResourcesSrcPath, 
+    realResourcesDstPath = os.path.join(frameworkDstDir,
+                                        os.path.relpath(realResourcesSrcPath,
                                                         frameworkSrcDir))
     DTUtils.copy(realResourcesSrcPath, realResourcesDstPath, False)
 
@@ -257,10 +257,18 @@ def writeBuildInfo(globs, buildInfoFile, sourcesDir):
 
         if 'TRAVIS_BUILD_WEB_URL' in os.environ:
             buildLogUrl = os.environ['TRAVIS_BUILD_WEB_URL']
-        elif 'APPVEYOR_ACCOUNT_NAME' in os.environ and 'APPVEYOR_PROJECT_NAME' in os.environ and 'APPVEYOR_JOB_ID' in os.environ:
+        elif 'APPVEYOR_ACCOUNT_NAME' in os.environ \
+            and 'APPVEYOR_PROJECT_NAME' in os.environ \
+            and 'APPVEYOR_JOB_ID' in os.environ:
             buildLogUrl = 'https://ci.appveyor.com/project/{}/{}/build/job/{}'.format(os.environ['APPVEYOR_ACCOUNT_NAME'],
-                                                                                        os.environ['APPVEYOR_PROJECT_SLUG'],
-                                                                                        os.environ['APPVEYOR_JOB_ID'])
+                                                                                      os.environ['APPVEYOR_PROJECT_SLUG'],
+                                                                                      os.environ['APPVEYOR_JOB_ID'])
+        elif 'GITHUB_SERVER_URL' in os.environ \
+            and 'GITHUB_REPOSITORY' in os.environ \
+            and 'GITHUB_RUN_ID' in os.environ:
+            buildLogUrl = '{}/{}/actions/runs/{}'.format(os.environ['GITHUB_SERVER_URL'],
+                                                         os.environ['GITHUB_REPOSITORY'],
+                                                         os.environ['GITHUB_RUN_ID'])
 
         if len(buildLogUrl) > 0:
             print('    Build log URL: ' + buildLogUrl)
@@ -355,7 +363,7 @@ def preRun(globs, configs, dataDir):
     print('Removing unnecessary files')
     removeUnneededFiles(dataDir)
     print('Fixing rpaths\n')
-    fixRpaths(solver, 
+    fixRpaths(solver,
               dataDir,
               os.path.dirname(mainExecutable),
               libDir)

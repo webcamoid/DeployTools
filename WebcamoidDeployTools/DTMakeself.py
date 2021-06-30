@@ -87,6 +87,8 @@ def run(globs, configs, dataDir, outputDir, mutex):
     version = DTUtils.programVersion(configs, sourcesDir)
     packageName = configs.get('Makeself', 'name', fallback=name).strip()
     appName = configs.get('Makeself', 'appName', fallback=name).strip()
+    defaultPkgTargetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
+    pkgTargetPlatform = configs.get('Makeself', 'pkgTargetPlatform', fallback=defaultPkgTargetPlatform).strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     label = configs.get('Makeself', 'label', fallback=appName).strip()
     licenseFile = configs.get('Makeself', 'license', fallback='COPYING').strip()
@@ -108,7 +110,17 @@ def run(globs, configs, dataDir, outputDir, mutex):
     defaultHideArch = 'true' if defaultHideArch else 'false'
     hideArch = configs.get('Makeself', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
-    outPackage = os.path.join(outputDir, '{}-{}'.format(packageName, version))
+    defaultShowTargetPlatform = configs.get('Package', 'showTargetPlatform', fallback='true').strip()
+    defaultShowTargetPlatform = DTUtils.toBool(defaultShowTargetPlatform)
+    defaultShowTargetPlatform = 'true' if defaultShowTargetPlatform else 'false'
+    showTargetPlatform = configs.get('Makeself', 'showTargetPlatform', fallback=defaultShowTargetPlatform).strip()
+    showTargetPlatform = DTUtils.toBool(showTargetPlatform)
+    outPackage = os.path.join(outputDir, packageName)
+
+    if showTargetPlatform:
+        outPackage += '-' + pkgTargetPlatform
+
+    outPackage += '-' + version
 
     if not hideArch:
         outPackage += '-' + targetArch

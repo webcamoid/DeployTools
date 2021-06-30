@@ -36,13 +36,25 @@ def run(globs, configs, dataDir, outputDir, mutex):
     name = configs.get('Package', 'name', fallback='app').strip()
     version = DTUtils.programVersion(configs, sourcesDir)
     packageName = configs.get('CompressedZip', 'name', fallback=name).strip()
+    defaultPkgTargetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
+    pkgTargetPlatform = configs.get('CompressedZip', 'pkgTargetPlatform', fallback=defaultPkgTargetPlatform).strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
     defaultHideArch = DTUtils.toBool(defaultHideArch)
     defaultHideArch = 'true' if defaultHideArch else 'false'
     hideArch = configs.get('CompressedZip', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
-    outPackage = os.path.join(outputDir, '{}-{}'.format(packageName, version))
+    defaultShowTargetPlatform = configs.get('Package', 'showTargetPlatform', fallback='true').strip()
+    defaultShowTargetPlatform = DTUtils.toBool(defaultShowTargetPlatform)
+    defaultShowTargetPlatform = 'true' if defaultShowTargetPlatform else 'false'
+    showTargetPlatform = configs.get('CompressedZip', 'showTargetPlatform', fallback=defaultShowTargetPlatform).strip()
+    showTargetPlatform = DTUtils.toBool(showTargetPlatform)
+    outPackage = os.path.join(outputDir, packageName)
+
+    if showTargetPlatform:
+        outPackage += '-' + pkgTargetPlatform
+
+    outPackage += '-' + version
 
     if not hideArch:
         outPackage += '-' + targetArch

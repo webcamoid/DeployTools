@@ -455,6 +455,8 @@ def run(globs, configs, dataDir, outputDir, mutex):
     packageName = configs.get('Nsis', 'name', fallback=name).strip()
     appName = configs.get('Nsis', 'appName', fallback=name).strip()
     organization = configs.get('Nsis', 'organization', fallback='project').strip()
+    defaultPkgTargetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
+    pkgTargetPlatform = configs.get('Nsis', 'pkgTargetPlatform', fallback=defaultPkgTargetPlatform).strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     icon = configs.get('Nsis', 'icon', fallback='').strip()
 
@@ -483,7 +485,17 @@ def run(globs, configs, dataDir, outputDir, mutex):
     defaultHideArch = 'true' if defaultHideArch else 'false'
     hideArch = configs.get('Nsis', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
-    outPackage = os.path.join(outputDir, '{}-{}'.format(packageName, version))
+    defaultShowTargetPlatform = configs.get('Package', 'showTargetPlatform', fallback='true').strip()
+    defaultShowTargetPlatform = DTUtils.toBool(defaultShowTargetPlatform)
+    defaultShowTargetPlatform = 'true' if defaultShowTargetPlatform else 'false'
+    showTargetPlatform = configs.get('Nsis', 'showTargetPlatform', fallback=defaultShowTargetPlatform).strip()
+    showTargetPlatform = DTUtils.toBool(showTargetPlatform)
+    outPackage = os.path.join(outputDir, packageName)
+
+    if showTargetPlatform:
+        outPackage += '-' + pkgTargetPlatform
+
+    outPackage += '-' + version
 
     if not hideArch:
         outPackage += '-' + targetArch

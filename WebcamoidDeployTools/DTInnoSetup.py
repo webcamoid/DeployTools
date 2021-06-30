@@ -36,12 +36,12 @@ def winPath(path):
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         stdout, _ = process.communicate()
-        
+
         if process.returncode != 0:
             return ''
-        
+
         return stdout.decode(sys.getdefaultencoding()).strip()
-    
+
     return path
 
 def isccDataDir(isccVersion):
@@ -303,6 +303,8 @@ def run(globs, configs, dataDir, outputDir, mutex):
     packageName = configs.get('InnoSetup', 'name', fallback=name).strip()
     appName = configs.get('InnoSetup', 'appName', fallback=name).strip()
     organization = configs.get('InnoSetup', 'organization', fallback='project').strip()
+    defaultPkgTargetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
+    pkgTargetPlatform = configs.get('InnoSetup', 'pkgTargetPlatform', fallback=defaultPkgTargetPlatform).strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     isccVersion = configs.get('InnoSetup', 'isccVersion', fallback='6').strip()
     icon = configs.get('InnoSetup', 'icon', fallback='').strip()
@@ -336,7 +338,17 @@ def run(globs, configs, dataDir, outputDir, mutex):
     defaultHideArch = 'true' if defaultHideArch else 'false'
     hideArch = configs.get('InnoSetup', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
-    outPackage = os.path.join(outputDir, '{}-{}'.format(packageName, version))
+    defaultShowTargetPlatform = configs.get('Package', 'showTargetPlatform', fallback='true').strip()
+    defaultShowTargetPlatform = DTUtils.toBool(defaultShowTargetPlatform)
+    defaultShowTargetPlatform = 'true' if defaultShowTargetPlatform else 'false'
+    showTargetPlatform = configs.get('InnoSetup', 'showTargetPlatform', fallback=defaultShowTargetPlatform).strip()
+    showTargetPlatform = DTUtils.toBool(showTargetPlatform)
+    outPackage = os.path.join(outputDir, packageName)
+
+    if showTargetPlatform:
+        outPackage += '-' + pkgTargetPlatform
+
+    outPackage += '-' + version
 
     if not hideArch:
         outPackage += '-' + targetArch

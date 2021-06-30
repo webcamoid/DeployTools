@@ -110,6 +110,8 @@ def run(globs, configs, dataDir, outputDir, mutex):
     name = configs.get('Package', 'name', fallback='app').strip()
     version = DTUtils.programVersion(configs, sourcesDir)
     packageName = configs.get('AppImage', 'name', fallback=name).strip()
+    defaultPkgTargetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
+    pkgTargetPlatform = configs.get('AppImage', 'pkgTargetPlatform', fallback=defaultPkgTargetPlatform).strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     launcher = configs.get('AppImage', 'launcher', fallback='AppRun').strip()
     launcher = os.path.join(dataDir, launcher)
@@ -124,7 +126,17 @@ def run(globs, configs, dataDir, outputDir, mutex):
     defaultHideArch = 'true' if defaultHideArch else 'false'
     hideArch = configs.get('AppImage', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
-    outPackage = os.path.join(outputDir, '{}-{}'.format(packageName, version))
+    defaultShowTargetPlatform = configs.get('Package', 'showTargetPlatform', fallback='true').strip()
+    defaultShowTargetPlatform = DTUtils.toBool(defaultShowTargetPlatform)
+    defaultShowTargetPlatform = 'true' if defaultShowTargetPlatform else 'false'
+    showTargetPlatform = configs.get('AppImage', 'showTargetPlatform', fallback=defaultShowTargetPlatform).strip()
+    showTargetPlatform = DTUtils.toBool(showTargetPlatform)
+    outPackage = os.path.join(outputDir, packageName)
+
+    if showTargetPlatform:
+        outPackage += '-' + pkgTargetPlatform
+
+    outPackage += '-' + version
 
     if not hideArch:
         outPackage += '-' + targetArch

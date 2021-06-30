@@ -262,6 +262,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     appName = configs.get('QtIFW', 'appName', fallback=name).strip()
     organization = configs.get('QtIFW', 'organization', fallback='project').strip()
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
+    pkgTargetPlatform = configs.get('QtIFW', 'pkgTargetPlatform', fallback=targetPlatform).strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     icon = configs.get('QtIFW', 'icon', fallback='').strip()
 
@@ -291,7 +292,17 @@ def run(globs, configs, dataDir, outputDir, mutex):
     defaultHideArch = 'true' if defaultHideArch else 'false'
     hideArch = configs.get('QtIFW', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
-    outPackage = os.path.join(outputDir, '{}-{}'.format(packageName, version))
+    defaultShowTargetPlatform = configs.get('Package', 'showTargetPlatform', fallback='true').strip()
+    defaultShowTargetPlatform = DTUtils.toBool(defaultShowTargetPlatform)
+    defaultShowTargetPlatform = 'true' if defaultShowTargetPlatform else 'false'
+    showTargetPlatform = configs.get('QtIFW', 'showTargetPlatform', fallback=defaultShowTargetPlatform).strip()
+    showTargetPlatform = DTUtils.toBool(showTargetPlatform)
+    outPackage = os.path.join(outputDir, packageName)
+
+    if showTargetPlatform:
+        outPackage += '-' + pkgTargetPlatform
+
+    outPackage += '-' + version
 
     if not hideArch:
         outPackage += '-' + targetArch

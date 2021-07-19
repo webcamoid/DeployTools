@@ -294,6 +294,9 @@ def programVersion(configs, sourcesDir):
 
     return configs.get('Package', 'version', fallback='0.0.0').strip()
 
+def versionCode(version):
+    return ''.join([n.rjust(4, '0') for n in version.split('.')])
+
 def solvedepsLibs(globs,
                   mainExecutable,
                   targetPlatform,

@@ -153,7 +153,13 @@ def copyAndroidTemplates(dataDir,
         f.write('buildDir=build\n')
         f.write('qt5AndroidDir={}\n'.format(javaDir))
 
-def solvedepsAndroid(globs, dataDir, libDir, sysLibDir):
+def solvedepsAndroid(globs,
+                     dataDir,
+                     libDir,
+                     sysLibDir,
+                     appName,
+                     appLibName,
+                     version):
     jars = []
     permissions = set()
     features = set()
@@ -229,11 +235,15 @@ def solvedepsAndroid(globs, dataDir, libDir, sysLibDir):
     permissions -= oldPermissions
     featuresWritten = len(features) < 1
     permissionsWritten = len(permissions) < 1
-    replace = {'-- %%INSERT_INIT_CLASSES%% --' : ':'.join(sorted(initClasses)),
-                '-- %%BUNDLE_LOCAL_QT_LIBS%% --': '1',
-                '-- %%USE_LOCAL_QT_LIBS%% --'   : '1',
-                '-- %%INSERT_LOCAL_LIBS%% --'   : ':'.join(sorted(libs)),
-                '-- %%INSERT_LOCAL_JARS%% --'   : ':'.join(sorted(jars))}
+    replace = {'-- %%INSERT_APP_NAME%% --'     : appName,
+               '-- %%INSERT_APP_LIB_NAME%% --' : appLibName,
+               '-- %%INSERT_VERSION_NAME%% --' : version,
+               '-- %%INSERT_VERSION_CODE%% --' : DTUtils.versionCode(version),
+               '-- %%INSERT_INIT_CLASSES%% --' : ':'.join(sorted(initClasses)),
+               '-- %%BUNDLE_LOCAL_QT_LIBS%% --': '1',
+               '-- %%USE_LOCAL_QT_LIBS%% --'   : '1',
+               '-- %%INSERT_LOCAL_LIBS%% --'   : ':'.join(sorted(libs)),
+               '-- %%INSERT_LOCAL_JARS%% --'   : ':'.join(sorted(jars))}
 
     with open(manifest) as inFile:
         with open(manifestTemp, 'w') as outFile:
@@ -545,6 +555,9 @@ def writeQtConf(qtConfFile,
             print('{} = {}'.format(path, paths[path]))
 
 def preRun(globs, configs, dataDir):
+    name = configs.get('Package', 'name', fallback='app').strip()
+    version = DTUtils.programVersion(configs, sourcesDir)
+    appLibName = configs.get('Android', 'appLibName', fallback=name).strip()
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
@@ -614,7 +627,13 @@ def preRun(globs, configs, dataDir):
         fixQtLibs(globs, libDir, outputQtPluginsDir, outputAssetsDir)
         print()
         print('Solving Android dependencies')
-        solvedepsAndroid(globs, dataDir, libDir, sysLibDir)
+        solvedepsAndroid(globs,
+                         dataDir,
+                         libDir,
+                         sysLibDir,
+                         name,
+                         appLibName,
+                         version)
         print('Copying Android build templates')
         copyAndroidTemplates(dataDir,
                              qtSourcesDir,

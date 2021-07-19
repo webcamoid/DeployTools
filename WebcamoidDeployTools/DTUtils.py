@@ -56,7 +56,9 @@ def whereBin(binary, extraPaths=[]):
     return ''
 
 def copy(src, dst='.', copyReals=False, overwrite=True):
+    print('COPY {} -> {}'.format(src, dst))
     if not os.path.exists(src):
+        print('{} does not exists'.format(src))
         return False
 
     if hostPlatform() == 'windows':
@@ -74,6 +76,7 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
             try:
                 os.makedirs(os.path.normpath(dstdir))
             except:
+                print('Cant make dir {}'.format(src))
                 return False
 
         if os.path.exists(dstfile) or os.path.islink(dstfile):
@@ -81,9 +84,9 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
 
         if overwrite:
             try:
-                print('COPY {} -> {}'.format(src, dstfile))
                 shutil.copy(src, dstfile, follow_symlinks=copyReals)
             except:
+                print('Cant copy {} to {}'.format(src, dstfile))
                 return False
 
         if os.path.islink(src) and not copyReals:

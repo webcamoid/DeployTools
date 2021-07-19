@@ -78,7 +78,7 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
 
         print('COPY {} -> {}'.format(src, dstfile))
 
-        if overwrite:
+        if overwrite or not os.path.exists(dstfile):
             print('OVERWRITE')
 
             if os.path.exists(dstfile) or os.path.islink(dstfile):

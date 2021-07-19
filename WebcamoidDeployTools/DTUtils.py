@@ -91,7 +91,9 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
                 srcdir = os.path.dirname(src)
                 relsrcdir = os.path.relpath(realsrcdir, srcdir)
                 dstfile = os.path.join(dstdir, relsrcdir, os.path.basename(realsrc))
-                copy(realsrc, dstfile, copyReals, overwrite)
+
+                if not copy(realsrc, dstfile, copyReals, overwrite):
+                    return False
             else:
                 try:
                     print('COPY_NORMAL')

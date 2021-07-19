@@ -76,16 +76,11 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
             except:
                 return False
 
-        print('COPY {} -> {}'.format(src, dstfile))
-
         if overwrite or not os.path.exists(dstfile):
-            print('OVERWRITE')
-
             if os.path.exists(dstfile) or os.path.islink(dstfile):
                 os.remove(dstfile)
 
             if os.path.islink(src) and copyReals:
-                print('COPY_SYMLINK')
                 realsrc = os.path.realpath(src)
                 realsrcdir = os.path.dirname(realsrc)
                 srcdir = os.path.dirname(src)
@@ -96,9 +91,7 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
                     return False
             else:
                 try:
-                    print('COPY_NORMAL')
                     shutil.copy(src, dstfile, follow_symlinks=copyReals)
-                    print('COPY_DONE')
                 except:
                     return False
 

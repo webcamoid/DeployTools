@@ -79,7 +79,7 @@ def zipalign(buildToolsVersion):
 
     return DTUtils.whereBin('zipalign')
 
-def alignPackage(package, sdkBuildToolsRevision):
+def alignPackage(package, sdkBuildToolsRevision, verbose):
     zalign = zipalign(sdkBuildToolsRevision)
 
     if len(zalign) < 1:
@@ -87,13 +87,19 @@ def alignPackage(package, sdkBuildToolsRevision):
 
     alignedPackage = os.path.join(os.path.dirname(package),
                                     'aligned-' + os.path.basename(package))
-    process = subprocess.Popen([zalign, # nosec
-                                '-v',
-                                '-f', '4',
-                                package,
-                                alignedPackage],
+    params = [zalign,
+              '-v',
+              '-f', '4',
+              package,
+              alignedPackage]
+
+    if verbose:
+        process = subprocess.Popen(params) # nosec
+    else:
+        process = subprocess.Popen(params, # nosec
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
+
     process.communicate()
 
     if process.returncode != 0:
@@ -103,8 +109,8 @@ def alignPackage(package, sdkBuildToolsRevision):
 
     return True
 
-def apkSignPackage(package, keystore, sdkBuildToolsRevision):
-    if not alignPackage(package, sdkBuildToolsRevision):
+def apkSignPackage(package, keystore, sdkBuildToolsRevision, verbose):
+    if not alignPackage(package, sdkBuildToolsRevision, verbose):
         return False
 
     apksign = apksigner(sdkBuildToolsRevision)
@@ -112,21 +118,27 @@ def apkSignPackage(package, keystore, sdkBuildToolsRevision):
     if len(apksign) < 1:
         return False
 
-    process = subprocess.Popen([apksign, # nosec
-                                'sign',
-                                '-v',
-                                '--ks', keystore,
-                                '--ks-pass', 'pass:android',
-                                '--ks-key-alias', 'androiddebugkey',
-                                '--key-pass', 'pass:android',
-                                package],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+    params = [apksign,
+              'sign',
+              '-v',
+              '--ks', keystore,
+              '--ks-pass', 'pass:android',
+              '--ks-key-alias', 'androiddebugkey',
+              '--key-pass', 'pass:android',
+              package]
+
+    if verbose:
+        process = subprocess.Popen(params) # nosec
+    except:
+        process = subprocess.Popen(params, # nosec
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+
     process.communicate()
 
     return process.returncode == 0
 
-def jarSignPackage(package, keystore):
+def jarSignPackage(package, keystore, verbose):
     jsigner = jarsigner()
 
     if len(jsigner) < 1:
@@ -134,19 +146,25 @@ def jarSignPackage(package, keystore):
 
     signedPackage = os.path.join(os.path.dirname(package),
                                     'signed-' + os.path.basename(package))
-    process = subprocess.Popen([jsigner, # nosec
-                                '-verbose',
-                                '-keystore', keystore,
-                                '-storepass', 'android',
-                                '-keypass', 'android',
-                                '-sigalg', 'SHA1withRSA',
-                                '-digestalg', 'SHA1',
-                                '-sigfile', 'CERT',
-                                '-signedjar', signedPackage,
-                                package,
-                                'androiddebugkey'],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+    params = [jsigner,
+              '-verbose',
+              '-keystore', keystore,
+              '-storepass', 'android',
+              '-keypass', 'android',
+              '-sigalg', 'SHA1withRSA',
+              '-digestalg', 'SHA1',
+              '-sigfile', 'CERT',
+              '-signedjar', signedPackage,
+              package,
+              'androiddebugkey']
+
+    if verbose:
+        process = subprocess.Popen(params) # nosec
+    else:
+        process = subprocess.Popen(params, # nosec
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+
     process.communicate()
 
     if process.returncode != 0:
@@ -154,9 +172,9 @@ def jarSignPackage(package, keystore):
 
     DTUtils.move(signedPackage, package)
 
-    return alignPackage(package)
+    return alignPackage(package, verbose)
 
-def signPackage(package, dataDir, sdkBuildToolsRevision):
+def signPackage(package, dataDir, sdkBuildToolsRevision, verbose):
     ktool = keytool()
 
     if len(ktool) < 1:
@@ -173,48 +191,62 @@ def signPackage(package, dataDir, sdkBuildToolsRevision):
         except:
             pass
 
-        process = subprocess.Popen([ktool, # nosec
-                                    '-genkey',
-                                    '-v',
-                                    '-storetype', 'pkcs12',
-                                    '-keystore', keystore,
-                                    '-storepass', 'android',
-                                    '-alias', 'androiddebugkey',
-                                    '-keypass', 'android',
-                                    '-keyalg', 'RSA',
-                                    '-keysize', '2048',
-                                    '-validity', '10000',
-                                    '-dname', 'CN=Android Debug,O=Android,C=US'],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
+        params = [ktool,
+                  '-genkey',
+                  '-v',
+                  '-storetype', 'pkcs12',
+                  '-keystore', keystore,
+                  '-storepass', 'android',
+                  '-alias', 'androiddebugkey',
+                  '-keypass', 'android',
+                  '-keyalg', 'RSA',
+                  '-keysize', '2048',
+                  '-validity', '10000',
+                  '-dname', 'CN=Android Debug,O=Android,C=US']
+
+        if verbose:
+            process = subprocess.Popen(params) # nosec
+        else:
+            process = subprocess.Popen(params, # nosec
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+
         process.communicate()
 
         if process.returncode != 0:
             return False
 
-    if apkSignPackage(package, keystore, sdkBuildToolsRevision):
+    if apkSignPackage(package, keystore, sdkBuildToolsRevision, verbose):
         return True
 
-    return jarSignPackage(package, keystore)
+    return jarSignPackage(package, keystore, verbose)
 
 def createApk(globs,
               mutex,
               dataDir,
               outPackage,
-              sdkBuildToolsRevision):
+              sdkBuildToolsRevision,
+              verbose):
     gradleSript = os.path.join(dataDir, 'gradlew')
 
     if DTUtils.hostPlatform() == 'windows':
         gradleSript += '.bat'
 
     os.chmod(gradleSript, 0o744)
-    process = subprocess.Popen([gradleSript, # nosec
-                                '--no-daemon',
-                                '--info',
-                                'assembleRelease'],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE,
-                                cwd=dataDir)
+    params = [gradleSript,
+              '--no-daemon',
+              '--info',
+              'assembleRelease']
+
+    if verbose:
+        process = subprocess.Popen(params, # nosec
+                                   cwd=dataDir)
+    else:
+        process = subprocess.Popen(params, # nosec
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE,
+                                   cwd=dataDir)
+
     process.communicate()
     name = os.path.basename(dataDir)
     apk = os.path.join(dataDir,
@@ -223,7 +255,7 @@ def createApk(globs,
                        'apk',
                        'release',
                        '{}-release-unsigned.apk'.format(name))
-    signPackage(apk, dataDir, sdkBuildToolsRevision)
+    signPackage(apk, dataDir, sdkBuildToolsRevision, verbose)
     DTUtils.copy(apk, outPackage)
 
     if not os.path.exists(outPackage):
@@ -269,6 +301,8 @@ def run(globs, configs, dataDir, outputDir, mutex):
     defaultPkgTargetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     pkgTargetPlatform = configs.get('AndroidAPK', 'pkgTargetPlatform', fallback=defaultPkgTargetPlatform).strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
+    verbose = configs.get('AndroidAPK', 'verbose', fallback='false').strip()
+    verbose = DTUtils.toBool(verbose)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
     defaultHideArch = DTUtils.toBool(defaultHideArch)
     defaultHideArch = 'true' if defaultHideArch else 'false'
@@ -299,4 +333,5 @@ def run(globs, configs, dataDir, outputDir, mutex):
               mutex,
               dataDir,
               outPackage,
-              sdkBuildToolsRevision)
+              sdkBuildToolsRevision,
+              verbose)

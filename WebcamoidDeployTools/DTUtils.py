@@ -81,6 +81,7 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
 
         if overwrite:
             try:
+                print('COPY {} -> {}'.format(src, dstfile))
                 shutil.copy(src, dstfile, follow_symlinks=copyReals)
             except:
                 return False

@@ -138,7 +138,7 @@ def copyAndroidTemplates(dataDir,
                  os.path.join(qtSourcesDir, 'android/templates')]
 
     for template in templates:
-        DTUtils.copy(template, dataDir)
+        DTUtils.copy(template, dataDir, overwrite=False)
 
     properties = os.path.join(dataDir, 'gradle.properties')
     javaDir = os.path.join(qtSourcesDir, 'android','java')

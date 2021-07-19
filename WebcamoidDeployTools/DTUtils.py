@@ -100,6 +100,7 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
         return True
 
     if os.path.isfile(dst):
+        print('{} is a file'.format(dst))
         return False
 
     for root, dirs, files in os.walk(src):

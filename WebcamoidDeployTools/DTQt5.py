@@ -555,6 +555,7 @@ def writeQtConf(qtConfFile,
             print('{} = {}'.format(path, paths[path]))
 
 def preRun(globs, configs, dataDir):
+    sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     name = configs.get('Package', 'name', fallback='app').strip()
     version = DTUtils.programVersion(configs, sourcesDir)
     appLibName = configs.get('Android', 'appLibName', fallback=name).strip()

@@ -129,7 +129,7 @@ def apkSignPackage(package, keystore, sdkBuildToolsRevision, verbose):
 
     if verbose:
         process = subprocess.Popen(params) # nosec
-    except:
+    else:
         process = subprocess.Popen(params, # nosec
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)

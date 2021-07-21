@@ -285,7 +285,7 @@ def programVersion(configs, sourcesDir):
             branch = os.environ['TRAVIS_BRANCH']
         elif 'APPVEYOR_REPO_BRANCH' in os.environ:
             branch = os.environ['APPVEYOR_REPO_BRANCH']
-        elif 'GITHUB_REF' in os.environ:
+        elif 'GITHUB_REF' in os.environ and os.environ['GITHUB_REF'] != '':
             branch = os.path.basename(os.path.basename(os.environ['GITHUB_REF']))
         else:
             branch = DTGit.branch(sourcesDir)

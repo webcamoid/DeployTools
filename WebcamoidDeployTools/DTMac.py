@@ -263,9 +263,9 @@ def writeBuildInfo(globs, buildInfoFile, sourcesDir):
             buildLogUrl = 'https://ci.appveyor.com/project/{}/{}/build/job/{}'.format(os.environ['APPVEYOR_ACCOUNT_NAME'],
                                                                                       os.environ['APPVEYOR_PROJECT_SLUG'],
                                                                                       os.environ['APPVEYOR_JOB_ID'])
-        elif 'GITHUB_SERVER_URL' in os.environ \
-            and 'GITHUB_REPOSITORY' in os.environ \
-            and 'GITHUB_RUN_ID' in os.environ:
+        elif 'GITHUB_SERVER_URL' in os.environ and os.environ['GITHUB_SERVER_URL'] != '' \
+            and 'GITHUB_REPOSITORY' in os.environ and os.environ['GITHUB_REPOSITORY'] != '' \
+            and 'GITHUB_RUN_ID' in os.environ and os.environ['GITHUB_RUN_ID'] != '':
             buildLogUrl = '{}/{}/actions/runs/{}'.format(os.environ['GITHUB_SERVER_URL'],
                                                          os.environ['GITHUB_REPOSITORY'],
                                                          os.environ['GITHUB_RUN_ID'])

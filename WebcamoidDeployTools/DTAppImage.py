@@ -46,7 +46,8 @@ def createAppImage(globs,
                    launcher,
                    desktopFile,
                    desktopIcon,
-                   dirIcon):
+                   dirIcon,
+                   verbose):
     with tempfile.TemporaryDirectory() as tmpdir:
         appDirName = os.path.splitext(os.path.basename(outPackage))[0]
         appDir = \
@@ -73,17 +74,24 @@ def createAppImage(globs,
 
         DTUtils.copy(desktopIcon, appDir)
         DTUtils.copy(dirIcon, os.path.join(appDir, '.DirIcon'))
+        params = [appimagetool(targetArch),
+                  '-v',
+                  '--no-appstream',
+                  '--comp', 'xz',
+                  appDir,
+                  outPackage]
         penv = os.environ.copy()
         penv['ARCH'] = targetArch
-        process = subprocess.Popen([appimagetool(targetArch), # nosec
-                                    '-v',
-                                    '--no-appstream',
-                                    '--comp', 'xz',
-                                    appDir,
-                                    outPackage],
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE,
-                                    env=penv)
+
+        if verbose:
+            process = subprocess.Popen(params, # nosec
+                                       env=penv)
+        else:
+            process = subprocess.Popen(params, # nosec
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE,
+                                       env=penv)
+
         process.communicate()
 
         if not os.path.exists(outPackage):
@@ -121,6 +129,8 @@ def run(globs, configs, dataDir, outputDir, mutex):
     desktopIcon = os.path.join(sourcesDir, desktopIcon)
     dirIcon = configs.get('AppImage', 'dirIcon', fallback='app.png').strip()
     dirIcon = os.path.join(sourcesDir, dirIcon)
+    verbose = configs.get('AppImage', 'verbose', fallback='false').strip()
+    verbose = DTUtils.toBool(verbose)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
     defaultHideArch = DTUtils.toBool(defaultHideArch)
     defaultHideArch = 'true' if defaultHideArch else 'false'
@@ -155,4 +165,5 @@ def run(globs, configs, dataDir, outputDir, mutex):
                    launcher,
                    desktopFile,
                    desktopIcon,
-                   dirIcon)
+                   dirIcon,
+                   verbose)

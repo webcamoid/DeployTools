@@ -62,8 +62,10 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
     if hostPlatform() == 'windows':
         copyReals = True
 
-    if os.path.isfile(src):
-        dstdir = os.path.dirname(dst)
+    realsrc = os.path.realpath(src)
+
+    if os.path.isfile(realsrc):
+        dstdir = os.path.normpath(os.path.dirname(dst))
         dstfile = dst
 
         if os.path.isdir(dst):
@@ -72,7 +74,7 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
 
         if not os.path.exists(dstdir):
             try:
-                os.makedirs(os.path.normpath(dstdir))
+                os.makedirs(dstdir)
             except:
                 return False
 
@@ -86,7 +88,6 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
                 return False
 
             if os.path.islink(src) and not copyReals:
-                realsrc = os.path.realpath(src)
                 realsrcdir = os.path.dirname(realsrc)
                 srcdir = os.path.dirname(src)
                 relsrcdir = os.path.relpath(realsrcdir, srcdir)

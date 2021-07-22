@@ -476,6 +476,8 @@ def solvedepsPlugins(globs,
     if not 'dependencies' in globs:
         globs['dependencies'] = set()
 
+    print('SYSLIBDIR {}'.format(sysLibDir))
+
     solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,

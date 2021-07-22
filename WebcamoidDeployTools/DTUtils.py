@@ -80,7 +80,12 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
             if os.path.exists(dstfile) or os.path.islink(dstfile):
                 os.remove(dstfile)
 
-            if os.path.islink(src) and copyReals:
+            try:
+                shutil.copy(src, dstfile, follow_symlinks=copyReals)
+            except:
+                return False
+
+            if os.path.islink(src) and not copyReals:
                 realsrc = os.path.realpath(src)
                 realsrcdir = os.path.dirname(realsrc)
                 srcdir = os.path.dirname(src)
@@ -88,11 +93,6 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
                 dstfile = os.path.join(dstdir, relsrcdir, os.path.basename(realsrc))
 
                 if not copy(realsrc, dstfile, copyReals, overwrite):
-                    return False
-            else:
-                try:
-                    shutil.copy(src, dstfile, follow_symlinks=copyReals)
-                except:
                     return False
 
         return True

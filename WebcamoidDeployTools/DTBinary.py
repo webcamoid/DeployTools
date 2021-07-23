@@ -30,10 +30,10 @@ from . import DTUtils
 
 
 class BinaryTools:
-    def __init__(self, 
-                 hostPlatform, 
-                 targetPlatform, 
-                 targetArch, 
+    def __init__(self,
+                 hostPlatform,
+                 targetPlatform,
+                 targetArch,
                  sysLibDir,
                  stripCmd='strip'):
         super().__init__()
@@ -193,6 +193,9 @@ class BinaryTools:
             for f in files:
                 permissions = 0o644
                 path = os.path.join(root, f)
+
+                if not os.path.exists(path):
+                    continue
 
                 if self.isExecutable(path):
                     permissions = 0o744

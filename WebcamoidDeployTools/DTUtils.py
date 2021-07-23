@@ -351,7 +351,7 @@ def solvedepsLibs(globs,
             if hostPlatform() == 'mac' and dep.endswith('.framework'):
                 DTMac.copyBundle(dep, depPath)
             else:
-                copyReals = targetPlatform != 'windows'
+                copyReals = targetPlatform == 'windows'
                 copy(dep, depPath, copyReals)
 
             globs['dependencies'].add(dep)

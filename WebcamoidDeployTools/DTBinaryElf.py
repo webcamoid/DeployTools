@@ -196,6 +196,9 @@ def readRpaths(elfInfo, binDir):
 # https://refspecs.linuxfoundation.org/lsb.shtml (See Core, Generic)
 # https://en.wikipedia.org/wiki/Executable_and_Linkable_Format
 def dump(binary):
+    if not os.path.exists(binary):
+        return {}
+
     # ELF file magic
     ELFMAGIC = b'\x7fELF'
 

@@ -191,6 +191,7 @@ def createInstaller(globs,
         }
 
         if installScript != '':
+            print('COPY ', installScript, ' -> ', tmpdir)
             DTUtils.copy(installScript, tmpdir)
 
         nsiScript = os.path.join(tmpdir, 'script.nsi')
@@ -428,9 +429,6 @@ def createInstaller(globs,
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
 
-        process.communicate()
-
-        process = subprocess.Popen(['ls', '-l', tmpdir])
         process.communicate()
 
         if not os.path.exists(outPackage):

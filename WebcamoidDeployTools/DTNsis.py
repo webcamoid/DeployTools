@@ -430,6 +430,9 @@ def createInstaller(globs,
 
         process.communicate()
 
+        process = subprocess.Popen(['ls', '-l', tmpdir])
+        process.communicate()
+
         if not os.path.exists(outPackage):
             return
 

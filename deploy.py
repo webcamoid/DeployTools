@@ -74,8 +74,12 @@ if __name__ =='__main__':
         parser.print_help()
         exit()
 
-    if not os.path.exists(options.data_dir) or not os.path.isdir(options.data_dir):
-        print("Invalid data directory", file=sys.stderr)
+    if not os.path.exists(options.data_dir):
+        print("Data directory does not exists", file=sys.stderr)
+        exit(-1)
+
+    if not os.path.isdir(os.path.realpath(options.data_dir)):
+        print("The data directory is not a directory", file=sys.stderr)
         exit(-1)
 
     if len(os.listdir(options.data_dir)) < 1:

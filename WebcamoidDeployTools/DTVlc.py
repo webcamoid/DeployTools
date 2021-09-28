@@ -53,12 +53,20 @@ def copyVlcPlugins(globs,
             for root, _, files in os.walk(vlcPluginsDir):
                 relpath = os.path.relpath(root, vlcPluginsDir)
 
-                if vlcPlugins != [] and not (relpath in vlcPlugins):
+                if relpath != '.' \
+                    and vlcPlugins != [] \
+                    and not (relpath in vlcPlugins):
                     continue
 
                 for f in files:
                     sysPluginPath = os.path.join(root, f)
-                    pluginPath = os.path.join(outputVlcPluginsDir, relpath, f)
+
+                    if relpath == '.':
+                        pluginPath = os.path.join(outputVlcPluginsDir, f)
+                    else:
+                        pluginPath = os.path.join(outputVlcPluginsDir,
+                                                  relpath,
+                                                  f)
 
                     if not os.path.exists(sysPluginPath):
                         continue

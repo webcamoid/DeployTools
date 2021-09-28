@@ -30,6 +30,7 @@ def copyVlcPlugins(globs,
                    targetArch,
                    dataDir,
                    outputVlcPluginsDir,
+                   vlcPlugins,
                    vlcPluginsDir,
                    sysLibDir,
                    stripCmd='strip'):
@@ -38,18 +39,26 @@ def copyVlcPlugins(globs,
                                   targetArch,
                                   sysLibDir,
                                   stripCmd)
+    vlcLibName = ''
+
+    if targetPlatform == 'mac' or targetPlatform == 'windows':
+        vlcLibName = 'libvlc'
+    else:
+        vlcLibName = 'vlc'
 
     for dep in solver.scanDependencies(dataDir):
         libName = solver.name(dep)
 
-        if libName == 'vlc':
+        if libName == vlcLibName:
             for root, _, files in os.walk(vlcPluginsDir):
+                relpath = os.path.relpath(root, vlcPluginsDir)
+
+                if vlcPlugins != [] and not (relpath in vlcPlugins):
+                    continue
+
                 for f in files:
                     sysPluginPath = os.path.join(root, f)
-                    pluginPath = os.path.join(outputVlcPluginsDir,
-                                              os.path.relpath(root,
-                                                              vlcPluginsDir),
-                                              f)
+                    pluginPath = os.path.join(outputVlcPluginsDir, relpath, f)
 
                     if not os.path.exists(sysPluginPath):
                         continue
@@ -82,6 +91,12 @@ def preRun(globs, configs, dataDir):
 
     sysLibDir = list(libs)
     stripCmd = configs.get('System', 'stripCmd', fallback='strip').strip()
+    vlcPlugins = configs.get('Vlc', 'plugins', fallback='')
+
+    if vlcPlugins == '':
+        vlcPlugins = []
+    else:
+        vlcPlugins = [plugin.strip() for plugin in vlcPlugins.split(',')]
 
     print('VLC information')
     print()
@@ -95,6 +110,7 @@ def preRun(globs, configs, dataDir):
                    targetArch,
                    dataDir,
                    outputVlcPluginsDir,
+                   vlcPlugins,
                    vlcPluginsDir,
                    sysLibDir,
                    stripCmd)

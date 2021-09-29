@@ -55,7 +55,11 @@ def copyBundle(frameworkSrcDir, frameworkDstDir):
     relCurVersionSrcPath = os.path.relpath(rcurVersionSrcPath,
                                            os.path.dirname(curVersionSrcPath))
     curVersionDstPath = os.path.join(frameworkDstDir, curVersion)
-    os.symlink(relCurVersionSrcPath, curVersionDstPath)
+
+    try:
+        os.symlink(relCurVersionSrcPath, curVersionDstPath)
+    except:
+        pass
 
     # Copy resources link
 
@@ -65,7 +69,11 @@ def copyBundle(frameworkSrcDir, frameworkDstDir):
     relResourcesSrcPath = os.path.relpath(rresourcesSrcPath,
                                           os.path.dirname(resourcesSrcPath))
     resourcesDstPath = os.path.join(frameworkDstDir, resources)
-    os.symlink(relResourcesSrcPath, resourcesDstPath)
+
+    try:
+        os.symlink(relResourcesSrcPath, resourcesDstPath)
+    except:
+        pass
 
     # Copy resources
 

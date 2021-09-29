@@ -78,6 +78,8 @@ def solveRefpath(path):
     if 'DYLD_FRAMEWORK_PATH' in os.environ:
         searchPaths += os.environ['DYLD_FRAMEWORK_PATH'].split(':')
 
+    searchPaths += ['/usr/local/lib']
+
     if path.endswith('.dylib'):
         dep = os.path.basename(path)
     else:

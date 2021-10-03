@@ -55,7 +55,20 @@ def whereBin(binary, extraPaths=[]):
 
     return ''
 
-def copy(src, dst='.', copyReals=False, overwrite=True):
+def isPathHiger(path, start=os.curdir):
+    rel = os.path.relpath(os.path.normpath(path), start)
+
+    return rel.startswith("..")
+
+def repositionPath(path, start=os.curdir):
+    rel = os.path.relpath(os.path.normpath(path), start)
+
+    if rel.startswith(".."):
+        return os.path.join(start, rel.replace('..', 'up'))
+
+    return path
+
+def copy(src, dst='.', copyReals=False, overwrite=True, rootPath=''):
     if not os.path.exists(src):
         return False
 
@@ -82,18 +95,37 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
             if os.path.exists(dstfile) or os.path.islink(dstfile):
                 os.remove(dstfile)
 
-            try:
-                shutil.copy(src, dstfile, follow_symlinks=copyReals)
-            except:
-                return False
+            realsrcdir = os.path.dirname(realsrc)
+            srcdir = os.path.dirname(src)
+            relsrcdir = os.path.relpath(realsrcdir, srcdir)
+            srclink = os.path.join(relsrcdir, os.path.basename(realsrc))
+            dstlink = os.path.normpath(os.path.join(dstdir, srclink))
+
+            if rootPath != '' \
+                and not copyReals \
+                and os.path.islink(src) \
+                and isPathHiger(dstlink, rootPath):
+                rep = os.path.dirname(repositionPath(dstlink, rootPath))
+                reldstdir = os.path.relpath(rep, dstdir)
+                dstlink = os.path.join(reldstdir, os.path.basename(dstlink))
+
+                try:
+                    os.symlink(dstlink, dstfile)
+                except:
+                    return False
+            else:
+                try:
+                    shutil.copy(src, dstfile, follow_symlinks=copyReals)
+                except:
+                    return False
 
             if os.path.islink(src) and not copyReals:
-                realsrcdir = os.path.dirname(realsrc)
-                srcdir = os.path.dirname(src)
-                relsrcdir = os.path.relpath(realsrcdir, srcdir)
                 dstfile = os.path.join(dstdir, relsrcdir, os.path.basename(realsrc))
 
-                if not copy(realsrc, dstfile, copyReals, overwrite):
+                if rootPath != '':
+                    dstfile = repositionPath(dstfile, rootPath)
+
+                if not copy(realsrc, dstfile, copyReals, overwrite, rootPath):
                     return False
 
         return True
@@ -106,7 +138,7 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
             srcfile = os.path.join(root, f)
             relsrcfile = os.path.relpath(srcfile, src)
             dstfile = os.path.join(dst, relsrcfile)
-            copy(srcfile, dstfile, copyReals, overwrite)
+            copy(srcfile, dstfile, copyReals, overwrite, rootPath)
 
         for d in dirs:
             srcdir = os.path.join(root, d)
@@ -132,7 +164,7 @@ def copy(src, dst='.', copyReals=False, overwrite=True):
 
             if os.path.islink(srcdir):
                 if copyReals:
-                    copy(srcdir, dstdir, copyReals, overwrite)
+                    copy(srcdir, dstdir, copyReals, overwrite, rootPath)
                 else:
                     realsrcdir = os.path.realpath(srcdir)
                     relsrcdir = os.path.relpath(realsrcdir,
@@ -352,7 +384,7 @@ def solvedepsLibs(globs,
                 DTMac.copyBundle(dep, depPath)
             else:
                 copyReals = targetPlatform == 'windows'
-                copy(dep, depPath, copyReals)
+                copy(dep, depPath, copyReals, True, dataDir)
 
             globs['dependencies'].add(dep)
 

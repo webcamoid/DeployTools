@@ -21,6 +21,7 @@
 
 import os
 import subprocess
+import sys
 
 from . import DTBinary
 from . import DTUtils

@@ -567,7 +567,7 @@ def preRun(globs, configs, dataDir):
     defaultSysLibDir = ''
 
     if targetPlatform == 'android':
-        defaultSysLibDir = '/opt/android-libs/{}/lib'.format(targetPlatform)
+        defaultSysLibDir = '/opt/android-libs/{}/lib'.format(targetArch)
     elif targetPlatform == 'mac':
         defaultSysLibDir = '/usr/local/lib'
 

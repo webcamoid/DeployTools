@@ -27,7 +27,12 @@ from . import DTBinary
 from . import DTUtils
 
 
-def vlcCacheGen():
+def vlcCacheGen(targetPlatform):
+    cacheGen = DTUtils.whereBin('vlc-cache-gen')
+
+    if cacheGen != '':
+        return cacheGen
+
     pkgConfig = DTUtils.whereBin('pkg-config')
 
     if pkgConfig == '':
@@ -50,6 +55,9 @@ def vlcCacheGen():
         return ''
 
     cacheGen = os.path.join(pkgLibDir, 'vlc-cache-gen')
+
+    if targetPlatform == 'windows':
+        cacheGen += '.exe'
 
     if not os.path.exists(cacheGen):
         return ''
@@ -108,8 +116,8 @@ def copyVlcPlugins(globs,
 
             break
 
-def regenerateCache(outputVlcPluginsDir, verbose):
-    cacheGen = vlcCacheGen()
+def regenerateCache(targetPlatform, outputVlcPluginsDir, verbose):
+    cacheGen = vlcCacheGen(targetPlatform)
 
     if cacheGen == '':
         return
@@ -139,7 +147,7 @@ def preRun(globs, configs, dataDir):
     defaultSysLibDir = ''
 
     if targetPlatform == 'android':
-        defaultSysLibDir = '/opt/android-libs/{}/lib'.format(targetPlatform)
+        defaultSysLibDir = '/opt/android-libs/{}/lib'.format(targetArch)
     elif targetPlatform == 'mac':
         defaultSysLibDir = '/usr/local/lib'
 
@@ -180,7 +188,7 @@ def preRun(globs, configs, dataDir):
     print()
     print('Regenerating VLC plugins cache')
     print()
-    regenerateCache(outputVlcPluginsDir, verbose)
+    regenerateCache(targetPlatform, outputVlcPluginsDir, verbose)
 
 def postRun(globs, configs, dataDir):
     pass

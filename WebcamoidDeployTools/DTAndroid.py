@@ -173,7 +173,7 @@ def preRun(globs, configs, dataDir):
     mainExecutable = os.path.join(dataDir, mainExecutable)
     libDir = configs.get('Package', 'libDir', fallback='').strip()
     libDir = os.path.join(dataDir, libDir)
-    defaultSysLibDir = '/opt/android-libs/{}/lib'.format(targetPlatform)
+    defaultSysLibDir = '/opt/android-libs/{}/lib'.format(targetArch)
     sysLibDir = configs.get('System', 'libDir', fallback=defaultSysLibDir)
     stripCmd = configs.get('System', 'stripCmd', fallback='strip').strip()
     libs = set()

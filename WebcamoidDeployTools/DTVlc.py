@@ -20,10 +20,40 @@
 # Web-Site: http://github.com/webcamoid/DeployTools/
 
 import os
+import subprocess
 
 from . import DTBinary
 from . import DTUtils
 
+
+def vlcCacheGen():
+    pkgConfig = DTUtils.whereBin('pkg-config')
+
+    if pkgConfig == '':
+        pkgConfig = DTUtils.whereBin('pkgconf')
+
+    if pkgConfig == '':
+        return ''
+
+    process = subprocess.Popen([pkgConfig, 'vlc-plugin', '--variable=pkglibdir'], # nosec
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+    stdout, _ = process.communicate()
+
+    if process.returncode != 0:
+        return ''
+
+    pkgLibDir = stdout.decode(sys.getdefaultencoding()).strip()
+
+    if pkgLibDir == '':
+        return ''
+
+    cacheGen = os.path.join(pkgLibDir, 'vlc-cache-gen')
+
+    if not os.path.exists(cacheGen):
+        return ''
+
+    return cacheGen
 
 def copyVlcPlugins(globs,
                    targetPlatform,
@@ -77,6 +107,27 @@ def copyVlcPlugins(globs,
 
             break
 
+def regenerateCache(outputVlcPluginsDir, verbose):
+    cacheGen = vlcCacheGen()
+
+    if cacheGen == '':
+        return
+
+    params = [cacheGen, outputVlcPluginsDir]
+    process = None
+
+    if verbose:
+        process = subprocess.Popen(params) # nosec
+    else:
+        process = subprocess.Popen(params, # nosec
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+
+    process = subprocess.Popen(params, # nosec
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+    process.communicate()
+
 def preRun(globs, configs, dataDir):
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
@@ -106,6 +157,9 @@ def preRun(globs, configs, dataDir):
     else:
         vlcPlugins = [plugin.strip() for plugin in vlcPlugins.split(',')]
 
+    verbose = configs.get('Vlc', 'verbose', fallback='false').strip()
+    verbose = DTUtils.toBool(verbose)
+
     print('VLC information')
     print()
     print('VLC plugins directory: {}'.format(vlcPluginsDir))
@@ -123,6 +177,9 @@ def preRun(globs, configs, dataDir):
                    sysLibDir,
                    stripCmd)
     print()
+    print('Regenerating VLC plugins cache')
+    print()
+    regenerateCache(outputVlcPluginsDir, verbose)
 
 def postRun(globs, configs, dataDir):
     pass

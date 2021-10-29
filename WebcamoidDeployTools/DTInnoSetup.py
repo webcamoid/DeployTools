@@ -30,6 +30,18 @@ from . import DTUtils
 
 
 def winPath(path):
+    if 'MSYSTEM' in os.environ and DTUtils.hostPlatform() == 'windows':
+        params = ['cygpath', '-w', path]
+        process = subprocess.Popen(params, # nosec
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        stdout, _ = process.communicate()
+
+        if process.returncode != 0:
+            return ''
+
+        return stdout.decode(sys.getdefaultencoding()).strip()
+
     if DTUtils.hostPlatform() != 'windows':
         params = ['winepath', '-w', path]
         process = subprocess.Popen(params, # nosec
@@ -49,7 +61,12 @@ def isccDataDir(isccVersion):
     isFolder = 'Inno Setup {}'.format(isccVersion)
 
     if DTUtils.hostPlatform() == 'windows':
-        rootPath = 'C:' + os.sep
+        rootDir = 'C:'
+
+        if 'MSYSTEM' in os.environ:
+            rootDir = '/c'
+
+        rootPath = rootDir + os.sep
         homeInnoSetup = \
             [os.path.join(rootPath, 'Program Files (x86)', isFolder),
              os.path.join(rootPath, 'Program Files', isFolder)]
@@ -83,7 +100,12 @@ def iscc(isccVersion):
     isFolder = 'Inno Setup {}'.format(isccVersion)
 
     if DTUtils.hostPlatform() == 'windows':
-        rootPath = 'C:' + os.sep
+        rootDir = 'C:'
+
+        if 'MSYSTEM' in os.environ:
+            rootDir = '/c'
+
+        rootPath = rootDir + os.sep
         homeInnoSetup = \
             [os.path.join(rootPath, 'Program Files (x86)', isFolder),
              os.path.join(rootPath, 'Program Files', isFolder)]

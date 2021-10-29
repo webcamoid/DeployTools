@@ -33,7 +33,12 @@ def binarycreator(targetPlatform):
     homeQt = ''
 
     if DTUtils.hostPlatform() == 'windows':
-        homeQt = 'C:\\Qt'
+        rootDir = 'C:'
+
+        if 'MSYSTEM' in os.environ:
+            rootDir = '/c'
+
+        homeQt = os.path.join(rootDir, 'Qt')
     elif targetPlatform == 'windows':
         if 'WINEPREFIX' in os.environ:
             homeQt = os.path.expanduser(os.path.join(os.environ['WINEPREFIX'],

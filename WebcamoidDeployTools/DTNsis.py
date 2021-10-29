@@ -30,6 +30,18 @@ from . import DTUtils
 
 
 def winPath(path):
+    if 'MSYSTEM' in os.environ and DTUtils.hostPlatform() == 'windows':
+        params = ['cygpath', '-w', path]
+        process = subprocess.Popen(params, # nosec
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        stdout, _ = process.communicate()
+
+        if process.returncode != 0:
+            return ''
+
+        return stdout.decode(sys.getdefaultencoding()).strip()
+
     if DTUtils.hostPlatform() != 'windows' \
         and DTUtils.whereBin('makensis') == '':
         params = ['winepath', '-w', path]
@@ -48,8 +60,15 @@ def winPath(path):
 def nsisDataDir():
     makeNSIS = 'makensis'
 
+    # if 'MSYSTEM' in os.environ:
+
     if DTUtils.hostPlatform() == 'windows':
-        rootPath = 'C:' + os.sep
+        rootDir = 'C:'
+
+        if 'MSYSTEM' in os.environ:
+            rootDir = '/c'
+
+        rootPath = rootDir + os.sep
         homeNSIS = [os.path.join(rootPath, 'Program Files (x86)', 'NSIS'),
                     os.path.join(rootPath, 'Program Files', 'NSIS')]
 
@@ -102,7 +121,12 @@ def makensis():
     makeNSIS = 'makensis'
 
     if DTUtils.hostPlatform() == 'windows':
-        rootPath = 'C:' + os.sep
+        rootDir = 'C:'
+
+        if 'MSYSTEM' in os.environ:
+            rootDir = '/c'
+
+        rootPath = rootDir + os.sep
         homeNSIS = [os.path.join(rootPath, 'Program Files (x86)', 'NSIS'),
                     os.path.join(rootPath, 'Program Files', 'NSIS')]
 

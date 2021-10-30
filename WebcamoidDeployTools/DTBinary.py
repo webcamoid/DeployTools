@@ -137,7 +137,7 @@ class BinaryTools:
             thread.join()
 
     def readExcludes(self):
-        curDir = os.path.dirname(os.path.realpath(__file__))
+        curDir = os.path.dirname(DTUtils.realPath(__file__))
         self.readExcludeList(os.path.join(curDir, 'exclude', self.targetPlatform + '.txt'))
 
     def readExcludeList(self, excludeList):

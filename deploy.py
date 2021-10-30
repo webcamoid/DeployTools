@@ -78,7 +78,7 @@ if __name__ =='__main__':
         print("Data directory does not exists", file=sys.stderr)
         exit(-1)
 
-    if not os.path.isdir(os.path.realpath(options.data_dir)):
+    if not os.path.isdir(DTUtils.realPath(options.data_dir)):
         print("The data directory is not a directory", file=sys.stderr)
         exit(-1)
 

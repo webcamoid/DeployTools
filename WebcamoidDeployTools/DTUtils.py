@@ -32,6 +32,22 @@ from . import DTBinary
 from . import DTMac
 
 
+def hostPlatform():
+    if os.name == 'posix' and sys.platform.startswith('darwin'):
+        return 'mac'
+    elif os.name == 'nt' and sys.platform.startswith('win32'):
+        return 'windows'
+    elif os.name == 'posix':
+        return 'posix'
+
+    return ''
+
+def realPath(path):
+    if hostPlatform() == 'windows':
+        return path
+
+    return os.path.realpath(path)
+
 def toBool(string):
     if string.lower() in ['true', 'yes', '1']:
         return True
@@ -75,7 +91,7 @@ def copy(src, dst='.', copyReals=False, overwrite=True, rootPath=''):
     if hostPlatform() == 'windows':
         copyReals = True
 
-    realsrc = os.path.realpath(src)
+    realsrc = realPath(src)
 
     if os.path.isfile(realsrc):
         dstdir = os.path.normpath(os.path.dirname(dst))
@@ -166,7 +182,7 @@ def copy(src, dst='.', copyReals=False, overwrite=True, rootPath=''):
                 if copyReals:
                     copy(srcdir, dstdir, copyReals, overwrite, rootPath)
                 else:
-                    realsrcdir = os.path.realpath(srcdir)
+                    realsrcdir = realPath(srcdir)
                     relsrcdir = os.path.relpath(realsrcdir,
                                                 os.path.dirname(srcdir))
 
@@ -209,7 +225,7 @@ def move(src, dst='.', moveReals=False):
                     pass
     elif os.path.isfile(src):
         if os.path.isdir(dst):
-            dst = os.path.realpath(dst)
+            dst = realPath(dst)
             dst = os.path.join(dst, os.path.basename(src))
 
         dirname = os.path.dirname(dst)
@@ -230,7 +246,7 @@ def move(src, dst='.', moveReals=False):
                 return False
 
         if moveReals and os.path.islink(src):
-            realpath = os.path.realpath(src)
+            realpath = realPath(src)
             basename = os.path.basename(realpath)
             os.symlink(os.path.join('.', basename), dst)
             move(realpath, os.path.join(dirname, basename), moveReals)
@@ -280,16 +296,6 @@ def hrSize(size):
     sizeKiB = size / (1024 ** i)
 
     return '{:.2f} {}'.format(sizeKiB, units[i - 1])
-
-def hostPlatform():
-    if os.name == 'posix' and sys.platform.startswith('darwin'):
-        return 'mac'
-    elif os.name == 'nt' and sys.platform.startswith('win32'):
-        return 'windows'
-    elif os.name == 'posix':
-        return 'posix'
-
-    return ''
 
 def readConfigs(configFile):
     try:

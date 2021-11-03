@@ -101,7 +101,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     if installScripts != '':
         installScripts = os.path.join(sourcesDir, installScripts)
 
-    uninstallScript = configs.get('MacPkg', 'uninstallScripts', fallback='').strip()
+    uninstallScript = configs.get('MacPkg', 'uninstallScript', fallback='').strip()
 
     if uninstallScript != '':
         uninstallScript = os.path.join(sourcesDir, uninstallScript)

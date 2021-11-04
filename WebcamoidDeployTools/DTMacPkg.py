@@ -35,16 +35,23 @@ def createInstaller(globs,
                     outPackage,
                     version,
                     targetDir,
+                    subFolder,
                     identifier,
                     installScripts,
                     uninstallScript,
                     verbose):
     with tempfile.TemporaryDirectory() as tmpdir:
-        DTUtils.copy(dataDir, tmpdir)
+        installDestDir = tmpdir
+
+        if subFolder != '':
+            installDestDir = os.path.join(tmpdir, subFolder)
+
+        DTUtils.copy(dataDir, installDestDir)
 
         if uninstallScript != '':
-            DTUtils.copy(uninstallScript, tmpdir)
-            os.chmod(os.path.join(tmpdir, os.path.basename(uninstallScript)),
+            DTUtils.copy(uninstallScript, installDestDir)
+            os.chmod(os.path.join(installDestDir,
+                                  os.path.basename(uninstallScript)),
                      0o755)
 
         params = [pkgbuild(),
@@ -96,6 +103,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     defaultTargetDir = '/Applications'
     targetDir = configs.get('MacPkg', 'targetDir', fallback=defaultTargetDir).strip()
+    subFolder = configs.get('MacPkg', 'subFolder', fallback='').strip()
     defaultIdentifier = 'com.{}.{}'.format(name, appName)
     identifier = configs.get('MacPkg', 'identifier', fallback=defaultIdentifier).strip()
     installScripts = configs.get('MacPkg', 'installScripts', fallback='').strip()
@@ -142,6 +150,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
                     outPackage,
                     version,
                     targetDir,
+                    subFolder,
                     identifier,
                     installScripts,
                     uninstallScript,

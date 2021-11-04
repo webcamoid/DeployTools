@@ -44,6 +44,8 @@ def createInstaller(globs,
 
         if uninstallScript != '':
             DTUtils.copy(uninstallScript, tmpdir)
+            os.chmod(os.path.join(tmpdir, os.path.basename(uninstallScript)),
+                     0o744)
 
         params = [pkgbuild(),
                   '--identifier', identifier,

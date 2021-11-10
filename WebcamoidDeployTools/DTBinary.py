@@ -198,7 +198,7 @@ class BinaryTools:
                     continue
 
                 if self.isExecutable(path):
-                    permissions = 0o744
+                    permissions = 0o755
 
                 if self.hostPlatform == 'mac':
                     os.chmod(path, permissions, follow_symlinks=False)

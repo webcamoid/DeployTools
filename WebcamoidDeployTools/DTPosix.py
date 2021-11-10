@@ -137,8 +137,8 @@ def createLauncher(globs, mainExecutable, dataDir, libDir):
 
         launcher.write('{} "$@"\n'.format(programName))
 
-    os.chmod(mainExecutable, 0o744)
-    os.chmod(launcherScript, 0o744)
+    os.chmod(mainExecutable, 0o755)
+    os.chmod(launcherScript, 0o755)
 
 def preRun(globs, configs, dataDir):
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()

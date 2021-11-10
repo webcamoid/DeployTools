@@ -232,7 +232,7 @@ def createApk(globs,
     if DTUtils.hostPlatform() == 'windows':
         gradleSript += '.bat'
 
-    os.chmod(gradleSript, 0o744)
+    os.chmod(gradleSript, 0o755)
     params = [gradleSript,
               '--no-daemon',
               '--info',

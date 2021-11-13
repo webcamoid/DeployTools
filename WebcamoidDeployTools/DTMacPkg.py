@@ -206,12 +206,15 @@ def createInstaller(globs,
                     readmeFile,
                     verbose):
     with tempfile.TemporaryDirectory() as tmpdir:
-        tmpInstallScripts = os.path.join(tmpdir, 'installScripts')
-        DTUtils.copy(installScripts, tmpInstallScripts)
+        tmpInstallScripts = ''
 
-        for root, dirs, files in os.walk(tmpInstallScripts):
-            for f in files:
-                os.chmod(os.path.join(root, f), 0o755)
+        if installScripts != '':
+            tmpInstallScripts = os.path.join(tmpdir, 'installScripts')
+            DTUtils.copy(installScripts, tmpInstallScripts)
+
+            for root, dirs, files in os.walk(tmpInstallScripts):
+                for f in files:
+                    os.chmod(os.path.join(root, f), 0o755)
 
         tmpPackagesDir = os.path.join(tmpdir, 'packages')
 

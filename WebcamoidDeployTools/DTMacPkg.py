@@ -40,6 +40,7 @@ def createPkg(globs,
               targetDir,
               subFolder,
               identifier,
+              componentPlist,
               installScripts,
               uninstallScript,
               verbose):
@@ -61,6 +62,9 @@ def createPkg(globs,
                   '--identifier', identifier,
                   '--version', version,
                   '--install-location', targetDir]
+
+        if componentPlist != '':
+            params += ['--component-plist', componentPlist]
 
         if installScripts != '':
             params += ['--scripts', installScripts]
@@ -194,6 +198,7 @@ def createInstaller(globs,
                     targetDir,
                     subFolder,
                     identifier,
+                    component,
                     resourcesDir,
                     installScripts,
                     uninstallScript,
@@ -224,6 +229,27 @@ def createInstaller(globs,
             pass
 
         appPackage = os.path.join(tmpPackagesDir, appName + '.pkg')
+        componentPlist = ''
+
+        if component != '':
+            componentPlist = os.path.join(tmpdir, 'component.plist')
+
+            with open(componentPlist, 'w') as f:
+                f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+                f.write('<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n')
+                f.write('<plist version="1.0">\n')
+                f.write('<array>\n')
+                f.write('    <dict>\n')
+                f.write('        <key>BundleIsVersionChecked</key>\n')
+                f.write('        <true/>\n')
+                f.write('        <key>BundleOverwriteAction</key>\n')
+                f.write('        <string>upgrade</string>\n')
+                f.write('        <key>RootRelativeBundlePath</key>\n')
+                f.write('        <string>{}</string>\n'.format(component))
+                f.write('    </dict>\n')
+                f.write('</array>\n')
+                f.write('</plist>\n')
+
         createPkg(globs,
                   dataDir,
                   appPackage,
@@ -231,6 +257,7 @@ def createInstaller(globs,
                   targetDir,
                   subFolder,
                   identifier,
+                  componentPlist,
                   tmpInstallScripts,
                   uninstallScript,
                   verbose)
@@ -303,6 +330,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     subFolder = configs.get('MacPkg', 'subFolder', fallback='').strip()
     defaultIdentifier = 'com.{}.{}'.format(name, appName)
     identifier = configs.get('MacPkg', 'identifier', fallback=defaultIdentifier).strip()
+    component = configs.get('MacPkg', 'component', fallback='').strip()
     description = configs.get('MacPkg', 'description', fallback='').strip()
     productTitle = configs.get('MacPkg', 'productTitle', fallback='').strip()
     resourcesDir = configs.get('MacPkg', 'resourcesDir', fallback='').strip()
@@ -370,6 +398,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
                     targetDir,
                     subFolder,
                     identifier,
+                    component,
                     resourcesDir,
                     installScripts,
                     uninstallScript,

@@ -108,12 +108,14 @@ def preRun(globs, configs, dataDir):
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     outputGstPluginsDir = configs.get('GStreamer', 'outputPluginsDir', fallback='plugins').strip()
     outputGstPluginsDir = os.path.join(dataDir, outputGstPluginsDir)
-    defaultGstPluginsDir = os.environ['GST_PLUGIN_PATH'] if 'GST_PLUGIN_PATH' in os.environ else ''
+    gstPluginsDir = configs.get('GStreamer', 'pluginsDir', fallback='').strip()
 
-    if defaultGstPluginsDir == '':
-        defaultGstPluginsDir = pkgconfVariable('gstreamer-1.0', 'pluginsdir')
+    if gstPluginsDir == '':
+        if 'GST_PLUGIN_PATH' in os.environ:
+            gstPluginsDir = os.environ['GST_PLUGIN_PATH']
+        else:
+            gstPluginsDir = pkgconfVariable('gstreamer-1.0', 'pluginsdir')
 
-    gstPluginsDir = configs.get('GStreamer', 'pluginsDir', fallback=defaultGstPluginsDir).strip()
     defaultSysLibDir = ''
 
     if targetPlatform == 'android':

@@ -150,8 +150,12 @@ def preRun(globs, configs, dataDir):
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     outputVlcPluginsDir = configs.get('Vlc', 'outputPluginsDir', fallback='plugins').strip()
     outputVlcPluginsDir = os.path.join(dataDir, outputVlcPluginsDir)
-    defaultVlcPluginsDir = os.environ['VLC_PLUGIN_PATH'] if 'VLC_PLUGIN_PATH' in os.environ else ''
-    vlcPluginsDir = configs.get('Vlc', 'pluginsDir', fallback=defaultVlcPluginsDir).strip()
+    vlcPluginsDir = configs.get('Vlc', 'pluginsDir', fallback='').strip()
+
+    if vlcPluginsDir == '':
+        if 'VLC_PLUGIN_PATH' in os.environ:
+            vlcPluginsDir = os.environ['VLC_PLUGIN_PATH']
+
     defaultSysLibDir = ''
 
     if targetPlatform == 'android':

@@ -27,6 +27,30 @@ from . import DTBinary
 from . import DTUtils
 
 
+def pkgconf():
+    pkgConfig = DTUtils.whereBin('pkg-config')
+
+    if pkgConfig == '':
+        pkgConfig = DTUtils.whereBin('pkgconf')
+
+    return pkgConfig
+
+def pkgconfVariable(package, var):
+    pkgConfig = pkgconf()
+
+    if pkgConfig == '':
+        return ''
+
+    process = subprocess.Popen([pkgConfig, package, '--variable={}'.format(var)], # nosec
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+    stdout, _ = process.communicate()
+
+    if process.returncode != 0:
+        return ''
+
+    return stdout.decode(sys.getdefaultencoding()).strip()
+
 def copyGStreamerPlugins(globs,
                          targetPlatform,
                          targetArch,
@@ -85,6 +109,10 @@ def preRun(globs, configs, dataDir):
     outputGstPluginsDir = configs.get('GStreamer', 'outputPluginsDir', fallback='plugins').strip()
     outputGstPluginsDir = os.path.join(dataDir, outputGstPluginsDir)
     defaultGstPluginsDir = os.environ['GST_PLUGIN_PATH'] if 'GST_PLUGIN_PATH' in os.environ else ''
+
+    if defaultGstPluginsDir == '':
+        defaultGstPluginsDir = pkgconfVariable('gstreamer-1.0', 'pluginsdir')
+
     gstPluginsDir = configs.get('GStreamer', 'pluginsDir', fallback=defaultGstPluginsDir).strip()
     defaultSysLibDir = ''
 

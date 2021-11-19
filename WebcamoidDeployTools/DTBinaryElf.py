@@ -47,7 +47,7 @@ def isValid(path):
 def name(binary):
     dep = os.path.basename(binary)[3:]
 
-    return dep[: dep.find('.')]
+    return dep[: dep.find('.so')]
 
 def readLdconf(ldconf='/etc/ld.so.conf'):
     if not os.path.exists(ldconf):

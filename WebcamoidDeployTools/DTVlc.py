@@ -27,21 +27,21 @@ from . import DTBinary
 from . import DTUtils
 
 
-def vlcCacheGen(targetPlatform):
-    cacheGen = DTUtils.whereBin('vlc-cache-gen')
-
-    if cacheGen != '':
-        return cacheGen
-
+def pkgconf():
     pkgConfig = DTUtils.whereBin('pkg-config')
 
     if pkgConfig == '':
         pkgConfig = DTUtils.whereBin('pkgconf')
 
+    return pkgConfig
+
+def pkgconfVariable(package, var):
+    pkgConfig = pkgconf()
+
     if pkgConfig == '':
         return ''
 
-    process = subprocess.Popen([pkgConfig, 'vlc-plugin', '--variable=pkglibdir'], # nosec
+    process = subprocess.Popen([pkgConfig, package, '--variable={}'.format(var)], # nosec
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
     stdout, _ = process.communicate()
@@ -49,7 +49,15 @@ def vlcCacheGen(targetPlatform):
     if process.returncode != 0:
         return ''
 
-    pkgLibDir = stdout.decode(sys.getdefaultencoding()).strip()
+    return stdout.decode(sys.getdefaultencoding()).strip()
+
+def vlcCacheGen(targetPlatform):
+    cacheGen = DTUtils.whereBin('vlc-cache-gen')
+
+    if cacheGen != '':
+        return cacheGen
+
+    pkgLibDir = pkgconfVariable('vlc-plugin', 'pkglibdir')
 
     if pkgLibDir == '':
         return ''

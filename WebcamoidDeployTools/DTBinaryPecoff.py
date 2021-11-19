@@ -58,7 +58,7 @@ def isValid(path):
 def name(binary):
     dep = os.path.basename(binary)
 
-    return dep[: dep.find('.')]
+    return dep[: dep.lower().find('.dll')]
 
 def init(targetPlatform, targetArch, sysLibDir):
     global EXTRA_LIBRARY_PATH
@@ -70,7 +70,7 @@ def init(targetPlatform, targetArch, sysLibDir):
 def dump(binary):
     # Characteristics flags
     IMAGE_FILE_EXECUTABLE_IMAGE = 0x2
-    
+
     dllImports = set()
 
     if not os.path.exists(binary) or not os.path.isfile(binary):

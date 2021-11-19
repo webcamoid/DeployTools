@@ -53,10 +53,10 @@ def isValid(path):
 
 def name(binary):
     dep = os.path.basename(binary)
-    i = dep.find('.')
+    i = dep.find('.dylib')
 
     if i >= 0:
-        dep = dep[: dep.find('.')]
+        dep = dep[: dep.find('.dylib')]
 
     if 'Qt' in dep and not 'Qt5' in dep:
         dep = dep.replace('Qt', 'Qt5')

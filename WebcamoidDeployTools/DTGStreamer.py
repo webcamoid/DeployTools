@@ -67,8 +67,10 @@ def copyGStreamerPlugins(globs,
                                   stripCmd)
     gstLibName = ''
 
-    if targetPlatform == 'mac' or targetPlatform == 'windows':
-        gstLibName = 'libgstreamer-1.0'
+    if targetPlatform == 'mac':
+        gstLibName = 'libgstreamer-1.0.0'
+    elif targetPlatform == 'windows':
+        gstLibName = 'libgstreamer-1.0-0'
     else:
         gstLibName = 'gstreamer-1.0'
 

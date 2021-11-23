@@ -184,7 +184,11 @@ def preRun(globs, configs, dataDir):
                                         os.path.basename(pluginScanner))
         print('    {} -> {}'.format(pluginScanner, outPluginScanner))
         DTUtils.copy(pluginScanner, outputGstPluginsDir)
-        os.chmod(outPluginScanner, 0o755)
+
+        try:
+            os.chmod(outPluginScanner, 0o755)
+        except:
+            pass
 
     print()
 

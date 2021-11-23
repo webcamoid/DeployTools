@@ -118,6 +118,21 @@ def preRun(globs, configs, dataDir):
         else:
             gstPluginsDir = pkgconfVariable('gstreamer-1.0', 'pluginsdir')
 
+    pluginScanner = configs.get('GStreamer', 'pluginScanner', fallback='').strip()
+
+    if pluginScanner == '':
+        if 'GST_PLUGIN_SCANNER' in os.environ:
+            pluginScanner = os.environ['GST_PLUGIN_SCANNER']
+        else:
+            pluginScannerDir = pkgconfVariable('gstreamer-1.0', 'pluginscannerdir')
+
+            if pluginScannerDir != '':
+                for f in os.listdir(pluginScannerDir):
+                    if f.startswith('gst-plugin-scanner'):
+                        pluginScanner = os.path.join(pluginScannerDir, f)
+
+                        break
+
     defaultSysLibDir = ''
 
     if targetPlatform == 'android':
@@ -145,8 +160,9 @@ def preRun(globs, configs, dataDir):
 
     print('GStreamer information')
     print()
-    print('GStreamer plugins directory: {}'.format(gstPluginsDir))
-    print('GStreamer plugins output directory: {}'.format(outputGstPluginsDir))
+    print('Plugins directory: {}'.format(gstPluginsDir))
+    print('Plugins output directory: {}'.format(outputGstPluginsDir))
+    print('Plugins scanner: {}'.format(pluginScanner))
     print()
     print('Copying required GStreamer plugins')
     print()
@@ -159,6 +175,18 @@ def preRun(globs, configs, dataDir):
                          gstPluginsDir,
                          sysLibDir,
                          stripCmd)
+    print()
+    print('Copying GStreamer plugins scanner')
+    print()
+
+    if pluginScanner != '':
+        outPluginScanner = os.path.join(outputGstPluginsDir,
+                                        os.path.basename(pluginScanner))
+        print('    {} -> {}'.format(pluginScanner, outPluginScanner))
+        DTUtils.copy(pluginScanner, outputGstPluginsDir)
+        os.chmod(outPluginScanner, 0o755)
+
+    print()
 
 def postRun(globs, configs, dataDir):
     pass

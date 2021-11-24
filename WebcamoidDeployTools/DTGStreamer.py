@@ -51,20 +51,14 @@ def pkgconfVariable(package, var):
 
     return stdout.decode(sys.getdefaultencoding()).strip()
 
-def copyGStreamerPlugins(globs,
-                         targetPlatform,
-                         targetArch,
-                         dataDir,
-                         outputGstPluginsDir,
-                         gstPlugins,
-                         gstPluginsDir,
-                         sysLibDir,
-                         stripCmd='strip'):
+def dependsOnGStreammer(targetPlatform,
+                        targetArch,
+                        dataDir,
+                        sysLibDir):
     solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
-                                  sysLibDir,
-                                  stripCmd)
+                                  sysLibDir)
     gstLibName = ''
 
     if targetPlatform == 'mac':
@@ -78,32 +72,40 @@ def copyGStreamerPlugins(globs,
         libName = solver.name(dep)
 
         if libName == gstLibName:
-            for root, _, files in os.walk(gstPluginsDir):
-                relpath = os.path.relpath(root, gstPluginsDir)
+            return True
 
-                if relpath != '.' \
-                    and gstPlugins != [] \
-                    and not (relpath in gstPlugins):
-                    continue
+    return False
 
-                for f in files:
-                    sysPluginPath = os.path.join(root, f)
+def copyGStreamerPlugins(globs,
+                         outputGstPluginsDir,
+                         gstPlugins,
+                         gstPluginsDir):
+    for root, _, files in os.walk(gstPluginsDir):
+        relpath = os.path.relpath(root, gstPluginsDir)
 
-                    if relpath == '.':
-                        pluginPath = os.path.join(outputGstPluginsDir, f)
-                    else:
-                        pluginPath = os.path.join(outputGstPluginsDir,
-                                                  relpath,
-                                                  f)
+        if relpath != '.' \
+            and gstPlugins != [] \
+            and not (relpath in gstPlugins):
+            continue
 
-                    if not os.path.exists(sysPluginPath):
-                        continue
+        for f in files:
+            sysPluginPath = os.path.join(root, f)
 
-                    print('    {} -> {}'.format(sysPluginPath, pluginPath))
-                    DTUtils.copy(sysPluginPath, pluginPath)
-                    globs['dependencies'].add(sysPluginPath)
+            if relpath == '.':
+                pluginPath = os.path.join(outputGstPluginsDir, f)
+            else:
+                pluginPath = os.path.join(outputGstPluginsDir,
+                                            relpath,
+                                            f)
 
-            break
+            if not os.path.exists(sysPluginPath):
+                continue
+
+            print('    {} -> {}'.format(sysPluginPath, pluginPath))
+            DTUtils.copy(sysPluginPath, pluginPath)
+            globs['dependencies'].add(sysPluginPath)
+
+    break
 
 def preRun(globs, configs, dataDir):
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
@@ -157,6 +159,10 @@ def preRun(globs, configs, dataDir):
 
     verbose = configs.get('GStreamer', 'verbose', fallback='false').strip()
     verbose = DTUtils.toBool(verbose)
+    depends = dependsOnGStreammer(targetPlatform,
+                                  targetArch,
+                                  dataDir,
+                                  sysLibDir)
 
     print('GStreamer information')
     print()
@@ -166,20 +172,17 @@ def preRun(globs, configs, dataDir):
     print()
     print('Copying required GStreamer plugins')
     print()
-    copyGStreamerPlugins(globs,
-                         targetPlatform,
-                         targetArch,
-                         dataDir,
-                         outputGstPluginsDir,
-                         gstPlugins,
-                         gstPluginsDir,
-                         sysLibDir,
-                         stripCmd)
+
+    if depends:
+        copyGStreamerPlugins(globs,
+                             outputGstPluginsDir,
+                             gstPlugins,
+                             gstPluginsDir)
     print()
     print('Copying GStreamer plugins scanner')
     print()
 
-    if pluginScanner != '':
+    if depends and pluginScanner != '':
         outPluginScanner = os.path.join(outputGstPluginsDir,
                                         os.path.basename(pluginScanner))
         print('    {} -> {}'.format(pluginScanner, outPluginScanner))

@@ -105,8 +105,6 @@ def copyGStreamerPlugins(globs,
             DTUtils.copy(sysPluginPath, pluginPath)
             globs['dependencies'].add(sysPluginPath)
 
-    break
-
 def preRun(globs, configs, dataDir):
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()

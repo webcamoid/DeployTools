@@ -20,7 +20,6 @@
 # Web-Site: http://github.com/webcamoid/DeployTools/
 
 import configparser
-import xml.etree.ElementTree as ET
 import json
 import os
 import platform

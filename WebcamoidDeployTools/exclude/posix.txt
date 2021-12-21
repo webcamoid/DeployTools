@@ -108,3 +108,6 @@
 (.*/)*libpulse-simple.so.0
 (.*/)*libjack.so.0
 (.*/)*libv4l2.so.0
+
+# KDE
+(.*/)*libKF5.*.so.[0-9]+

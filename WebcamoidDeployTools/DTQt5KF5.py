@@ -52,7 +52,11 @@ def preRun(globs, configs, dataDir):
     outputQtPluginsDir = os.path.join(dataDir, outputQtPluginsDir)
     defaultQtPluginsDir = qmakeQuery('QT_INSTALL_PLUGINS')
     qtPluginsDir = configs.get('Qt5KF5', 'qtPluginsDir', fallback=defaultQtPluginsDir).strip()
-    kf5Plugins = os.path.join(qtPluginsDir,'kf5')
+    kf5Plugins = ''
+
+    if qtPluginsDir != '':
+        kf5Plugins = os.path.join(qtPluginsDir,'kf5')
+
     outKF5Plugins = os.path.join(outputQtPluginsDir,'kf5')
 
     print('Qt information')

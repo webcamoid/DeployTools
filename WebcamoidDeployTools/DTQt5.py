@@ -443,12 +443,12 @@ def solvedepsPlugins(globs,
         'Qt5Declarative': ['qml1tooling'],
         'Qt5EglFSDeviceIntegration': ['egldeviceintegrations'],
         'Qt5Gui': ['accessible',
-                    'generic',
-                    'iconengines',
-                    'imageformats',
-                    'platforms',
-                    'platforminputcontexts',
-                    'styles'],
+                   'generic',
+                   'iconengines',
+                   'imageformats',
+                   'platforms',
+                   'platforminputcontexts',
+                   'styles'],
         'Qt5Location': ['geoservices'],
         'Qt5Multimedia': ['audio', 'mediaservice', 'playlistformats'],
         'Qt5Network': ['bearer'],
@@ -468,6 +468,7 @@ def solvedepsPlugins(globs,
     }
 
     pluginsMap.update({lib + 'd': pluginsMap[lib] for lib in pluginsMap})
+    pluginsMap.update({lib.replace('Qt5', 'Qt'): pluginsMap[lib] for lib in pluginsMap})
 
     if targetPlatform == 'android':
         pluginsMap.update({lib + '_' + targetArch: pluginsMap[lib] for lib in pluginsMap})

@@ -472,6 +472,8 @@ def solvedepsPlugins(globs,
 
     if targetPlatform == 'android':
         pluginsMap.update({lib + '_' + targetArch: pluginsMap[lib] for lib in pluginsMap})
+    elif targetPlatform == 'mac':
+        pluginsMap.update({lib + '.framework': pluginsMap[lib] for lib in pluginsMap})
 
     if not 'dependencies' in globs:
         globs['dependencies'] = set()

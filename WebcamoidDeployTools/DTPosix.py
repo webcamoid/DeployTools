@@ -31,19 +31,21 @@ from . import DTSystemPackages
 from . import DTUtils
 
 
-def fixLibRpath(solver, mutex, elf, libDir):
+def fixLibRpath(solver, mutex, elf, binDir, libDir):
     log = '\tFixing {}\n\n'.format(elf)
     elfInfo = solver.dump(elf)
     elfDir = os.path.dirname(elf)
-    rpath = os.path.join('$ORIGIN',
-                         os.path.relpath(libDir, elfDir))
+    rpath = ''
 
-    if rpath == '$ORIGIN/.':
+    if machDir.startswith(binDir):
+        rpath = os.path.join('$ORIGIN',
+                             os.path.relpath(libDir, elfDir))
+    else:
         rpath = '$ORIGIN'
 
     # Change rpath
 
-    if not rpath in elfInfo['rpath']:
+    if rpath != '' and not rpath in elfInfo['rpath']:
         log += '\t\tChanging rpaths from {} to {}\n'.format(elfInfo['rpath'], rpath)
 
         # Set our rpath
@@ -56,7 +58,7 @@ def fixLibRpath(solver, mutex, elf, libDir):
     print(log)
     mutex.release()
 
-def fixRpaths(solver, dataDir, libDir):
+def fixRpaths(solver, dataDir, binDir, libDir):
     if DTUtils.whereBin('patchelf') == '':
         print('patchelf not found')
 
@@ -64,12 +66,28 @@ def fixRpaths(solver, dataDir, libDir):
 
     mutex = threading.Lock()
     threads = []
+    elfs = []
 
-    for elf in solver.find(dataDir):
+    for f in os.listdir(binDir):
+        fpath = os.path.join(binDir, f)
+        rfpath = os.path.realpath(fpath)
+
+        if os.path.isfile(rfpath) and solver.isValid(fpath):
+            elfs.append(fpath)
+
+    for f in os.listdir(libDir):
+        fpath = os.path.join(libDir, f)
+        rfpath = os.path.realpath(fpath)
+
+        if os.path.isfile(rfpath) and solver.isValid(fpath):
+            elfs.append(fpath)
+
+    for elf in elfs:
         thread = threading.Thread(target=fixLibRpath,
                                   args=(solver,
                                         mutex,
                                         elf,
+                                        binDir,
                                         libDir,))
         threads.append(thread)
 
@@ -247,7 +265,7 @@ def preRun(globs, configs, dataDir):
 
     if runFixRpaths:
         print('Fixing rpaths\n')
-        fixRpaths(solver, dataDir, libDir)
+        fixRpaths(solver, dataDir, os.path.dirname(mainExecutable), libDir)
         print()
 
 def postRun(globs, configs, dataDir):

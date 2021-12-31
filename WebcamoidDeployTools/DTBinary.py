@@ -56,6 +56,9 @@ class BinaryTools:
     def name(self, binary):
         return self.solver.name(binary)
 
+    def isValid(self, binary):
+        return self.solver.isValid(binaryPath)
+
     def find(self, path):
         binaries = []
 

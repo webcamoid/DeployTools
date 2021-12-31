@@ -37,7 +37,7 @@ def fixLibRpath(solver, mutex, elf, libDir):
     elfDir = os.path.dirname(elf)
     rpath = os.path.join('$ORIGIN',
                          os.path.relpath(libDir, elfDir))
-    
+
     if rpath == '$ORIGIN/.':
         rpath = '$ORIGIN'
 
@@ -46,13 +46,7 @@ def fixLibRpath(solver, mutex, elf, libDir):
     if not rpath in elfInfo['rpath']:
         log += '\t\tChanging rpaths from {} to {}\n'.format(elfInfo['rpath'], rpath)
 
-        # Remove old rpaths
-        process = subprocess.Popen(['patchelf', # nosec
-                                    '--remove-rpath', elf],
-                                    stdout=subprocess.PIPE)
-        process.communicate()
-
-        # Add our rpath
+        # Set our rpath
         process = subprocess.Popen(['patchelf', # nosec
                                     '--set-rpath', rpath, elf],
                                     stdout=subprocess.PIPE)
@@ -65,9 +59,9 @@ def fixLibRpath(solver, mutex, elf, libDir):
 def fixRpaths(solver, dataDir, libDir):
     if DTUtils.whereBin('patchelf') == '':
         print('patchelf not found')
-        
+
         return
-    
+
     mutex = threading.Lock()
     threads = []
 
@@ -170,7 +164,7 @@ def writeBuildInfo(globs, buildInfoFile, sourcesDir):
             print('    ' + packge)
             f.write(packge + '\n')
 
-def createLauncher(globs, mainExecutable, dataDir, libDir):
+def createLauncher(globs, mainExecutable, dataDir, libDir, runFixRpaths):
     programName = os.path.basename(mainExecutable)
     launcherScript = os.path.join(dataDir, programName) + '.sh'
     binDir = os.path.relpath(os.path.dirname(mainExecutable), dataDir)
@@ -182,6 +176,9 @@ def createLauncher(globs, mainExecutable, dataDir, libDir):
         launcher.write('path=$(realpath "$0")\n')
         launcher.write('ROOTDIR=$(dirname "$path")\n')
         launcher.write('export PATH="${{ROOTDIR}}/{}:$PATH"\n'.format(binDir))
+
+        if not runFixRpaths:
+            launcher.write('export LD_LIBRARY_PATH="${{ROOTDIR}}/{}:$LD_LIBRARY_PATH"\n'.format(libDir))
 
         if 'environment' in globs:
             for env in globs['environment']:
@@ -222,6 +219,8 @@ def preRun(globs, configs, dataDir):
             elibs.add(lib.strip())
 
     extraLibs = list(elibs)
+    runFixRpaths = configs.get('Posix', 'fixRpaths', fallback='true').strip()
+    runFixRpaths = DTUtils.toBool(runFixRpaths)
     solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
@@ -245,8 +244,11 @@ def preRun(globs, configs, dataDir):
     print('Resetting file permissions')
     solver.resetFilePermissions(dataDir)
     print()
-    print('Fixing rpaths\n')
-    fixRpaths(solver, dataDir, libDir)
+
+    if runFixRpaths:
+        print('Fixing rpaths\n')
+        fixRpaths(solver, dataDir, libDir)
+        print()
 
 def postRun(globs, configs, dataDir):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
@@ -261,10 +263,12 @@ def postRun(globs, configs, dataDir):
     libDir = os.path.join(dataDir, libDir)
     buildInfoFile = configs.get('Package', 'buildInfoFile', fallback='build-info.txt').strip()
     buildInfoFile = os.path.join(dataDir, buildInfoFile)
+    runFixRpaths = configs.get('Posix', 'fixRpaths', fallback='true').strip()
+    runFixRpaths = DTUtils.toBool(runFixRpaths)
 
     if writeLauncher and mainExecutable != '':
         print('Writting launcher file')
-        createLauncher(globs, mainExecutable, dataDir, libDir)
+        createLauncher(globs, mainExecutable, dataDir, libDir, runFixRpaths)
 
     print('Writting build system information')
     print()

@@ -37,7 +37,7 @@ def fixLibRpath(solver, mutex, elf, binDir, libDir):
     elfDir = os.path.dirname(elf)
     rpath = ''
 
-    if machDir.startswith(binDir):
+    if elfDir.startswith(binDir):
         rpath = os.path.join('$ORIGIN',
                              os.path.relpath(libDir, elfDir))
     else:

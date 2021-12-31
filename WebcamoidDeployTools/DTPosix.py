@@ -21,12 +21,71 @@
 
 import os
 import platform
+import subprocess
+import threading
+import time
 
 from . import DTBinary
 from . import DTGit
 from . import DTSystemPackages
 from . import DTUtils
 
+
+def fixLibRpath(solver, mutex, elf, libDir):
+    log = '\tFixing {}\n\n'.format(elf)
+    elfInfo = solver.dump(elf)
+    elfDir = os.path.dirname(elf)
+    rpath = os.path.join('$ORIGIN',
+                         os.path.relpath(libDir, elfDir))
+    
+    if rpath == '$ORIGIN/.':
+        rpath = '$ORIGIN'
+
+    # Change rpath
+
+    if not rpath in elfInfo['rpath']:
+        log += '\t\tChanging rpaths from {} to {}\n'.format(elfInfo['rpath'], rpath)
+
+        # Remove old rpaths
+        process = subprocess.Popen(['patchelf', # nosec
+                                    '--remove-rpath', elf],
+                                    stdout=subprocess.PIPE)
+        process.communicate()
+
+        # Add our rpath
+        process = subprocess.Popen(['patchelf', # nosec
+                                    '--set-rpath', rpath, elf],
+                                    stdout=subprocess.PIPE)
+        process.communicate()
+
+    mutex.acquire()
+    print(log)
+    mutex.release()
+
+def fixRpaths(solver, dataDir, libDir):
+    if DTUtils.whereBin('patchelf') == '':
+        print('patchelf not found')
+        
+        return
+    
+    mutex = threading.Lock()
+    threads = []
+
+    for elf in solver.find(dataDir):
+        thread = threading.Thread(target=fixLibRpath,
+                                  args=(solver,
+                                        mutex,
+                                        elf,
+                                        libDir,))
+        threads.append(thread)
+
+        while threading.active_count() >= DTUtils.numThreads():
+            time.sleep(0.25)
+
+        thread.start()
+
+    for thread in threads:
+        thread.join()
 
 def sysInfo():
     info = ''
@@ -123,7 +182,6 @@ def createLauncher(globs, mainExecutable, dataDir, libDir):
         launcher.write('path=$(realpath "$0")\n')
         launcher.write('ROOTDIR=$(dirname "$path")\n')
         launcher.write('export PATH="${{ROOTDIR}}/{}:$PATH"\n'.format(binDir))
-        launcher.write('export LD_LIBRARY_PATH="${{ROOTDIR}}/{}:$LD_LIBRARY_PATH"\n'.format(libDir))
 
         if 'environment' in globs:
             for env in globs['environment']:
@@ -187,6 +245,8 @@ def preRun(globs, configs, dataDir):
     print('Resetting file permissions')
     solver.resetFilePermissions(dataDir)
     print()
+    print('Fixing rpaths\n')
+    fixRpaths(solver, dataDir, libDir)
 
 def postRun(globs, configs, dataDir):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()

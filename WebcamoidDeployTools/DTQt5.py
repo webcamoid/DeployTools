@@ -463,8 +463,7 @@ def solvedepsPlugins(globs,
         'Qt5WebEngine': ['qtwebengine'],
         'Qt5WebEngineCore': ['qtwebengine'],
         'Qt5WebEngineWidgets': ['qtwebengine'],
-        'Qt5WebView': ['webview'],
-        'Qt5XcbQpa': ['xcbglintegrations']
+        'Qt5WebView': ['webview']
     }
 
     pluginsMap.update({lib + 'd': pluginsMap[lib] for lib in pluginsMap})

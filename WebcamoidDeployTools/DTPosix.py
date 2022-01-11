@@ -31,17 +31,17 @@ from . import DTSystemPackages
 from . import DTUtils
 
 
-def fixLibRpath(solver, mutex, elf, binDir, libDir):
+def fixLibRpath(solver, mutex, elf, dataDir, libDir):
     log = '\tFixing {}\n\n'.format(elf)
     elfInfo = solver.dump(elf)
     elfDir = os.path.dirname(elf)
     rpath = ''
 
-    if elfDir.startswith(binDir):
+    if elfDir.startswith(os.path.join(dataDir, 'up')):
+        rpath = '$ORIGIN'
+    else:
         rpath = os.path.join('$ORIGIN',
                              os.path.relpath(libDir, elfDir))
-    else:
-        rpath = '$ORIGIN'
 
     # Change rpath
 
@@ -58,7 +58,7 @@ def fixLibRpath(solver, mutex, elf, binDir, libDir):
     print(log)
     mutex.release()
 
-def fixRpaths(solver, dataDir, binDir, libDir):
+def fixRpaths(solver, dataDir, libDir):
     if DTUtils.whereBin('patchelf') == '':
         print('patchelf not found')
 
@@ -66,28 +66,13 @@ def fixRpaths(solver, dataDir, binDir, libDir):
 
     mutex = threading.Lock()
     threads = []
-    elfs = []
 
-    for f in os.listdir(binDir):
-        fpath = os.path.join(binDir, f)
-        rfpath = os.path.realpath(fpath)
-
-        if os.path.isfile(rfpath) and solver.isValid(fpath):
-            elfs.append(fpath)
-
-    for f in os.listdir(libDir):
-        fpath = os.path.join(libDir, f)
-        rfpath = os.path.realpath(fpath)
-
-        if os.path.isfile(rfpath) and solver.isValid(fpath):
-            elfs.append(fpath)
-
-    for elf in elfs:
+    for elf in solver.find(dataDir):
         thread = threading.Thread(target=fixLibRpath,
                                   args=(solver,
                                         mutex,
                                         elf,
-                                        binDir,
+                                        dataDir,
                                         libDir,))
         threads.append(thread)
 
@@ -265,7 +250,7 @@ def preRun(globs, configs, dataDir):
 
     if runFixRpaths:
         print('Fixing rpaths\n')
-        fixRpaths(solver, dataDir, os.path.dirname(mainExecutable), libDir)
+        fixRpaths(solver, dataDir, libDir)
         print()
 
 def postRun(globs, configs, dataDir):

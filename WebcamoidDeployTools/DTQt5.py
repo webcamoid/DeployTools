@@ -205,14 +205,18 @@ def solvedepsAndroid(globs,
 
     print('Copying jar files')
     qtInstallPrefx = qmakeQuery('QT_INSTALL_PREFIX')
+    outJarsDir = os.path.join(dataDir, 'libs')
+    print()
+    print('From: ', qtInstallPrefx)
+    print('To: ', outJarsDir)
+    print()
 
     for jar in sorted(jars):
         srcPath = os.path.join(qtInstallPrefx, jar)
 
         if os.path.exists(srcPath):
-            dstPath = os.path.join(dataDir,
-                                'libs',
-                                os.path.basename(jar))
+            dstPath = os.path.join(outJarsDir,
+                                   os.path.basename(jar))
             print('    {} -> {}'.format(srcPath, dstPath))
             DTUtils.copy(srcPath, dstPath)
 

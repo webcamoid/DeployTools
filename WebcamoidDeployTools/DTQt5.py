@@ -140,7 +140,7 @@ def copyAndroidTemplates(dataDir,
         DTUtils.copy(template, dataDir, overwrite=False)
 
     properties = os.path.join(dataDir, 'gradle.properties')
-    javaDir = os.path.join(qtSourcesDir, 'android','java')
+    javaDir = os.path.join(qtSourcesDir, 'android', 'java')
 
     with open(properties, 'w') as f:
         if len(sdkBuildToolsRevision) > 0:
@@ -168,6 +168,9 @@ def solvedepsAndroid(globs,
     for f in os.listdir(libDir):
         basename = os.path.basename(f)[3:]
         basename = os.path.splitext(basename)[0]
+
+        if not basename.startswith('Qt'):
+            continue
 
         for ldir in sysLibDir:
             depFile = os.path.join(ldir,
@@ -201,17 +204,17 @@ def solvedepsAndroid(globs,
         globs['localLibs'].add(os.path.basename(lib))
 
     print('Copying jar files')
+    qtInstallPrefx = qmakeQuery('QT_INSTALL_PREFIX')
 
     for jar in sorted(jars):
-        for ldir in sysLibDir:
-            srcPath = os.path.join(ldir, jar)
+        srcPath = os.path.join(qtInstallPrefx, jar)
 
-            if os.path.exists(srcPath):
-                dstPath = os.path.join(dataDir,
-                                    'libs',
-                                    os.path.basename(jar))
-                print('    {} -> {}'.format(srcPath, dstPath))
-                DTUtils.copy(srcPath, dstPath)
+        if os.path.exists(srcPath):
+            dstPath = os.path.join(dataDir,
+                                'libs',
+                                os.path.basename(jar))
+            print('    {} -> {}'.format(srcPath, dstPath))
+            DTUtils.copy(srcPath, dstPath)
 
     manifest = os.path.join(dataDir, 'AndroidManifest.xml')
     manifestTemp = os.path.join(dataDir, 'AndroidManifestTemp.xml')

@@ -172,15 +172,20 @@ def solvedepsAndroid(globs,
         if not basename.startswith('Qt'):
             continue
 
+        print('Qt Module:', basename)
+
         for ldir in sysLibDir:
             depFile = os.path.join(ldir,
                                    basename + '-android-dependencies.xml')
+            print('Path:', depFile)
 
             if os.path.exists(depFile):
+                print('Exists')
                 tree = ET.parse(depFile)
                 root = tree.getroot()
 
                 for jar in root.iter('jar'):
+                    print('Jar file:', jar.attrib['file'])
                     jars.append(jar.attrib['file'])
 
                     if 'initClass' in jar.attrib:
@@ -207,13 +212,12 @@ def solvedepsAndroid(globs,
     qtInstallPrefx = qmakeQuery('QT_INSTALL_PREFIX')
     outJarsDir = os.path.join(dataDir, 'libs')
     print()
-    print('From: ', qtInstallPrefx)
+    print('From: ', os.path.join(qtInstallPrefx, 'jar'))
     print('To: ', outJarsDir)
     print()
 
     for jar in sorted(jars):
         srcPath = os.path.join(qtInstallPrefx, jar)
-        print('Jar:', srcPath)
 
         if os.path.exists(srcPath):
             dstPath = os.path.join(outJarsDir,

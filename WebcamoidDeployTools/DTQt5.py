@@ -213,6 +213,7 @@ def solvedepsAndroid(globs,
 
     for jar in sorted(jars):
         srcPath = os.path.join(qtInstallPrefx, jar)
+        print('Jar:', srcPath)
 
         if os.path.exists(srcPath):
             dstPath = os.path.join(outJarsDir,

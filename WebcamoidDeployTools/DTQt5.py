@@ -172,20 +172,15 @@ def solvedepsAndroid(globs,
         if not basename.startswith('Qt'):
             continue
 
-        print('Qt Module:', basename)
-
         for ldir in sysLibDir:
             depFile = os.path.join(ldir,
                                    basename + '-android-dependencies.xml')
-            print('Path:', depFile)
 
             if os.path.exists(depFile):
-                print('Exists')
                 tree = ET.parse(depFile)
                 root = tree.getroot()
 
                 for jar in root.iter('jar'):
-                    print('Jar file:', jar.attrib['file'])
                     jars.append(jar.attrib['file'])
 
                     if 'initClass' in jar.attrib:
@@ -576,9 +571,6 @@ def writeQtConf(qtConfFile,
 
 def preRun(globs, configs, dataDir):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
-    name = configs.get('Package', 'name', fallback='app').strip()
-    version = DTUtils.programVersion(configs, sourcesDir)
-    appLibName = configs.get('Android', 'appLibName', fallback=name).strip()
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
@@ -655,14 +647,6 @@ def preRun(globs, configs, dataDir):
         print('Fixing Android libs')
         fixQtLibs(globs, libDir, outputQtPluginsDir, outputAssetsDir)
         print()
-        print('Solving Android dependencies')
-        solvedepsAndroid(globs,
-                         dataDir,
-                         libDir,
-                         sysLibDir,
-                         name,
-                         appLibName,
-                         version)
         print('Copying Android build templates')
         copyAndroidTemplates(dataDir,
                              qtSourcesDir,
@@ -691,12 +675,41 @@ def preRun(globs, configs, dataDir):
     globs['environment'].add(('QT_DEBUG_PLUGINS', 1, 'Enable plugin debugging', True))
 
 def postRun(globs, configs, dataDir):
+    sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
+    name = configs.get('Package', 'name', fallback='app').strip()
+    version = DTUtils.programVersion(configs, sourcesDir)
+    appLibName = configs.get('Android', 'appLibName', fallback=name).strip()
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
+    libDir = configs.get('Package', 'libDir', fallback='').strip()
+    libDir = os.path.join(dataDir, libDir)
+    defaultSysLibDir = ''
+
+    if targetPlatform == 'android':
+        defaultSysLibDir = '/opt/android-libs/{}/lib'.format(targetArch)
+    elif targetPlatform == 'mac':
+        defaultSysLibDir = '/usr/local/lib'
+
+    sysLibDir = configs.get('System', 'libDir', fallback=defaultSysLibDir)
+    libs = set()
+
+    for lib in sysLibDir.split(','):
+        libs.add(lib.strip())
+
+    sysLibDir = list(libs)
     outputAssetsDir = configs.get('Android', 'outputAssetsDir', fallback='assets').strip()
     outputAssetsDir = os.path.join(dataDir, outputAssetsDir)
 
     if targetPlatform == 'android':
+        print('Solving Android dependencies')
+        solvedepsAndroid(globs,
+                         dataDir,
+                         libDir,
+                         sysLibDir,
+                         name,
+                         appLibName,
+                         version)
+        print()
         print('Fixing libs.xml file')
         fixLibsXml(globs, targetArch, dataDir)
         print('Creating .rcc bundle file')

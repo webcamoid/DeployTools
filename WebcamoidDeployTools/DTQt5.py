@@ -283,29 +283,44 @@ def solvedepsAndroid(globs,
     os.remove(manifest)
     shutil.move(manifestTemp, manifest)
 
-def createRccBundle(outputAssetsDir):
+def createRccBundle(outputAssetsDir, verbose):
+    outputAssetsDir = os.path.join(outputAssetsDir, 'android_rcc_bundle')
     assetsDir = os.path.abspath(os.path.join(outputAssetsDir, '..'))
     assetsFolder = os.path.relpath(outputAssetsDir, assetsDir)
     qrcFile = os.path.join(outputAssetsDir, assetsFolder + '.qrc')
 
     params = ['rcc',
+              '--verbose',
               '--project',
               '-o', qrcFile]
-    process = subprocess.Popen(params, # nosec
-                               cwd=outputAssetsDir,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
+
+    if verbose:
+        process = subprocess.Popen(params, # nosec
+                                   cwd=outputAssetsDir)
+    else:
+        process = subprocess.Popen(params, # nosec
+                                   cwd=outputAssetsDir,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+
     process.communicate()
 
     params = ['rcc',
+              '--verbose',
               '--root=/{}'.format(assetsFolder),
               '--binary',
               '-o', outputAssetsDir + '.rcc',
               qrcFile]
-    process = subprocess.Popen(params, # nosec
-                               cwd=assetsDir,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
+
+    if verbose:
+        process = subprocess.Popen(params, # nosec
+                                   cwd=assetsDir)
+    else:
+        process = subprocess.Popen(params, # nosec
+                                   cwd=assetsDir,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+
     process.communicate()
 
     shutil.rmtree(outputAssetsDir, True)
@@ -314,11 +329,13 @@ def fixQtLibs(globs, libDir, outputQtPluginsDir, outputAssetsDir):
     if not 'bundledInLib' in globs:
         globs['bundledInLib'] = set()
 
+    rccDir = os.path.abspath(os.path.join(outputQtPluginsDir, '..'))
+
     for root, dirs, files in os.walk(outputAssetsDir):
         for f in files:
             if f.endswith('.so'):
                 srcPath = os.path.join(root, f)
-                relPath = root.replace(outputAssetsDir, '')[1:]
+                relPath = os.path.relpath(root, rccDir)
                 prefix = 'lib' + relPath.replace(os.path.sep, '_') + '_'
                 lib = ''
 
@@ -681,6 +698,8 @@ def postRun(globs, configs, dataDir):
     appLibName = configs.get('Android', 'appLibName', fallback=name).strip()
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
+    verbose = configs.get('Qt5', 'verbose', fallback='false').strip()
+    verbose = DTUtils.toBool(verbose)
     libDir = configs.get('Package', 'libDir', fallback='').strip()
     libDir = os.path.join(dataDir, libDir)
     defaultSysLibDir = ''
@@ -713,5 +732,5 @@ def postRun(globs, configs, dataDir):
         print('Fixing libs.xml file')
         fixLibsXml(globs, targetArch, dataDir)
         print('Creating .rcc bundle file')
-        createRccBundle(outputAssetsDir)
+        createRccBundle(outputAssetsDir, verbose)
         print()

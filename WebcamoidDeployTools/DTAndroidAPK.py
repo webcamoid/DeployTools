@@ -22,6 +22,7 @@
 import os
 import subprocess
 
+from . import DTQt5
 from . import DTUtils
 
 
@@ -227,6 +228,7 @@ def createApk(globs,
               outPackage,
               sdkBuildToolsRevision,
               verbose):
+    DTQt5.mergeXmlLibs(os.path.join(dataDir, 'res', 'values'))
     gradleSript = os.path.join(dataDir, 'gradlew')
 
     if DTUtils.hostPlatform() == 'windows':

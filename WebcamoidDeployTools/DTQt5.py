@@ -127,7 +127,59 @@ def fixLibsXml(globs, targetArch, dataDir):
                 outFile.write(line)
 
     os.remove(libsXml)
+    libsXml = os.path.join(dataDir, 'res', 'values', 'libs-{}.xml'.format(targetArch))
     shutil.move(libsXmlTemp, libsXml)
+
+def readXmlLibs(libsXml):
+    tree = ET.parse(libsXml)
+
+    libs = {
+        'qt_sources': set([item.text for item in tree.findall("array[@name='qt_sources']/item")]),
+        'bundled_libs': set([item.text for item in tree.findall("array[@name='bundled_libs']/item")]),
+        'qt_libs': set([item.text for item in tree.findall("array[@name='qt_libs']/item")]),
+        'load_local_libs': set([item.text for item in tree.findall("array[@name='load_local_libs']/item")])
+    }
+
+    return libs
+
+def mergeXmlLibs(libsXmlDir, keep=False):
+    libs = {}
+    deleteFiles = []
+
+    for f in os.listdir(libsXmlDir):
+        xmlPath = os.path.join(libsXmlDir, f)
+
+        if os.path.isfile(xmlPath) and re.match('^libs-.+\.xml$' , f):
+            items = readXmlLibs(xmlPath)
+
+            for key in items:
+                if key in libs:
+                    libs[key].update(items[key])
+                else:
+                    libs[key] = items[key]
+
+            if not keep:
+                deleteFiles.append(xmlPath)
+
+    with open(os.path.join(libsXmlDir, 'libs.xml'), 'w') as outFile:
+        outFile.write('<?xml version=\'1.0\' encoding=\'utf-8\'?>\n')
+        outFile.write('<resources>\n')
+
+        for key in libs:
+            outFile.write('    <array name="{}">\n'.format(key))
+
+            for item in sorted(list(libs[key])):
+                outFile.write('        <item>{}</item>\n'.format(item))
+
+            outFile.write('    </array>\n')
+
+        outFile.write('</resources>\n')
+
+    for f in deleteFiles:
+        try:
+            os.remove(f)
+        except:
+            pass
 
 def copyAndroidTemplates(dataDir,
                          qtSourcesDir,

@@ -33,12 +33,13 @@ def binarycreator(targetPlatform):
     homeQt = ''
 
     if DTUtils.hostPlatform() == 'windows':
-        rootDir = 'C:'
+        for rootDir in ['C:', '/c']:
+            qtDir = os.path.join(rootDir, 'Qt')
 
-        if 'MSYSTEM' in os.environ:
-            rootDir = '/c'
+            if os.path.exists(qtDir):
+                homeQt = qtDir
 
-        homeQt = os.path.join(rootDir, 'Qt')
+                break
     elif targetPlatform == 'windows':
         if 'WINEPREFIX' in os.environ:
             homeQt = os.path.expanduser(os.path.join(os.environ['WINEPREFIX'],
@@ -48,15 +49,16 @@ def binarycreator(targetPlatform):
     else:
         homeQt = os.path.expanduser('~/Qt')
 
-    binCreator = 'binarycreator'
+    if homeQt != '':
+        binCreator = 'binarycreator'
 
-    if targetPlatform == 'windows':
-        binCreator += '.exe'
+        if targetPlatform == 'windows':
+            binCreator += '.exe'
 
-    for root, _, files in os.walk(homeQt):
-        for f in files:
-            if f.lower() == binCreator:
-                return os.path.join(root, f)
+        for root, _, files in os.walk(homeQt):
+            for f in files:
+                if f.lower() == binCreator:
+                    return os.path.join(root, f)
 
     # binarycreator offered by the system is most probably dynamically
     # linked, so it's useful for test purposes only, but not recommended

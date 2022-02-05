@@ -63,18 +63,13 @@ def nsisDataDir():
     # if 'MSYSTEM' in os.environ:
 
     if DTUtils.hostPlatform() == 'windows':
-        rootDir = 'C:'
+        for rootDir in ['C:', '/c']:
+            homeNSIS = [os.path.join(rootDir, 'Program Files (x86)', 'NSIS'),
+                        os.path.join(rootDir, 'Program Files', 'NSIS')]
 
-        if 'MSYSTEM' in os.environ:
-            rootDir = '/c'
-
-        rootPath = rootDir + os.sep
-        homeNSIS = [os.path.join(rootPath, 'Program Files (x86)', 'NSIS'),
-                    os.path.join(rootPath, 'Program Files', 'NSIS')]
-
-        for path in homeNSIS:
-            if os.path.exists(path):
-                return path
+            for path in homeNSIS:
+                if os.path.exists(path):
+                    return path
 
         makeNSISPath = DTUtils.whereBin(makeNSIS + '.exe')
 
@@ -121,20 +116,15 @@ def makensis():
     makeNSIS = 'makensis'
 
     if DTUtils.hostPlatform() == 'windows':
-        rootDir = 'C:'
+        for rootDir in ['C:', '/c']:
+            homeNSIS = [os.path.join(rootDir, 'Program Files (x86)', 'NSIS'),
+                        os.path.join(rootDir, 'Program Files', 'NSIS')]
 
-        if 'MSYSTEM' in os.environ:
-            rootDir = '/c'
+            for path in homeNSIS:
+                makeNSISPath = os.path.join(path, makeNSIS + '.exe')
 
-        rootPath = rootDir + os.sep
-        homeNSIS = [os.path.join(rootPath, 'Program Files (x86)', 'NSIS'),
-                    os.path.join(rootPath, 'Program Files', 'NSIS')]
-
-        for path in homeNSIS:
-            makeNSISPath = os.path.join(path, makeNSIS + '.exe')
-
-            if os.path.exists(makeNSISPath):
-                return makeNSISPath
+                if os.path.exists(makeNSISPath):
+                    return makeNSISPath
 
         return DTUtils.whereBin(makeNSIS + '.exe')
     else:

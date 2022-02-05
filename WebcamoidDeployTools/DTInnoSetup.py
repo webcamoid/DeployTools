@@ -61,19 +61,14 @@ def isccDataDir(isccVersion):
     isFolder = 'Inno Setup {}'.format(isccVersion)
 
     if DTUtils.hostPlatform() == 'windows':
-        rootDir = 'C:'
+        for rootDir in ['C:', '/c']:
+            homeInnoSetup = \
+                [os.path.join(rootDir, 'Program Files (x86)', isFolder),
+                 os.path.join(rootDir, 'Program Files', isFolder)]
 
-        if 'MSYSTEM' in os.environ:
-            rootDir = '/c'
-
-        rootPath = rootDir + os.sep
-        homeInnoSetup = \
-            [os.path.join(rootPath, 'Program Files (x86)', isFolder),
-             os.path.join(rootPath, 'Program Files', isFolder)]
-
-        for path in homeInnoSetup:
-            if os.path.exists(path):
-                return path
+            for path in homeInnoSetup:
+                if os.path.exists(path):
+                    return path
 
         issCompilerPath = DTUtils.whereBin(issCompiler + '.exe')
 
@@ -100,21 +95,16 @@ def iscc(isccVersion):
     isFolder = 'Inno Setup {}'.format(isccVersion)
 
     if DTUtils.hostPlatform() == 'windows':
-        rootDir = 'C:'
+        for rootDir in ['C:', '/c']:
+            homeInnoSetup = \
+                [os.path.join(rootDir, 'Program Files (x86)', isFolder),
+                 os.path.join(rootDir, 'Program Files', isFolder)]
 
-        if 'MSYSTEM' in os.environ:
-            rootDir = '/c'
+            for path in homeInnoSetup:
+                issCompilerPath = os.path.join(path, issCompiler + '.exe')
 
-        rootPath = rootDir + os.sep
-        homeInnoSetup = \
-            [os.path.join(rootPath, 'Program Files (x86)', isFolder),
-             os.path.join(rootPath, 'Program Files', isFolder)]
-
-        for path in homeInnoSetup:
-            issCompilerPath = os.path.join(path, issCompiler + '.exe')
-
-            if os.path.exists(issCompilerPath):
-                return issCompilerPath
+                if os.path.exists(issCompilerPath):
+                    return issCompilerPath
 
         return DTUtils.whereBin(issCompiler + '.exe')
     else:

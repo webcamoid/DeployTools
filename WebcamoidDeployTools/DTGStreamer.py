@@ -126,7 +126,7 @@ def preRun(globs, configs, dataDir):
         else:
             pluginScannerDir = pkgconfVariable('gstreamer-1.0', 'pluginscannerdir')
 
-            if pluginScannerDir != '':
+            if pluginScannerDir != '' and os.path.exists(pluginScannerDir):
                 for f in os.listdir(pluginScannerDir):
                     if f.startswith('gst-plugin-scanner'):
                         pluginScanner = os.path.join(pluginScannerDir, f)

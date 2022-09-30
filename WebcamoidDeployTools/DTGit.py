@@ -57,7 +57,7 @@ def branch(path):
     try:
         process = subprocess.Popen(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], # nosec
                                     stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE,
+                                    #stderr=subprocess.PIPE,
                                     cwd=path)
         stdout, _ = process.communicate()
 
@@ -72,7 +72,7 @@ def commitCount(path):
     try:
         process = subprocess.Popen(['git', 'rev-list', '--count', 'HEAD'], # nosec
                                     stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE,
+                                    #stderr=subprocess.PIPE,
                                     cwd=path)
         stdout, _ = process.communicate()
 
@@ -102,7 +102,7 @@ def commitCountSince(path, tag):
     try:
         process = subprocess.Popen(['git', 'rev-list', '--count', '{}..HEAD'.format(tag)], # nosec
                                     stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE,
+                                    #stderr=subprocess.PIPE,
                                     cwd=path)
         stdout, _ = process.communicate()
 

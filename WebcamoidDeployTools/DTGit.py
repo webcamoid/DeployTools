@@ -62,11 +62,11 @@ def branch(path):
         stdout, _ = process.communicate()
 
         if process.returncode != 0:
-            return ''
+            return 'master'
 
         return stdout.decode(sys.getdefaultencoding()).strip()
     except:
-        return ''
+        return 'master'
 
 def commitCount(path):
     try:
@@ -77,11 +77,11 @@ def commitCount(path):
         stdout, _ = process.communicate()
 
         if process.returncode != 0:
-            return ''
+            return 1
 
-        return stdout.decode(sys.getdefaultencoding()).strip()
+        return int(stdout.decode(sys.getdefaultencoding()).strip())
     except:
-        return ''
+        return 1
 
 def lastTag(path):
     try:
@@ -107,16 +107,16 @@ def commitCountSince(path, tag):
         stdout, _ = process.communicate()
 
         if process.returncode != 0:
-            return ''
+            return 1
 
-        return stdout.decode(sys.getdefaultencoding()).strip()
+        return int(stdout.decode(sys.getdefaultencoding()).strip())
     except:
-        return ''
+        return 1
 
 def commitCountSinceLastTag(path):
     tag = lastTag(path)
 
     if tag == '':
-        return '';
+        return 1;
 
     return commitCountSince(tag)

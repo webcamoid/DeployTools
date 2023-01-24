@@ -98,8 +98,8 @@ def alignPackage(package, sdkBuildToolsRevision, verbose):
         process = subprocess.Popen(params) # nosec
     else:
         process = subprocess.Popen(params, # nosec
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
 
     process.communicate()
 
@@ -228,6 +228,16 @@ def createApk(globs,
               outPackage,
               sdkBuildToolsRevision,
               verbose):
+    localProperties = os.path.join(dataDir, 'local.properties')
+
+    if not os.path.exists(localProperties):
+        with open(localProperties, 'w') as f:
+            if 'ANDROID_HOME' in os.environ:
+                f.write('sdk.dir=' + os.environ['ANDROID_HOME'] + '\n')
+
+            if 'ANDROID_NDK' in os.environ:
+                f.write('ndk.dir=' + os.environ['ANDROID_NDK'] + '\n')
+
     DTQt5.mergeXmlLibs(os.path.join(dataDir, 'res', 'values'))
     gradleSript = os.path.join(dataDir, 'gradlew')
 

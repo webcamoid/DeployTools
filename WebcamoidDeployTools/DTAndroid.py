@@ -211,6 +211,18 @@ def preRun(globs, configs, dataDir):
     print()
     print('Stripping symbols')
     solver.stripSymbols(dataDir)
+    print('Removing old build files')
+
+    try:
+        shutil.rmtree(os.path.join(dataDir, '.gradle'), True)
+    except:
+        pass
+
+    try:
+        shutil.rmtree(os.path.join(dataDir, 'build'), True)
+    except:
+        pass
+
     print('Removing unnecessary files')
     removeUnneededFiles(libDir)
     print()

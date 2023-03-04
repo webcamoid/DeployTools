@@ -118,7 +118,7 @@ class BinaryTools:
         return self.solver.guess(mainExecutable, dependency)
 
     def strip(self, binary):
-        if self.debug || self.stripBin == '':
+        if self.debug or self.stripBin == '':
             return
 
         process = subprocess.Popen([self.stripBin, binary], # nosec

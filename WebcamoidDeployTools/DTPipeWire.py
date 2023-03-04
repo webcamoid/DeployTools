@@ -30,6 +30,7 @@ from . import DTUtils
 def copyPipeWireModules(globs,
                         targetPlatform,
                         targetArch,
+                        debug,
                         dataDir,
                         outputPipeWireModulesDir,
                         pipeWireModules,
@@ -39,6 +40,7 @@ def copyPipeWireModules(globs,
     solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
+                                  debug,
                                   sysLibDir,
                                   stripCmd)
 
@@ -76,6 +78,7 @@ def copyPipeWireModules(globs,
 def copySpaPlugins(globs,
                    targetPlatform,
                    targetArch,
+                   debug,
                    dataDir,
                    outputSpaPluginsDir,
                    spaPlugins,
@@ -85,6 +88,7 @@ def copySpaPlugins(globs,
     solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
+                                  debug,
                                   sysLibDir,
                                   stripCmd)
 
@@ -122,6 +126,8 @@ def copySpaPlugins(globs,
 def preRun(globs, configs, dataDir):
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
+    debug =  configs.get('Package', 'debug', fallback='false').strip()
+    debug = DTUtils.toBool(debug)
     outputPipeWireModulesDir = configs.get('PipeWire', 'outputModulesDir', fallback='pipewire-modules').strip()
     outputPipeWireModulesDir = os.path.join(dataDir, outputPipeWireModulesDir)
     pipeWireModulesDir = configs.get('PipeWire', 'modulesDir', fallback='').strip()
@@ -173,6 +179,7 @@ def preRun(globs, configs, dataDir):
     copyPipeWireModules(globs,
                         targetPlatform,
                         targetArch,
+                        debug,
                         dataDir,
                         outputPipeWireModulesDir,
                         pipeWireModules,
@@ -190,6 +197,7 @@ def preRun(globs, configs, dataDir):
     copySpaPlugins(globs,
                    targetPlatform,
                    targetArch,
+                   debug,
                    dataDir,
                    outputSpaPluginsDir,
                    spaPlugins,

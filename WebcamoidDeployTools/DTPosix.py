@@ -201,6 +201,8 @@ def createLauncher(globs, mainExecutable, dataDir, libDir, runFixRpaths):
 def preRun(globs, configs, dataDir):
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
+    debug =  configs.get('Package', 'debug', fallback='false').strip()
+    debug = DTUtils.toBool(debug)
     mainExecutable = configs.get('Package', 'mainExecutable', fallback='').strip()
     mainExecutable = os.path.join(dataDir, mainExecutable)
     libDir = configs.get('Package', 'libDir', fallback='lib').strip()
@@ -227,6 +229,7 @@ def preRun(globs, configs, dataDir):
     solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
+                                  debug,
                                   sysLibDir,
                                   stripCmd)
 
@@ -236,6 +239,7 @@ def preRun(globs, configs, dataDir):
                           mainExecutable,
                           targetPlatform,
                           targetArch,
+                          debug,
                           dataDir,
                           libDir,
                           sysLibDir,

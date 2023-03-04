@@ -34,11 +34,13 @@ class BinaryTools:
                  hostPlatform,
                  targetPlatform,
                  targetArch,
+                 debug,
                  sysLibDir,
                  stripCmd='strip'):
         super().__init__()
         self.hostPlatform = hostPlatform
         self.targetPlatform = targetPlatform
+        self.debug = debug
         self.stripBin = DTUtils.whereBin(stripCmd)
         self.solver = None
 
@@ -116,7 +118,7 @@ class BinaryTools:
         return self.solver.guess(mainExecutable, dependency)
 
     def strip(self, binary):
-        if self.stripBin == '':
+        if self.debug || self.stripBin == '':
             return
 
         process = subprocess.Popen([self.stripBin, binary], # nosec

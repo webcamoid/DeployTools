@@ -75,6 +75,7 @@ def vlcCacheGen(targetPlatform):
 def copyVlcPlugins(globs,
                    targetPlatform,
                    targetArch,
+                   debug,
                    dataDir,
                    outputVlcPluginsDir,
                    vlcPlugins,
@@ -84,6 +85,7 @@ def copyVlcPlugins(globs,
     solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
+                                  debug,
                                   sysLibDir,
                                   stripCmd)
     vlcLibName = ''
@@ -148,6 +150,8 @@ def regenerateCache(targetPlatform, outputVlcPluginsDir, verbose):
 def preRun(globs, configs, dataDir):
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
+    debug =  configs.get('Package', 'debug', fallback='false').strip()
+    debug = DTUtils.toBool(debug)
     outputVlcPluginsDir = configs.get('Vlc', 'outputPluginsDir', fallback='plugins').strip()
     outputVlcPluginsDir = os.path.join(dataDir, outputVlcPluginsDir)
     vlcPluginsDir = configs.get('Vlc', 'pluginsDir', fallback='').strip()
@@ -191,6 +195,7 @@ def preRun(globs, configs, dataDir):
     copyVlcPlugins(globs,
                    targetPlatform,
                    targetArch,
+                   debug,
                    dataDir,
                    outputVlcPluginsDir,
                    vlcPlugins,

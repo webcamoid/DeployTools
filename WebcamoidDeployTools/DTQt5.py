@@ -508,6 +508,7 @@ def solvedepsQml(globs, sourcesQmlDirs, outputQmlDir, qtQmlDir):
 def solvedepsPlugins(globs,
                      targetPlatform,
                      targetArch,
+                     debug,
                      dataDir,
                      outputQtPluginsDir,
                      qtPluginsDir,
@@ -563,6 +564,7 @@ def solvedepsPlugins(globs,
     solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
+                                  debug,
                                   sysLibDir,
                                   stripCmd)
     plugins = []
@@ -642,6 +644,8 @@ def preRun(globs, configs, dataDir):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
+    debug =  configs.get('Package', 'debug', fallback='false').strip()
+    debug = DTUtils.toBool(debug)
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     libDir = configs.get('Package', 'libDir', fallback='').strip()
     libDir = os.path.join(dataDir, libDir)
@@ -694,6 +698,7 @@ def preRun(globs, configs, dataDir):
     solvedepsPlugins(globs,
                      targetPlatform,
                      targetArch,
+                     debug,
                      dataDir,
                      outputQtPluginsDir,
                      qtPluginsDir,

@@ -53,11 +53,13 @@ def pkgconfVariable(package, var):
 
 def dependsOnGStreammer(targetPlatform,
                         targetArch,
+                        debug,
                         dataDir,
                         sysLibDir):
     solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
+                                  debug,
                                   sysLibDir)
     gstLibName = ''
 
@@ -108,6 +110,8 @@ def copyGStreamerPlugins(globs,
 def preRun(globs, configs, dataDir):
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
+    debug =  configs.get('Package', 'debug', fallback='false').strip()
+    debug = DTUtils.toBool(debug)
     outputGstPluginsDir = configs.get('GStreamer', 'outputPluginsDir', fallback='plugins').strip()
     outputGstPluginsDir = os.path.join(dataDir, outputGstPluginsDir)
     gstPluginsDir = configs.get('GStreamer', 'pluginsDir', fallback='').strip()
@@ -158,6 +162,7 @@ def preRun(globs, configs, dataDir):
     verbose = DTUtils.toBool(verbose)
     depends = dependsOnGStreammer(targetPlatform,
                                   targetArch,
+                                  debug,
                                   dataDir,
                                   sysLibDir)
 

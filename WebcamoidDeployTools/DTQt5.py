@@ -236,7 +236,7 @@ def solvedepsAndroid(globs,
                     jars.append(jar.attrib['file'])
 
                     if 'initClass' in jar.attrib:
-                        initClasses.append(jar.attrib['initClass'])
+                        initClasses.add(jar.attrib['initClass'])
 
                 for permission in root.iter('permission'):
                     permissions.add(permission.attrib['name'])

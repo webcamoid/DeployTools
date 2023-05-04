@@ -30,6 +30,7 @@ import sys
 from . import DTGit
 from . import DTBinary
 from . import DTMac
+from . import DTUtils
 
 
 def hostPlatform():
@@ -317,6 +318,10 @@ def numThreads():
     return nthreads
 
 def programVersion(configs, sourcesDir):
+    hideCommitCount = configs.get('Git', 'hideCommitCount', fallback='false').strip()
+    hideCommitCount = DTUtils.toBool(hideCommitCount)
+    hideCommitCount = 'true' if hideCommitCount else 'false'
+
     if 'DAILY_BUILD' in os.environ:
         branch = ''
 
@@ -328,6 +333,9 @@ def programVersion(configs, sourcesDir):
             branch = os.path.basename(os.environ['GITHUB_REF'])
         else:
             branch = DTGit.branch(sourcesDir)
+
+        if hideCommitCount:
+            return 'daily-' + branch
 
         count = DTGit.commitCount(sourcesDir)
 

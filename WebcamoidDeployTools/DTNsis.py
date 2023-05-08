@@ -347,10 +347,15 @@ def createInstaller(globs,
 
             f.write('WriteRegStr SHCTX "${UNINST_KEY}" "DisplayName" "${APP_NAME}"\n')
 
+            if icon != '':
+                f.write('WriteRegStr SHCTX "${UNINST_KEY}" "DisplayIcon" "$\\"$INSTDIR\\${RUN_PROGRAM},0"\n')
+
             if multiUserInstall:
                 f.write('WriteRegStr SHCTX "${UNINST_KEY}" "UninstallString" "$\\"$INSTDIR\\uninstall.exe$\\" /$MultiUser.InstallMode"\n')
+                f.write('WriteRegStr SHCTX "${UNINST_KEY}" "QuietUninstallString" "$\\"$INSTDIR\\uninstall.exe$\\" /$MultiUser.InstallMode /S"\n')
             else:
                 f.write('WriteRegStr SHCTX "${UNINST_KEY}" "UninstallString" "$\\"$INSTDIR\\uninstall.exe$\\""\n')
+                f.write('WriteRegStr SHCTX "${UNINST_KEY}" "QuietUninstallString" "$\\"$INSTDIR\\uninstall.exe$\\" /S"\n')
 
             f.write('SectionEnd\n')
             f.write('\n')

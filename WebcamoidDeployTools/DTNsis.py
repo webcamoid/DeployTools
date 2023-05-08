@@ -347,7 +347,7 @@ def createInstaller(globs,
 
             f.write('WriteRegStr SHCTX "${UNINST_KEY}" "DisplayName" "${APP_NAME}"\n')
 
-            if icon != '':
+            if runProgram != '':
                 f.write('WriteRegStr SHCTX "${UNINST_KEY}" "DisplayIcon" "$\\"$INSTDIR\\${RUN_PROGRAM},0"\n')
 
             if multiUserInstall:

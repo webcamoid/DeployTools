@@ -222,6 +222,8 @@ def createInstaller(globs,
                 f.write('!define MULTIUSER_INSTALLMODE_COMMANDLINE\n')
                 f.write('!define MULTIUSER_MUI\n')
 
+            f.write('!define UNINST_KEY "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${APP_NAME}"\n')
+
             f.write('SetCompressor /SOLID lzma\n')
             f.write('\n')
             f.write('!include MUI2.nsh\n')
@@ -340,6 +342,16 @@ def createInstaller(globs,
             f.write('!ifmacrodef INSTALL_SCRIPT_AFTER_INSTALL\n')
             f.write('!insertmacro INSTALL_SCRIPT_AFTER_INSTALL\n')
             f.write('!endif\n')
+
+            # Add uninstall information to Add/Remove Programs
+
+            f.write('WriteRegStr SHCTX "${UNINST_KEY}" "DisplayName" "${APP_NAME}"\n')
+
+            if multiUserInstall:
+                f.write('WriteRegStr SHCTX "${UNINST_KEY}" "UninstallString" "$\\"$INSTDIR\\uninstall.exe$\\" /$MultiUser.InstallMode"\n')
+            else:
+                f.write('WriteRegStr SHCTX "${UNINST_KEY}" "UninstallString" "$\\"$INSTDIR\\uninstall.exe$\\""\n')
+
             f.write('SectionEnd\n')
             f.write('\n')
             f.write('Function .onInit\n')
@@ -402,6 +414,7 @@ def createInstaller(globs,
             f.write('RMDir /r "$SMPROGRAMS\${APP_NAME}"\n')
             f.write('Delete "$DESKTOP\${APP_NAME}.lnk"\n')
             f.write('Delete "$SMSTARTUP\${APP_NAME}.lnk"\n')
+            f.write('DeleteRegKey SHCTX "${UNINST_KEY}"\n')
             f.write('SectionEnd\n')
             f.write('\n')
             f.write('Function un.onInit\n')

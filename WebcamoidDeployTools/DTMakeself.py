@@ -46,6 +46,7 @@ def createInstaller(globs,
                     licenseFile,
                     targetDir,
                     installScript,
+                    installScriptArgs,
                     uninstallScript,
                     verbose):
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -74,6 +75,10 @@ def createInstaller(globs,
                    outPackage,
                    label,
                    startupScript]
+
+        if installScriptArgs != '':
+            params += installScriptArgs.split()
+
         process = None
 
         if verbose:
@@ -117,6 +122,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     defaultTargetDir = '/opt/{}'.format(appName)
     targetDir = configs.get('Makeself', 'targetDir', fallback=defaultTargetDir).strip()
     installScript = configs.get('Makeself', 'installScript', fallback='').strip()
+    installScriptArgs = configs.get('Makeself', 'installScriptArgs', fallback='').strip()
 
     if installScript != '':
         installScript = os.path.join(sourcesDir, installScript)
@@ -162,5 +168,6 @@ def run(globs, configs, dataDir, outputDir, mutex):
                     licenseFile,
                     targetDir,
                     installScript,
+                    installScriptArgs,
                     uninstallScript,
                     verbose)

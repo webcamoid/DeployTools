@@ -50,7 +50,6 @@ def createInstaller(globs,
                     uninstallScript,
                     verbose):
     with tempfile.TemporaryDirectory() as tmpdir:
-        licenseOutFile = os.path.basename(licenseFile)
         DTUtils.copy(dataDir, tmpdir)
         startupScript = ''
         params = [makeself(),
@@ -70,8 +69,22 @@ def createInstaller(globs,
             if DTUtils.versionCode(mkselfVersion) >= DTUtils.versionCode('2.4.2'):
                 params += ['--cleanup', './{}'.format(os.path.basename(uninstallScript))]
 
-        params += ['--license', licenseFile,
-                   tmpdir,
+        if licenseFile != '':
+            licenseOutFile = os.path.exists(tmpdir, os.path.basename(licenseFile))
+            charReplacement = {'"': '\\"',
+                               '`': '\\`'}
+
+            with open(licenseFile) as ifile:
+                with open(licenseOutFile, 'w') as ofile:
+                    for line in ifile:
+                        for c in charReplacement:
+                            line = line.replace(c, charReplacement[c])
+
+                        ofile.write(line)
+
+            params += ['--license', licenseOutFile]
+
+        params += [tmpdir,
                    outPackage,
                    label,
                    startupScript]

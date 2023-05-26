@@ -237,9 +237,6 @@ def createInstaller(globs,
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE)
 
-        process = subprocess.Popen(params, # nosec
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
         process.communicate()
 
         if not os.path.exists(outPackage):

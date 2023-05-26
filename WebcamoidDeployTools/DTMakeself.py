@@ -37,7 +37,8 @@ def createInstaller(globs,
                     licenseFile,
                     targetDir,
                     installScript,
-                    uninstallScript):
+                    uninstallScript,
+                    verbose):
     with tempfile.TemporaryDirectory() as tmpdir:
         licenseOutFile = os.path.basename(licenseFile)
         DTUtils.copy(dataDir, tmpdir)
@@ -60,9 +61,15 @@ def createInstaller(globs,
                    outPackage,
                    label,
                    startupScript]
-        process = subprocess.Popen(params, #nosec
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
+        process = None
+
+        if verbose:
+            process = subprocess.Popen(params) # nosec
+        else:
+            process = subprocess.Popen(params, # nosec
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+
         process.communicate()
 
         if not os.path.exists(outPackage):
@@ -106,6 +113,8 @@ def run(globs, configs, dataDir, outputDir, mutex):
     if uninstallScript != '':
         uninstallScript = os.path.join(sourcesDir, uninstallScript)
 
+    verbose = configs.get('QtIFW', 'verbose', fallback='false').strip()
+    verbose = DTUtils.toBool(verbose)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
     defaultHideArch = DTUtils.toBool(defaultHideArch)
     defaultHideArch = 'true' if defaultHideArch else 'false'
@@ -140,4 +149,5 @@ def run(globs, configs, dataDir, outputDir, mutex):
                     licenseFile,
                     targetDir,
                     installScript,
-                    uninstallScript)
+                    uninstallScript,
+                    verbose)

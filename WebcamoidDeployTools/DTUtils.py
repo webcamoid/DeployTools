@@ -346,6 +346,12 @@ def programVersion(configs, sourcesDir):
 def versionCode(version):
     return ''.join([n.rjust(4, '0') for n in version.split('.')])
 
+def compareVersions(version1, op, version2):
+    ver1 = versionCode(version1)
+    ver2 = versionCode(version2)
+
+    return op(ver1, v2)
+
 def solvedepsLibs(globs,
                   mainExecutable,
                   targetPlatform,

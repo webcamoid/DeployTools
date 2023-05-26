@@ -21,6 +21,7 @@
 
 import os
 import subprocess
+import sys
 import tempfile
 
 from . import DTUtils
@@ -28,6 +29,14 @@ from . import DTUtils
 
 def makeself():
     return DTUtils.whereBin('makeself')
+
+def makeselfVersion():
+    process = subprocess.Popen([makeself(), '--version'], # nosec
+                               stdout=subprocess.PIPE)
+    stdout, _ = process.communicate()
+    versionArr = stdout.strip().decode(sys.getdefaultencoding()).split()
+
+    return versionArr[2] if len(versionArr) >= 3 else '0.0.0'
 
 def createInstaller(globs,
                     mutex,
@@ -54,7 +63,11 @@ def createInstaller(globs,
 
         if uninstallScript != '' and os.path.exists(uninstallScript):
             DTUtils.copy(uninstallScript, tmpdir)
-            params += ['--cleanup', './{}'.format(os.path.basename(uninstallScript))]
+
+            mkselfVersion = makeselfVersion()
+
+            if DTUtils.versionCode(mkselfVersion) >= DTUtils.versionCode('2.4.2'):
+                params += ['--cleanup', './{}'.format(os.path.basename(uninstallScript))]
 
         params += ['--license', licenseFile,
                    tmpdir,

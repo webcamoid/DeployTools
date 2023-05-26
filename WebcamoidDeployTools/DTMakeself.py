@@ -113,7 +113,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     if uninstallScript != '':
         uninstallScript = os.path.join(sourcesDir, uninstallScript)
 
-    verbose = configs.get('QtIFW', 'verbose', fallback='false').strip()
+    verbose = configs.get('Makeself', 'verbose', fallback='false').strip()
     verbose = DTUtils.toBool(verbose)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
     defaultHideArch = DTUtils.toBool(defaultHideArch)

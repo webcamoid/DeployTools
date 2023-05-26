@@ -70,7 +70,7 @@ def createInstaller(globs,
                 params += ['--cleanup', './{}'.format(os.path.basename(uninstallScript))]
 
         if licenseFile != '':
-            licenseOutFile = os.path.exists(tmpdir, os.path.basename(licenseFile))
+            licenseOutFile = os.path.join(tmpdir, os.path.basename(licenseFile))
             charReplacement = {'"': '\\"',
                                '`': '\\`'}
 

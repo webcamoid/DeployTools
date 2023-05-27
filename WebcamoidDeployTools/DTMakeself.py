@@ -59,7 +59,7 @@ def createInstaller(globs,
         if installScript != '' and os.path.exists(installScript):
             DTUtils.copy(installScript, tmpdir)
             scriptPath = os.path.basename(installScript)
-            startupScript = './{}; rm -f {}'.format(scriptPath, scriptPath)
+            startupScript = './' + scriptPath
 
         if uninstallScript != '' and os.path.exists(uninstallScript):
             DTUtils.copy(uninstallScript, tmpdir)

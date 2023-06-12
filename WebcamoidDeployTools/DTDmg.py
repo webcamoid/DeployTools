@@ -179,12 +179,10 @@ def run(globs, configs, dataDir, outputDir, mutex):
     icon = os.path.join(sourcesDir, icon)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
     defaultHideArch = DTUtils.toBool(defaultHideArch)
-    defaultHideArch = 'true' if defaultHideArch else 'false'
     hideArch = configs.get('Dmg', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
     defaultShowTargetPlatform = configs.get('Package', 'showTargetPlatform', fallback='true').strip()
     defaultShowTargetPlatform = DTUtils.toBool(defaultShowTargetPlatform)
-    defaultShowTargetPlatform = 'true' if defaultShowTargetPlatform else 'false'
     showTargetPlatform = configs.get('Dmg', 'showTargetPlatform', fallback=defaultShowTargetPlatform).strip()
     showTargetPlatform = DTUtils.toBool(showTargetPlatform)
     outPackage = os.path.join(outputDir, packageName)

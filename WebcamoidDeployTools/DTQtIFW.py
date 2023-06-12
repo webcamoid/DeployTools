@@ -98,6 +98,7 @@ def createInstaller(globs,
                     targetPlatform,
                     name,
                     version,
+                    dailyBuild,
                     organization,
                     appName,
                     appIcon,
@@ -154,7 +155,7 @@ def createInstaller(globs,
             config.write('<Installer>\n')
             config.write('    <Name>{}</Name>\n'.format(appName))
 
-            if 'DAILY_BUILD' in os.environ:
+            if dailyBuild:
                 config.write('    <Version>0.0.0</Version>\n')
             else:
                 config.write('    <Version>{}</Version>\n'.format(version))
@@ -191,7 +192,7 @@ def createInstaller(globs,
             f.write('    <DisplayName>{}</DisplayName>\n'.format(appName))
             f.write('    <Description>{}</Description>\n'.format(description))
 
-            if 'DAILY_BUILD' in os.environ:
+            if dailyBuild:
                 f.write('    <Version>0.0.0</Version>\n')
             else:
                 f.write('    <Version>{}</Version>\n'.format(version))
@@ -204,7 +205,7 @@ def createInstaller(globs,
             f.write('    <Script>{}</Script>\n'.format(script))
             f.write('    <UpdateText>\n')
 
-            if not 'DAILY_BUILD' in os.environ:
+            if not dailyBuild:
                 f.write(readChangeLog(changeLog, appName, version))
 
             f.write('    </UpdateText>\n')
@@ -262,6 +263,8 @@ def run(globs, configs, dataDir, outputDir, mutex):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     name = configs.get('Package', 'name', fallback='app').strip()
     version = DTUtils.programVersion(configs, sourcesDir)
+    dailyBuild = configs.get('Package', 'dailyBuild', fallback='false').strip()
+    dailyBuild = DTUtils.toBool(dailyBuild)
     packageName = configs.get('QtIFW', 'name', fallback=name).strip()
     appName = configs.get('QtIFW', 'appName', fallback=name).strip()
     organization = configs.get('QtIFW', 'organization', fallback='project').strip()
@@ -293,12 +296,10 @@ def run(globs, configs, dataDir, outputDir, mutex):
     verbose = DTUtils.toBool(verbose)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
     defaultHideArch = DTUtils.toBool(defaultHideArch)
-    defaultHideArch = 'true' if defaultHideArch else 'false'
     hideArch = configs.get('QtIFW', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
     defaultShowTargetPlatform = configs.get('Package', 'showTargetPlatform', fallback='true').strip()
     defaultShowTargetPlatform = DTUtils.toBool(defaultShowTargetPlatform)
-    defaultShowTargetPlatform = 'true' if defaultShowTargetPlatform else 'false'
     showTargetPlatform = configs.get('QtIFW', 'showTargetPlatform', fallback=defaultShowTargetPlatform).strip()
     showTargetPlatform = DTUtils.toBool(showTargetPlatform)
     outPackage = os.path.join(outputDir, packageName)
@@ -329,6 +330,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
                     targetPlatform,
                     name,
                     version,
+                    dailyBuild,
                     organization,
                     appName,
                     icon,

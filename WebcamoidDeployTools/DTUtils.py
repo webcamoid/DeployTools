@@ -320,9 +320,10 @@ def numThreads():
 def programVersion(configs, sourcesDir):
     hideCommitCount = configs.get('Git', 'hideCommitCount', fallback='false').strip()
     hideCommitCount = DTUtils.toBool(hideCommitCount)
-    hideCommitCount = 'true' if hideCommitCount else 'false'
+    dailyBuild = configs.get('Package', 'dailyBuild', fallback='false').strip()
+    dailyBuild = DTUtils.toBool(dailyBuild)
 
-    if 'DAILY_BUILD' in os.environ:
+    if dailyBuild:
         branch = ''
 
         if 'TRAVIS_BRANCH' in os.environ:

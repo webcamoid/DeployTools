@@ -178,7 +178,6 @@ def run(globs, configs, dataDir, outputDir, mutex):
     icon = configs.get('Dmg', 'icon', fallback='app.icns').strip()
     icon = os.path.join(sourcesDir, icon)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
-    defaultHideArch = DTUtils.toBool(defaultHideArch)
     hideArch = configs.get('Dmg', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
     defaultShowTargetPlatform = configs.get('Package', 'showTargetPlatform', fallback='true').strip()

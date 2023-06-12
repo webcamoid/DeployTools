@@ -40,7 +40,6 @@ def run(globs, configs, dataDir, outputDir, mutex):
     pkgTargetPlatform = configs.get('CompressedTarBz2', 'pkgTargetPlatform', fallback=defaultPkgTargetPlatform).strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
-    defaultHideArch = DTUtils.toBool(defaultHideArch)
     hideArch = configs.get('CompressedTarBz2', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
     defaultShowTargetPlatform = configs.get('Package', 'showTargetPlatform', fallback='true').strip()

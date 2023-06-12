@@ -513,7 +513,6 @@ def run(globs, configs, dataDir, outputDir, mutex):
     verbose = configs.get('Nsis', 'verbose', fallback='false').strip()
     verbose = DTUtils.toBool(verbose)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
-    defaultHideArch = DTUtils.toBool(defaultHideArch)
     hideArch = configs.get('Nsis', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
     defaultShowTargetPlatform = configs.get('Package', 'showTargetPlatform', fallback='true').strip()

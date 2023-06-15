@@ -43,7 +43,6 @@ def run(globs, configs, dataDir, outputDir, mutex):
     hideArch = configs.get('CompressedZip', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
     defaultShowTargetPlatform = configs.get('Package', 'showTargetPlatform', fallback='true').strip()
-    defaultShowTargetPlatform = DTUtils.toBool(defaultShowTargetPlatform)
     showTargetPlatform = configs.get('CompressedZip', 'showTargetPlatform', fallback=defaultShowTargetPlatform).strip()
     showTargetPlatform = DTUtils.toBool(showTargetPlatform)
     outPackage = os.path.join(outputDir, packageName)

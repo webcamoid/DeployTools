@@ -349,7 +349,6 @@ def run(globs, configs, dataDir, outputDir, mutex):
     hideArch = configs.get('InnoSetup', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
     defaultShowTargetPlatform = configs.get('Package', 'showTargetPlatform', fallback='true').strip()
-    defaultShowTargetPlatform = DTUtils.toBool(defaultShowTargetPlatform)
     showTargetPlatform = configs.get('InnoSetup', 'showTargetPlatform', fallback=defaultShowTargetPlatform).strip()
     showTargetPlatform = DTUtils.toBool(showTargetPlatform)
     outPackage = os.path.join(outputDir, packageName)

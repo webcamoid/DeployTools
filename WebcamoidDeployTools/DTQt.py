@@ -182,6 +182,7 @@ def mergeXmlLibs(libsXmlDir, keep=False):
             pass
 
 def copyAndroidTemplates(dataDir,
+                         qtVersion,
                          qtSourcesDir,
                          sdkBuildToolsRevision,
                          androidCompileSdkVersion):
@@ -202,7 +203,7 @@ def copyAndroidTemplates(dataDir,
         f.write('qtMinSdkVersion={}\n'.format(androidCompileSdkVersion))
         f.write('qtTargetSdkVersion={}\n'.format(androidCompileSdkVersion))
         f.write('buildDir=build\n')
-        f.write('qt5AndroidDir={}\n'.format(javaDir))
+        f.write('qt{}AndroidDir={}\n'.format(qtVersion, javaDir))
 
 def solvedepsAndroid(globs,
                      dataDir,
@@ -510,48 +511,54 @@ def solvedepsPlugins(globs,
                      targetArch,
                      debug,
                      dataDir,
+                     qtVersion,
                      outputQtPluginsDir,
                      qtPluginsDir,
                      sysLibDir,
                      stripCmd='strip'):
     pluginsMap = {
-        'Qt53DRenderer': ['sceneparsers',
-                          'renderers',
-                          'renderplugins',
-                          'geometryloaders'],
-        'Qt53DQuickRenderer': ['renderplugins'],
-        'Qt5Declarative': ['qml1tooling'],
-        'Qt5EglFSDeviceIntegration': ['egldeviceintegrations'],
-        'Qt5GamePad': ['gamepads'],
-        'Qt5Gui': ['accessible',
-                   'generic',
-                   'iconengines',
-                   'imageformats',
-                   'platforms',
-                   'platforminputcontexts',
-                   'styles',
-                   'virtualkeyboard'],
-        'Qt5Location': ['geoservices'],
-        'Qt5Multimedia': ['audio', 'mediaservice', 'playlistformats'],
-        'Qt5Network': ['bearer', 'networkaccess', 'networkinformation', 'tls'],
-        'Qt5Positioning': ['position'],
-        'Qt5PrintSupport': ['printsupport'],
-        'Qt5QmlTooling': ['qmltooling'],
-        'Qt5Quick': ['scenegraph', 'qmltooling'],
-        'Qt5Sensors': ['sensors', 'sensorgestures'],
-        'Qt5SerialBus': ['canbus'],
-        'Qt5ShaderTools': ['renderers'],
-        'Qt5Sql': ['sqldrivers'],
-        'Qt5TextToSpeech': ['texttospeech'],
-        'Qt5WebEngine': ['qtwebengine'],
-        'Qt5WebEngineCore': ['qtwebengine'],
-        'Qt5WebEngineWidgets': ['qtwebengine'],
-        'Qt5WebView': ['webview'],
-        'Qt5Widgets': ['styles'],
+        'Qt{}3DRenderer'.format(qtVersion): ['sceneparsers',
+                                             'renderers',
+                                             'renderplugins',
+                                             'geometryloaders'],
+        'Qt{}3DQuickRenderer'.format(qtVersion): ['renderplugins'],
+        'Qt{}Declarative'.format(qtVersion): ['qml1tooling'],
+        'Qt{}EglFSDeviceIntegration'.format(qtVersion): ['egldeviceintegrations'],
+        'Qt{}GamePad'.format(qtVersion): ['gamepads'],
+        'Qt{}Gui'.format(qtVersion): ['accessible',
+                                      'generic',
+                                      'iconengines',
+                                      'imageformats',
+                                      'platforms',
+                                      'platforminputcontexts',
+                                      'styles',
+                                      'virtualkeyboard'],
+        'Qt{}Location'.format(qtVersion): ['geoservices'],
+        'Qt{}Multimedia'.format(qtVersion): ['audio',
+                                             'mediaservice',
+                                             'playlistformats'],
+        'Qt{}Network'.format(qtVersion): ['bearer',
+                                          'networkaccess',
+                                          'networkinformation',
+                                          'tls'],
+        'Qt{}Positioning'.format(qtVersion): ['position'],
+        'Qt{}PrintSupport'.format(qtVersion): ['printsupport'],
+        'Qt{}QmlTooling'.format(qtVersion): ['qmltooling'],
+        'Qt{}Quick'.format(qtVersion): ['scenegraph', 'qmltooling'],
+        'Qt{}Sensors'.format(qtVersion): ['sensors', 'sensorgestures'],
+        'Qt{}SerialBus'.format(qtVersion): ['canbus'],
+        'Qt{}ShaderTools'.format(qtVersion): ['renderers'],
+        'Qt{}Sql'.format(qtVersion): ['sqldrivers'],
+        'Qt{}TextToSpeech'.format(qtVersion): ['texttospeech'],
+        'Qt{}WebEngine'.format(qtVersion): ['qtwebengine'],
+        'Qt{}WebEngineCore'.format(qtVersion): ['qtwebengine'],
+        'Qt{}WebEngineWidgets'.format(qtVersion): ['qtwebengine'],
+        'Qt{}WebView'.format(qtVersion): ['webview'],
+        'Qt{}Widgets'.format(qtVersion): ['styles'],
     }
 
     pluginsMap.update({lib + 'd': pluginsMap[lib] for lib in pluginsMap})
-    pluginsMap.update({lib.replace('Qt5', 'Qt'): pluginsMap[lib] for lib in pluginsMap})
+    pluginsMap.update({lib.replace('Qt{}'.format(qtVersion), 'Qt'): pluginsMap[lib] for lib in pluginsMap})
 
     if targetPlatform == 'android':
         pluginsMap.update({lib + '_' + targetArch: pluginsMap[lib] for lib in pluginsMap})
@@ -648,6 +655,7 @@ def preRun(globs, configs, dataDir):
     debug = DTUtils.toBool(debug)
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     libDir = configs.get('Package', 'libDir', fallback='').strip()
+    qtVersion = configs.get('Qt', 'version', fallback='6').strip()
     libDir = os.path.join(dataDir, libDir)
     defaultSysLibDir = ''
 
@@ -663,21 +671,21 @@ def preRun(globs, configs, dataDir):
         libs.add(lib.strip())
 
     sysLibDir = list(libs)
-    sourcesQmlDirs = configs.get('Qt5', 'sourcesQmlDirs', fallback='').split(',')
+    sourcesQmlDirs = configs.get('Qt', 'sourcesQmlDirs', fallback='').split(',')
     sourcesQmlDirs = [os.path.join(sourcesDir, module.strip()) for module in sourcesQmlDirs]
-    outputQmlDir = configs.get('Qt5', 'outputQmlDir', fallback='qml').strip()
+    outputQmlDir = configs.get('Qt', 'outputQmlDir', fallback='qml').strip()
     outputQmlDir = os.path.join(dataDir, outputQmlDir)
     defaultQtQmlDir = qmakeQuery('QT_INSTALL_QML')
-    qtQmlDir = configs.get('Qt5', 'qtQmlDir', fallback=defaultQtQmlDir).strip()
-    outputQtPluginsDir = configs.get('Qt5', 'outputQtPluginsDir', fallback='plugins').strip()
+    qtQmlDir = configs.get('Qt', 'qtQmlDir', fallback=defaultQtQmlDir).strip()
+    outputQtPluginsDir = configs.get('Qt', 'outputQtPluginsDir', fallback='plugins').strip()
     outputQtPluginsDir = os.path.join(dataDir, outputQtPluginsDir)
     defaultQtPluginsDir = qmakeQuery('QT_INSTALL_PLUGINS')
-    qtPluginsDir = configs.get('Qt5', 'qtPluginsDir', fallback=defaultQtPluginsDir).strip()
+    qtPluginsDir = configs.get('Qt', 'qtPluginsDir', fallback=defaultQtPluginsDir).strip()
     outputAssetsDir = configs.get('Android', 'outputAssetsDir', fallback='assets').strip()
     outputAssetsDir = os.path.join(dataDir, outputAssetsDir)
     mainExecutable = configs.get('Package', 'mainExecutable', fallback='').strip()
     mainExecutable = os.path.join(dataDir, mainExecutable)
-    qtConfFile = configs.get('Qt5', 'qtConfFile', fallback='qt.conf').strip()
+    qtConfFile = configs.get('Qt', 'qtConfFile', fallback='qt.conf').strip()
     qtConfFile = os.path.join(dataDir, qtConfFile)
     stripCmd = configs.get('System', 'stripCmd', fallback='strip').strip()
 
@@ -700,6 +708,7 @@ def preRun(globs, configs, dataDir):
                      targetArch,
                      debug,
                      dataDir,
+                     qtVersion,
                      outputQtPluginsDir,
                      qtPluginsDir,
                      sysLibDir,
@@ -712,7 +721,7 @@ def preRun(globs, configs, dataDir):
     elif targetPlatform == 'android':
         assetsDir = configs.get('Package', 'assetsDir', fallback='assets').strip()
         assetsDir = os.path.join(dataDir, assetsDir)
-        qtSourcesDir = configs.get('Qt5', 'sourcesDir', fallback='').strip()
+        qtSourcesDir = configs.get('Qt', 'sourcesDir', fallback='').strip()
         sdkBuildToolsRevision = configs.get('System', 'sdkBuildToolsRevision', fallback='').strip()
         androidCompileSdkVersion = configs.get('System', 'androidCompileSdkVersion', fallback='').strip()
 
@@ -723,6 +732,7 @@ def preRun(globs, configs, dataDir):
         print()
         print('Copying Android build templates')
         copyAndroidTemplates(dataDir,
+                             qtVersion,
                              qtSourcesDir,
                              sdkBuildToolsRevision,
                              androidCompileSdkVersion)
@@ -755,8 +765,15 @@ def postRun(globs, configs, dataDir):
     appLibName = configs.get('Android', 'appLibName', fallback=name).strip()
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
-    verbose = configs.get('Qt5', 'verbose', fallback='false').strip()
+    verbose = configs.get('Qt', 'verbose', fallback='false').strip()
     verbose = DTUtils.toBool(verbose)
+    qtVersion = configs.get('Qt', 'version', fallback='6').strip()
+
+    try:
+        qtVersion = int(qtVersion)
+    except:
+        qtVersion = 6
+
     libDir = configs.get('Package', 'libDir', fallback='').strip()
     libDir = os.path.join(dataDir, libDir)
     defaultSysLibDir = ''

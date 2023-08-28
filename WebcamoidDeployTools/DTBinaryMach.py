@@ -58,8 +58,15 @@ def name(binary):
     if i >= 0:
         dep = dep[: dep.find('.dylib')]
 
-    if 'Qt' in dep and not 'Qt5' in dep:
-        dep = dep.replace('Qt', 'Qt5')
+    qtVersion = configs.get('Qt', 'version', fallback='6').strip()
+
+    try:
+        qtVersion = int(qtVersion)
+    except:
+        qtVersion = 6
+
+    if 'Qt' in dep and not 'Qt{}'.format(qtVersion) in dep:
+        dep = dep.replace('Qt', 'Qt{}'.format(qtVersion))
 
     return dep
 

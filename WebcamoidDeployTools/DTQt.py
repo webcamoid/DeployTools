@@ -428,10 +428,12 @@ def qmakeQuery(var=''):
 def modulePath(importLine):
     imp = importLine.strip().split()
     path = imp[1].replace('.', '/')
-    majorVersion = imp[2].split('.')[0]
 
-    if int(majorVersion) > 1:
-        path += '.{}'.format(majorVersion)
+    if len(imp) > 2:
+        majorVersion = imp[2].split('.')[0]
+
+        if majorVersion != 'as' and int(majorVersion) > 1:
+            path += '.{}'.format(majorVersion)
 
     return path
 

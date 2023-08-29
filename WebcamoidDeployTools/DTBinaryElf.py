@@ -44,7 +44,7 @@ def isValid(path):
 
     return False
 
-def name(binary):
+def name(binary, configs=None):
     dep = os.path.basename(binary)[3:]
 
     return dep[: dep.find('.so')]

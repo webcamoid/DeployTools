@@ -55,8 +55,8 @@ class BinaryTools:
         self.excludes = []
         self.readExcludes()
 
-    def name(self, binary):
-        return self.solver.name(binary)
+    def name(self, binary, configs=None):
+        return self.solver.name(binary, configs)
 
     def isValid(self, binary):
         return self.solver.isValid(binary)

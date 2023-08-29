@@ -51,18 +51,21 @@ def isValid(path):
 
     return False
 
-def name(binary):
+def name(binary, configs=None):
     dep = os.path.basename(binary)
     i = dep.find('.dylib')
 
     if i >= 0:
         dep = dep[: dep.find('.dylib')]
 
-    qtVersion = configs.get('Qt', 'version', fallback='6').strip()
+    if configs != None:
+        qtVersion = configs.get('Qt', 'version', fallback='6').strip()
 
-    try:
-        qtVersion = int(qtVersion)
-    except:
+        try:
+            qtVersion = int(qtVersion)
+        except:
+            qtVersion = 6
+    else:
         qtVersion = 6
 
     if 'Qt' in dep and not 'Qt{}'.format(qtVersion) in dep:

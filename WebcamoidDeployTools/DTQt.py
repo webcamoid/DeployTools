@@ -512,6 +512,7 @@ def solvedepsQml(globs, sourcesQmlDirs, outputQmlDir, qtQmlDir):
         solved.add(qmlFile)
 
 def solvedepsPlugins(globs,
+                     configs,
                      targetPlatform,
                      targetArch,
                      debug,
@@ -582,7 +583,7 @@ def solvedepsPlugins(globs,
     plugins = []
 
     for dep in solver.scanDependencies(dataDir):
-        libName = solver.name(dep)
+        libName = solver.name(dep, configs)
 
         if not libName in pluginsMap:
             continue
@@ -709,6 +710,7 @@ def preRun(globs, configs, dataDir):
     print('Copying required plugins')
     print()
     solvedepsPlugins(globs,
+                     configs,
                      targetPlatform,
                      targetArch,
                      debug,

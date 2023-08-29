@@ -55,7 +55,7 @@ def isValid(path):
 
     return False
 
-def name(binary):
+def name(binary, configs=None):
     dep = os.path.basename(binary)
 
     return dep[: dep.lower().find('.dll')]

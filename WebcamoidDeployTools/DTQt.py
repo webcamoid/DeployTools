@@ -432,8 +432,11 @@ def modulePath(importLine):
     if len(imp) > 2:
         majorVersion = imp[2].split('.')[0]
 
-        if majorVersion != 'as' and int(majorVersion) > 1:
-            path += '.{}'.format(majorVersion)
+        try:
+            if int(majorVersion) > 1:
+                path += '.{}'.format(majorVersion)
+        except:
+            pass
 
     return path
 

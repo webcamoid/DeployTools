@@ -185,25 +185,63 @@ def copyAndroidTemplates(dataDir,
                          qtVersion,
                          qtSourcesDir,
                          sdkBuildToolsRevision,
-                         androidCompileSdkVersion):
+                         androidCompileSdkVersion,
+                         targetArch):
     templates = [os.path.join(qtSourcesDir, '3rdparty/gradle'),
                  os.path.join(qtSourcesDir, 'android/templates')]
 
     for template in templates:
         DTUtils.copy(template, dataDir, overwrite=False)
 
+    androidNDK = ''
+
+    if 'ANDROID_NDK_ROOT' in os.environ:
+        androidNDK = os.environ['ANDROID_NDK_ROOT']
+    elif 'ANDROID_NDK' in os.environ:
+        androidNDK = os.environ['ANDROID_NDK']
+
+    ndkInfoFile = os.path.join(androidNDK, 'source.properties')
+    androidNdkVersion = ''
+
+    try:
+        with open(ndkInfoFile) as ndkf:
+            for line in ndkf:
+                if 'Pkg.Revision' in line:
+                    androidNdkVersion = line.split('=')[1].strip()
+    except:
+        pass
+
     properties = os.path.join(dataDir, 'gradle.properties')
     javaDir = os.path.join(qtSourcesDir, 'android', 'java')
 
     with open(properties, 'w') as f:
+        f.write('android.useAndroidX=true\n')
+        f.write('org.gradle.parallel=true\n')
+
         if len(sdkBuildToolsRevision) > 0:
             f.write('androidBuildToolsVersion={}\n'.format(sdkBuildToolsRevision))
 
-        f.write('androidCompileSdkVersion={}\n'.format(androidCompileSdkVersion))
+        f.write('androidCompileSdkVersion=android-{}\n'.format(androidCompileSdkVersion))
+        f.write('androidNdkVersion={}\n'.format(androidNdkVersion))
         f.write('qtMinSdkVersion={}\n'.format(androidCompileSdkVersion))
         f.write('qtTargetSdkVersion={}\n'.format(androidCompileSdkVersion))
+        f.write('qtTargetAbiList={}\n'.format(targetArch))
         f.write('buildDir=build\n')
         f.write('qt{}AndroidDir={}\n'.format(qtVersion, javaDir))
+        f.write('qtAndroidDir={}\n'.format(javaDir))
+
+    if androidCompileSdkVersion < 31:
+        buildGradle = os.path.join(dataDir, 'build.gradle')
+        lines = []
+
+        with open(buildGradle, 'r') as f:
+            for line in f:
+                if not "implementation 'androidx.core:" in line:
+                    lines.append(line)
+
+        with open(buildGradle, 'w') as f:
+            for line in lines:
+                f.write(line)
 
 def solvedepsAndroid(globs,
                      dataDir,
@@ -310,7 +348,10 @@ def solvedepsAndroid(globs,
                 for key in replace:
                     line = line.replace(key, replace[key])
 
-                outFile.write(line)
+                if not 'android.app.ministro_not_found_msg' in line \
+                   and not 'android.app.ministro_needed_msg' in line:
+                    outFile.write(line)
+
                 spaces = len(line)
                 line = line.lstrip()
                 spaces -= len(line)
@@ -732,6 +773,11 @@ def preRun(globs, configs, dataDir):
         sdkBuildToolsRevision = configs.get('System', 'sdkBuildToolsRevision', fallback='').strip()
         androidCompileSdkVersion = configs.get('System', 'androidCompileSdkVersion', fallback='').strip()
 
+        try:
+            androidCompileSdkVersion = int(androidCompileSdkVersion)
+        except:
+            androidCompileSdkVersion = 0
+
         print('Removing unused architectures')
         removeInvalidAndroidArchs(targetArch, assetsDir)
         print('Fixing Android libs')
@@ -742,7 +788,8 @@ def preRun(globs, configs, dataDir):
                              qtVersion,
                              qtSourcesDir,
                              sdkBuildToolsRevision,
-                             androidCompileSdkVersion)
+                             androidCompileSdkVersion,
+                             targetArch)
 
     if targetPlatform != 'android':
         print('Writting qt.conf file')

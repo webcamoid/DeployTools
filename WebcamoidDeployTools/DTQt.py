@@ -60,17 +60,20 @@ def fixLibsXml(globs, targetArch, dataDir):
     oldPermissions = set()
     resources = {}
 
-    for array in root:
-        if not array.attrib['name'] in resources:
-            resources[array.attrib['name']] = set()
+    for element in root:
+        if element.tag == 'array':
+            if not element.attrib['name'] in resources:
+                resources[element.attrib['name']] = set()
 
-        for item in array:
-            if item.text:
-                lib = item.text.strip()
+            for item in element:
+                if item.text:
+                    lib = item.text.strip()
 
-                if len(lib) > 0:
-                    lib = '<item>{}</item>'.format(lib)
-                    resources[array.attrib['name']].add(lib)
+                    if len(lib) > 0:
+                        lib = '<item>{}</item>'.format(lib)
+                        resources[element.attrib['name']].add(lib)
+        elif element.tag == 'string':
+            resources[element.attrib['name']] = element.text.strip() if element.text != None else ''
 
     libs = []
 
@@ -111,12 +114,41 @@ def fixLibsXml(globs, targetArch, dataDir):
         localLibs -= resources['load_local_libs']
 
     localLibs = '\n'.join(sorted(list(localLibs)))
+    staticInitClasses = ''
+
+    if 'static_init_classes' in resources:
+        staticInitClasses = resources['static_init_classes']
+
+    useLocalQtLibs = '1'
+
+    if 'use_local_qt_libs' in resources:
+        useLocalQtLibs = resources['use_local_qt_libs']
+
+        if useLocalQtLibs != '0':
+            useLocalQtLibs = '1'
+
+    bundleLocalQtLibs = '1'
+
+    if 'bundle_local_qt_libs' in resources:
+        bundleLocalQtLibs = resources['bundle_local_qt_libs']
+
+        if bundleLocalQtLibs != '0':
+            bundleLocalQtLibs = '1'
+
+    systemLibsPrefix = ''
+
+    if 'system_libs_prefix' in resources:
+        systemLibsPrefix = resources['system_libs_prefix'].strip()
 
     replace = {'<!-- %%INSERT_EXTRA_LIBS%% -->'       : '',
                '<!-- %%INSERT_QT_LIBS%% -->'          : qtLibs,
                '<!-- %%INSERT_BUNDLED_IN_LIB%% -->'   : bundledInLib,
                '<!-- %%INSERT_BUNDLED_IN_ASSETS%% -->': bundledInAssets,
-               '<!-- %%INSERT_LOCAL_LIBS%% -->'       : localLibs}
+               '<!-- %%INSERT_LOCAL_LIBS%% -->'       : localLibs,
+               '<!-- %%INSERT_INIT_CLASSES%% -->'     : staticInitClasses,
+               '<!-- %%USE_LOCAL_QT_LIBS%% -->'       : useLocalQtLibs,
+               '<!-- %%BUNDLE_LOCAL_QT_LIBS%% -->'    : bundleLocalQtLibs,
+               '<!-- %%SYSTEM_LIBS_PREFIX%% -->'      : systemLibsPrefix}
 
     with open(libsXml) as inFile:
         with open(libsXmlTemp, 'w') as outFile:
@@ -137,7 +169,11 @@ def readXmlLibs(libsXml):
         'qt_sources': set([item.text for item in tree.findall("array[@name='qt_sources']/item")]),
         'bundled_libs': set([item.text for item in tree.findall("array[@name='bundled_libs']/item")]),
         'qt_libs': set([item.text for item in tree.findall("array[@name='qt_libs']/item")]),
-        'load_local_libs': set([item.text for item in tree.findall("array[@name='load_local_libs']/item")])
+        'load_local_libs': set([item.text for item in tree.findall("array[@name='load_local_libs']/item")]),
+        'static_init_classes': set([item.text for item in tree.findall("string[@name='static_init_classes']")]),
+        'use_local_qt_libs': set([item.text for item in tree.findall("string[@name='use_local_qt_libs']")]),
+        'bundle_local_qt_libs': set([item.text for item in tree.findall("string[@name='bundle_local_qt_libs']")]),
+        'system_libs_prefix': set([item.text for item in tree.findall("string[@name='system_libs_prefix']")])
     }
 
     return libs
@@ -161,17 +197,32 @@ def mergeXmlLibs(libsXmlDir, keep=False):
             if not keep:
                 deleteFiles.append(xmlPath)
 
+    strings = ['static_init_classes',
+               'use_local_qt_libs',
+               'bundle_local_qt_libs',
+               'system_libs_prefix']
+
     with open(os.path.join(libsXmlDir, 'libs.xml'), 'w') as outFile:
         outFile.write('<?xml version=\'1.0\' encoding=\'utf-8\'?>\n')
         outFile.write('<resources>\n')
 
         for key in libs:
-            outFile.write('    <array name="{}">\n'.format(key))
+            if key in strings:
+                value = libs[key]
 
-            for item in sorted(list(libs[key])):
-                outFile.write('        <item>{}</item>\n'.format(item))
+                if len(value) > 0:
+                    value = list(value)[0] if list(value)[0] != None else ''
+                else:
+                    value = ''
 
-            outFile.write('    </array>\n')
+                outFile.write('    <string name="{}">{}</string>\n'.format(key, value))
+            else:
+                outFile.write('    <array name="{}">\n'.format(key))
+
+                for item in sorted(list(libs[key])):
+                    outFile.write('        <item>{}</item>\n'.format(item))
+
+                outFile.write('    </array>\n')
 
         outFile.write('</resources>\n')
 
@@ -249,7 +300,8 @@ def solvedepsAndroid(globs,
                      sysLibDir,
                      appName,
                      appLibName,
-                     version):
+                     version,
+                     androidCompileSdkVersion):
     jars = []
     permissions = set()
     features = set()
@@ -376,6 +428,20 @@ def solvedepsAndroid(globs,
 
     os.remove(manifest)
     shutil.move(manifestTemp, manifest)
+
+    if androidCompileSdkVersion >= 30:
+        tree = ET.parse(manifest)
+        ET.register_namespace('android', "http://schemas.android.com/apk/res/android")
+        root = tree.getroot()
+
+        application = root.find('application')
+
+        if application != None:
+            application.set('requestLegacyExternalStorage', 'true')
+            application.set('allowNativeHeapPointerTagging', 'false')
+
+            with open('person.xml', 'wb') as f:
+                tree.write(manifest)
 
 def createRccBundle(outputAssetsDir, verbose):
     outputAssetsDir = os.path.join(outputAssetsDir, 'android_rcc_bundle')
@@ -848,6 +914,13 @@ def postRun(globs, configs, dataDir):
     outputAssetsDir = os.path.join(dataDir, outputAssetsDir)
 
     if targetPlatform == 'android':
+        androidCompileSdkVersion = configs.get('System', 'androidCompileSdkVersion', fallback='').strip()
+
+        try:
+            androidCompileSdkVersion = int(androidCompileSdkVersion)
+        except:
+            androidCompileSdkVersion = 0
+
         print('Solving Android dependencies')
         solvedepsAndroid(globs,
                          dataDir,
@@ -855,7 +928,8 @@ def postRun(globs, configs, dataDir):
                          sysLibDir,
                          name,
                          appLibName,
-                         version)
+                         version,
+                         androidCompileSdkVersion)
         print()
         print('Fixing libs.xml file')
         fixLibsXml(globs, targetArch, dataDir)

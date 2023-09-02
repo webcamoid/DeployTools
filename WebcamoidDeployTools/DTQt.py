@@ -627,6 +627,7 @@ def solvedepsPlugins(globs,
                      qtVersion,
                      outputQtPluginsDir,
                      qtPluginsDir,
+                     libDir,
                      sysLibDir,
                      stripCmd='strip'):
     pluginsMap = {
@@ -649,6 +650,7 @@ def solvedepsPlugins(globs,
         'Qt{}Location'.format(qtVersion): ['geoservices'],
         'Qt{}Multimedia'.format(qtVersion): ['audio',
                                              'mediaservice',
+                                             'multimedia',
                                              'playlistformats'],
         'Qt{}Network'.format(qtVersion): ['bearer',
                                           'networkaccess',
@@ -694,6 +696,21 @@ def solvedepsPlugins(globs,
 
         if not libName in pluginsMap:
             continue
+
+        # QtMultimediaQuick seems to be a dynamically loaded library so copy it
+        # to the libary directory.
+        if re.match('.*Qt[0-9]*Multimedia' , libName) \
+            and not 'MultimediaQuick' in libName:
+                pluginPath = os.path.join(outputQtPluginsDir, plugin)
+
+                if os.path.exists(dep):
+                    multimediaQuickLibName = \
+                        libName.replace('Multimedia', 'MultimediaQuick')
+                    multimediaQuickLib = \
+                        dep.replace(libName, multimediaQuickLibName)
+
+                    print('    {} -> {}'.format(multimediaQuickLib, libDir))
+                    DTUtils.copy(multimediaQuickLib, libDir)
 
         for plugin in pluginsMap[libName]:
             if not plugin in plugins:
@@ -825,6 +842,7 @@ def preRun(globs, configs, dataDir):
                      qtVersion,
                      outputQtPluginsDir,
                      qtPluginsDir,
+                     libDir,
                      sysLibDir,
                      stripCmd)
     print()

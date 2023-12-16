@@ -43,7 +43,11 @@ def sysInfo():
 
     return info
 
-def writeBuildInfo(globs, buildInfoFile, sourcesDir, androidCompileSdkVersion):
+def writeBuildInfo(globs,
+                   buildInfoFile,
+                   sourcesDir,
+                   minSdkVersion,
+                   targetSdkVersion):
     outputDir = os.path.dirname(buildInfoFile)
 
     if not os.path.exists(outputDir):
@@ -115,8 +119,12 @@ def writeBuildInfo(globs, buildInfoFile, sourcesDir, androidCompileSdkVersion):
         sdkInfoFile = os.path.join(androidSDK, 'tools', 'source.properties')
         ndkInfoFile = os.path.join(androidNDK, 'source.properties')
 
-        print('    Android Platform: {}'.format(androidCompileSdkVersion))
-        f.write('Android Platform: {}\n'.format(androidCompileSdkVersion))
+        print('    Android Platform: {}'.format(minSdkVersion))
+        f.write('Android Platform: {}\n'.format(minSdkVersion))
+        print('    Minimum SDK version: {}'.format(minSdkVersion))
+        f.write('Minimum SDK version: {}\n'.format(minSdkVersion))
+        print('    Target SDK version: {}'.format(targetSdkVersion))
+        f.write('Target SDK version: {}\n'.format(targetSdkVersion))
         print('    SDK Info: \n')
         f.write('SDK Info: \n\n')
 
@@ -235,8 +243,13 @@ def postRun(globs, configs, dataDir):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     buildInfoFile = configs.get('Package', 'buildInfoFile', fallback='build-info.txt').strip()
     buildInfoFile = os.path.join(dataDir, buildInfoFile)
-    androidCompileSdkVersion = configs.get('System', 'androidCompileSdkVersion', fallback='24').strip()
+    minSdkVersion = configs.get('Android', 'minSdkVersion', fallback='24').strip()
+    targetSdkVersion = configs.get('Android', 'targetSdkVersion', fallback='24').strip()
 
     print('Writting build system information')
     print()
-    writeBuildInfo(globs, buildInfoFile, sourcesDir, androidCompileSdkVersion)
+    writeBuildInfo(globs,
+                   buildInfoFile,
+                   sourcesDir,
+                   minSdkVersion,
+                   targetSdkVersion)

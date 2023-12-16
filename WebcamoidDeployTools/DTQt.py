@@ -236,7 +236,8 @@ def copyAndroidTemplates(dataDir,
                          qtVersion,
                          qtSourcesDir,
                          sdkBuildToolsRevision,
-                         androidCompileSdkVersion,
+                         minSdkVersion,
+                         targetSdkVersion,
                          targetArch):
     templates = [os.path.join(qtSourcesDir, '3rdparty/gradle'),
                  os.path.join(qtSourcesDir, 'android/templates')]
@@ -272,16 +273,16 @@ def copyAndroidTemplates(dataDir,
         if len(sdkBuildToolsRevision) > 0:
             f.write('androidBuildToolsVersion={}\n'.format(sdkBuildToolsRevision))
 
-        f.write('androidCompileSdkVersion=android-{}\n'.format(androidCompileSdkVersion))
+        f.write('minSdkVersion=android-{}\n'.format(minSdkVersion))
         f.write('androidNdkVersion={}\n'.format(androidNdkVersion))
-        f.write('qtMinSdkVersion={}\n'.format(androidCompileSdkVersion))
-        f.write('qtTargetSdkVersion={}\n'.format(androidCompileSdkVersion))
+        f.write('qtMinSdkVersion={}\n'.format(minSdkVersion))
+        f.write('qtTargetSdkVersion={}\n'.format(targetSdkVersion))
         f.write('qtTargetAbiList={}\n'.format(targetArch))
         f.write('buildDir=build\n')
         f.write('qt{}AndroidDir={}\n'.format(qtVersion, javaDir))
         f.write('qtAndroidDir={}\n'.format(javaDir))
 
-    if androidCompileSdkVersion < 31:
+    if minSdkVersion < 31:
         buildGradle = os.path.join(dataDir, 'build.gradle')
         lines = []
 
@@ -301,7 +302,8 @@ def solvedepsAndroid(globs,
                      appName,
                      appLibName,
                      version,
-                     androidCompileSdkVersion):
+                     minSdkVersion,
+                     targetSdkVersion):
     jars = []
     permissions = set()
     features = set()
@@ -429,7 +431,7 @@ def solvedepsAndroid(globs,
     os.remove(manifest)
     shutil.move(manifestTemp, manifest)
 
-    if androidCompileSdkVersion >= 30:
+    if minSdkVersion >= 30:
         tree = ET.parse(manifest)
         ET.register_namespace('android', "http://schemas.android.com/apk/res/android")
         root = tree.getroot()
@@ -855,12 +857,19 @@ def preRun(globs, configs, dataDir):
         assetsDir = os.path.join(dataDir, assetsDir)
         qtSourcesDir = configs.get('Qt', 'sourcesDir', fallback='').strip()
         sdkBuildToolsRevision = configs.get('System', 'sdkBuildToolsRevision', fallback='').strip()
-        androidCompileSdkVersion = configs.get('System', 'androidCompileSdkVersion', fallback='').strip()
+        minSdkVersion = configs.get('Android', 'minSdkVersion', fallback='24').strip()
 
         try:
-            androidCompileSdkVersion = int(androidCompileSdkVersion)
+            minSdkVersion = int(minSdkVersion)
         except:
-            androidCompileSdkVersion = 0
+            minSdkVersion = 0
+
+        targetSdkVersion = configs.get('Android', 'targetSdkVersion', fallback='24').strip()
+
+        try:
+            targetSdkVersion = int(targetSdkVersion)
+        except:
+            targetSdkVersion = 0
 
         print('Removing unused architectures')
         removeInvalidAndroidArchs(targetArch, assetsDir)
@@ -872,7 +881,9 @@ def preRun(globs, configs, dataDir):
                              qtVersion,
                              qtSourcesDir,
                              sdkBuildToolsRevision,
-                             androidCompileSdkVersion,
+                             minSdkVersion,
+                             targetSdkVersion,
+                             targetSdkVersion,
                              targetArch)
 
     if targetPlatform != 'android':
@@ -932,12 +943,19 @@ def postRun(globs, configs, dataDir):
     outputAssetsDir = os.path.join(dataDir, outputAssetsDir)
 
     if targetPlatform == 'android':
-        androidCompileSdkVersion = configs.get('System', 'androidCompileSdkVersion', fallback='').strip()
+        minSdkVersion = configs.get('Android', 'minSdkVersion', fallback='24').strip()
 
         try:
-            androidCompileSdkVersion = int(androidCompileSdkVersion)
+            minSdkVersion = int(minSdkVersion)
         except:
-            androidCompileSdkVersion = 0
+            minSdkVersion = 0
+
+        targetSdkVersion = configs.get('Android', 'targetSdkVersion', fallback='24').strip()
+
+        try:
+            targetSdkVersion = int(targetSdkVersion)
+        except:
+            targetSdkVersion = 0
 
         print('Solving Android dependencies')
         solvedepsAndroid(globs,
@@ -947,7 +965,8 @@ def postRun(globs, configs, dataDir):
                          name,
                          appLibName,
                          version,
-                         androidCompileSdkVersion)
+                         minSdkVersion,
+                         targetSdkVersion)
         print()
         print('Fixing libs.xml file')
         fixLibsXml(globs, targetArch, dataDir)

@@ -183,6 +183,7 @@ def preRun(globs, configs, dataDir):
     mainExecutable = os.path.join(dataDir, mainExecutable)
     libDir = configs.get('Package', 'libDir', fallback='').strip()
     libDir = os.path.join(dataDir, libDir)
+    buildType = configs.get('Package', 'buildType', fallback='Debug').strip()
     defaultSysLibDir = '/opt/android-libs/{}/lib'.format(targetArch)
     sysLibDir = configs.get('System', 'libDir', fallback=defaultSysLibDir)
     stripCmd = configs.get('System', 'stripCmd', fallback='strip').strip()
@@ -221,8 +222,11 @@ def preRun(globs, configs, dataDir):
                           extraLibs,
                           stripCmd)
     print()
-    print('Stripping symbols')
-    solver.stripSymbols(dataDir)
+
+    if buildType == 'Release' or buildType == 'MinSizeRel':
+        print('Stripping symbols')
+        solver.stripSymbols(dataDir)
+
     print('Removing old build files')
 
     try:

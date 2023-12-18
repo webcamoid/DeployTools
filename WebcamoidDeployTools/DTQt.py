@@ -238,7 +238,7 @@ def copyAndroidTemplates(dataDir,
                          sdkBuildToolsRevision,
                          minSdkVersion,
                          targetSdkVersion,
-                         targetArch):
+                         ndkABIFilters):
     templates = [os.path.join(qtSourcesDir, '3rdparty/gradle'),
                  os.path.join(qtSourcesDir, 'android/templates')]
 
@@ -273,11 +273,12 @@ def copyAndroidTemplates(dataDir,
         if len(sdkBuildToolsRevision) > 0:
             f.write('androidBuildToolsVersion={}\n'.format(sdkBuildToolsRevision))
 
+        f.write('androidCompileSdkVersion=android-{}\n'.format(minSdkVersion))
         f.write('minSdkVersion=android-{}\n'.format(minSdkVersion))
         f.write('androidNdkVersion={}\n'.format(androidNdkVersion))
         f.write('qtMinSdkVersion={}\n'.format(minSdkVersion))
         f.write('qtTargetSdkVersion={}\n'.format(targetSdkVersion))
-        f.write('qtTargetAbiList={}\n'.format(targetArch))
+        f.write('qtTargetAbiList={}\n'.format(ndkABIFilters))
         f.write('buildDir=build\n')
         f.write('qt{}AndroidDir={}\n'.format(qtVersion, javaDir))
         f.write('qtAndroidDir={}\n'.format(javaDir))
@@ -820,6 +821,10 @@ def preRun(globs, configs, dataDir):
     qtConfFile = configs.get('Qt', 'qtConfFile', fallback='qt.conf').strip()
     qtConfFile = os.path.join(dataDir, qtConfFile)
     stripCmd = configs.get('System', 'stripCmd', fallback='strip').strip()
+    ndkABIFilters = configs.get('Android', 'ndkABIFilters', fallback=targetArch).strip()
+
+    if len(ndkABIFilters) < 1:
+        ndkABIFilters = targetArch
 
     print('Qt information')
     print()
@@ -883,8 +888,7 @@ def preRun(globs, configs, dataDir):
                              sdkBuildToolsRevision,
                              minSdkVersion,
                              targetSdkVersion,
-                             targetSdkVersion,
-                             targetArch)
+                             ndkABIFilters)
 
     if targetPlatform != 'android':
         print('Writting qt.conf file')

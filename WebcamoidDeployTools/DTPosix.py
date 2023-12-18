@@ -207,6 +207,7 @@ def preRun(globs, configs, dataDir):
     mainExecutable = os.path.join(dataDir, mainExecutable)
     libDir = configs.get('Package', 'libDir', fallback='lib').strip()
     libDir = os.path.join(dataDir, libDir)
+    buildType = configs.get('Package', 'buildType', fallback='Debug').strip()
     sysLibDir = configs.get('System', 'libDir', fallback='')
     stripCmd = configs.get('System', 'stripCmd', fallback='strip').strip()
     libs = set()
@@ -246,8 +247,11 @@ def preRun(globs, configs, dataDir):
                           extraLibs,
                           stripCmd)
     print()
-    print('Stripping symbols')
-    solver.stripSymbols(dataDir)
+
+    if buildType == 'Release' or buildType == 'MinSizeRel':
+        print('Stripping symbols')
+        solver.stripSymbols(dataDir)
+
     print('Resetting file permissions')
     solver.resetFilePermissions(dataDir)
     print()

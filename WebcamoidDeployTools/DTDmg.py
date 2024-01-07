@@ -122,8 +122,11 @@ def createDmg(globs,
 
         appsShortcut = os.path.join(volumePath, 'Applications')
 
-        if not os.path.exists(appsShortcut):
-            os.symlink('/Applications', appsShortcut)
+        try:
+            if not os.path.exists(appsShortcut):
+                os.symlink('/Applications', appsShortcut)
+        except:
+            pass
 
         os.sync()
 

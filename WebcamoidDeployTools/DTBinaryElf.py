@@ -115,7 +115,7 @@ def init(targetPlatform, targetArch, sysLibDir):
                                   'sysroot',
                                   'usr',
                                   'lib',
-                                  arch[1] + '-linux-android')]
+                                  arch[2])]
     else:
         LIBS_SEARCH_PATHS = readLdconf() \
                           + ['/usr/lib',

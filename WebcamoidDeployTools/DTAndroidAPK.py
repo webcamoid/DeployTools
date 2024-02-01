@@ -286,20 +286,37 @@ def platforms():
 
 def isAvailable(configs):
     sdkBuildToolsRevision = configs.get('System', 'sdkBuildToolsRevision', fallback='30.0.3').strip()
+    verbose = configs.get('AndroidAPK', 'verbose', fallback='false').strip()
+    verbose = DTUtils.toBool(verbose)
 
     if len(DTUtils.whereBin('gradle')) < 1:
+        if verbose:
+            print('gradle not found')
+
         return False
 
     if len(keytool()) < 1:
+        if verbose:
+            print('keytool not found')
+
         return False
 
     if len(jarsigner()) < 1:
+        if verbose:
+            print('jarsigner not found')
+
         return False
 
     if len(apksigner(sdkBuildToolsRevision)) < 1:
+        if verbose:
+            print('apksigner not found')
+
         return False
 
     if len(zipalign(sdkBuildToolsRevision)) < 1:
+        if verbose:
+            print('zipalign not found')
+
         return False
 
     return True

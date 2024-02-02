@@ -22,6 +22,7 @@
 import os
 import subprocess
 
+from . import DTAndroid
 from . import DTQt
 from . import DTUtils
 
@@ -285,7 +286,7 @@ def platforms():
     return ['android']
 
 def isAvailable(configs):
-    sdkBuildToolsRevision = configs.get('System', 'sdkBuildToolsRevision', fallback='30.0.3').strip()
+    sdkBuildToolsRevision = DTAndroid.buildToolsVersion(configs)
     verbose = configs.get('AndroidAPK', 'verbose', fallback='false').strip()
     verbose = DTUtils.toBool(verbose)
 
@@ -325,7 +326,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     name = configs.get('Package', 'name', fallback='app').strip()
     version = DTUtils.programVersion(configs, sourcesDir)
-    sdkBuildToolsRevision = configs.get('System', 'sdkBuildToolsRevision', fallback='30.0.3').strip()
+    sdkBuildToolsRevision = DTAndroid.buildToolsVersion(configs)
     packageName = configs.get('AndroidAPK', 'name', fallback=name).strip()
     defaultPkgTargetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     pkgTargetPlatform = configs.get('AndroidAPK', 'pkgTargetPlatform', fallback=defaultPkgTargetPlatform).strip()

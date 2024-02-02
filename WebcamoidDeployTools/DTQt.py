@@ -30,8 +30,9 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 
-from . import DTUtils
+from . import DTAndroid
 from . import DTBinary
+from . import DTUtils
 
 
 def libBaseName(lib):
@@ -861,7 +862,7 @@ def preRun(globs, configs, dataDir):
         assetsDir = configs.get('Package', 'assetsDir', fallback='assets').strip()
         assetsDir = os.path.join(dataDir, assetsDir)
         qtSourcesDir = configs.get('Qt', 'sourcesDir', fallback='').strip()
-        sdkBuildToolsRevision = configs.get('System', 'sdkBuildToolsRevision', fallback='').strip()
+        sdkBuildToolsRevision = DTAndroid.buildToolsVersion(configs)
         minSdkVersion = configs.get('Android', 'minSdkVersion', fallback='24').strip()
 
         try:

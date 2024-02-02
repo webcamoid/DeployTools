@@ -30,6 +30,33 @@ from . import DTSystemPackages
 from . import DTUtils
 
 
+def buildToolsVersions():
+    androidSDK = ''
+
+    if 'ANDROID_HOME' in os.environ:
+        androidSDK = os.environ['ANDROID_HOME']
+
+    buildToolsDir = os.path.join(androidSDK, 'build-tools')
+    buildToolsVersions = []
+
+    try:
+        buildToolsVersions = list(os.listdir(buildToolsDir))
+    except:
+        pass
+
+    sorted(buildToolsVersions, key=lambda v: DTUtils.versionCode(v), reverse=True)
+
+    return buildToolsVersions
+
+def buildToolsVersion(configs=None):
+    versions = buildToolsVersions()
+    latestVersion = '' if len(versions) < 1 else versions[0]
+
+    if configs == None:
+        return latestVersion
+
+    return configs.get('System', 'sdkBuildToolsRevision', fallback=latestVersion).strip()
+
 def sysInfo():
     info = ''
 

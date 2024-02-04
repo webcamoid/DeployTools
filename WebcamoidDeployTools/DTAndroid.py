@@ -140,8 +140,8 @@ def writeBuildInfo(globs,
 
         if 'ANDROID_NDK_ROOT' in os.environ:
             androidNDK = os.environ['ANDROID_NDK_ROOT']
-        elif 'ANDROID_NDK' in os.environ:
-            androidNDK = os.environ['ANDROID_NDK']
+        elif 'ANDROID_NDK_ROOT' in os.environ:
+            androidNDK = os.environ['ANDROID_NDK_ROOT']
 
         sdkInfoFile = os.path.join(androidSDK, 'tools', 'source.properties')
         ndkInfoFile = os.path.join(androidNDK, 'source.properties')

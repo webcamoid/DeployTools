@@ -236,8 +236,8 @@ def createApk(globs,
             if 'ANDROID_HOME' in os.environ:
                 f.write('sdk.dir=' + os.environ['ANDROID_HOME'] + '\n')
 
-            if 'ANDROID_NDK' in os.environ:
-                f.write('ndk.dir=' + os.environ['ANDROID_NDK'] + '\n')
+            if 'ANDROID_NDK_ROOT' in os.environ:
+                f.write('ndk.dir=' + os.environ['ANDROID_NDK_ROOT'] + '\n')
 
     DTQt.mergeXmlLibs(os.path.join(dataDir, 'res', 'values'))
     gradleSript = os.path.join(dataDir, 'gradlew')

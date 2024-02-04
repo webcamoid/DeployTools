@@ -250,8 +250,8 @@ def copyAndroidTemplates(dataDir,
 
     if 'ANDROID_NDK_ROOT' in os.environ:
         androidNDK = os.environ['ANDROID_NDK_ROOT']
-    elif 'ANDROID_NDK' in os.environ:
-        androidNDK = os.environ['ANDROID_NDK']
+    elif 'ANDROID_NDK_ROOT' in os.environ:
+        androidNDK = os.environ['ANDROID_NDK_ROOT']
 
     ndkInfoFile = os.path.join(androidNDK, 'source.properties')
     androidNdkVersion = ''

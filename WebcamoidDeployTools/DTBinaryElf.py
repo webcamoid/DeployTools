@@ -101,8 +101,8 @@ def init(targetPlatform, targetArch, sysLibDir):
 
         if 'ANDROID_NDK_ROOT' in os.environ:
             androidNDK = os.environ['ANDROID_NDK_ROOT']
-        elif 'ANDROID_NDK' in os.environ:
-            androidNDK = os.environ['ANDROID_NDK']
+        elif 'ANDROID_NDK_ROOT' in os.environ:
+            androidNDK = os.environ['ANDROID_NDK_ROOT']
 
         for arch in ANDROID_ARCH_MAP:
             if targetArch == arch[0]:

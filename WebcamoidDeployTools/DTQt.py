@@ -268,8 +268,14 @@ def copyAndroidTemplates(dataDir,
     javaDir = os.path.join(qtSourcesDir, 'android', 'java')
 
     with open(properties, 'w') as f:
-        f.write('android.useAndroidX=true\n')
-        f.write('org.gradle.parallel=true\n')
+        # f.write('android.useAndroidX=true\n')
+        # f.write('org.gradle.parallel=true\n')
+        f.write('android.useAndroidX=false\n')
+        f.write('org.gradle.parallel=false\n')
+        f.write('org.gradle.daemon=false\n')
+        f.write('org.gradle.configuration-cache=true\n')
+        f.write('org.gradle.caching=true\n')
+        f.write('org.gradle.jvmargs=-Xmx2048M\n')
 
         if len(sdkBuildToolsRevision) > 0:
             f.write('androidBuildToolsVersion={}\n'.format(sdkBuildToolsRevision))

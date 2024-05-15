@@ -1,6 +1,8 @@
 # VDSO
-(.*/)*ld-linux.so.2
-(.*/)*ld-linux-x86-64.so.2
+(.*/)*ld-linux.so.[0-9]+
+(.*/)*ld-linux-x86-64.so.[0-9]+
+(.*/)*ld-linux-aarch64.so.[0-9]+
+(.*/)*ld-linux-armhf.so.[0-9]+
 
 # Glibc
 (.*/)*libc.so.[0-9]+

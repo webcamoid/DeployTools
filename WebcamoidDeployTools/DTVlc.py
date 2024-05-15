@@ -99,6 +99,8 @@ def copyVlcPlugins(globs,
         libName = solver.name(dep)
 
         if libName == vlcLibName:
+            print('Found libVLC dependency')
+
             for root, _, files in os.walk(vlcPluginsDir):
                 relpath = os.path.relpath(root, vlcPluginsDir)
 
@@ -125,6 +127,8 @@ def copyVlcPlugins(globs,
                     globs['dependencies'].add(sysPluginPath)
 
             break
+        else:
+            print('LIB = {}'.format(libName))
 
 def regenerateCache(targetPlatform, outputVlcPluginsDir, verbose):
     cacheGen = vlcCacheGen(targetPlatform)

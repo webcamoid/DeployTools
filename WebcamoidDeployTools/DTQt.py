@@ -541,7 +541,8 @@ def qmakeQuery(var=''):
     return ''
 
 def modulePath(importLine):
-    if importLine.startswith('import ') or importLine.startswith('depends '):
+    if not importLine.startswith('import ') \
+        and not importLine.startswith('depends '):
         importLine = 'import ' + importLine
 
     imp = importLine.strip().split()

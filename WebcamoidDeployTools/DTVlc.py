@@ -51,6 +51,34 @@ def pkgconfVariable(package, var):
 
     return stdout.decode(sys.getdefaultencoding()).strip()
 
+def dependsOnVLC(globs,
+                 targetPlatform,
+                 targetArch,
+                 debug,
+                 dataDir,
+                 sysLibDir,
+                 stripCmd):
+    solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
+                                  targetPlatform,
+                                  targetArch,
+                                  debug,
+                                  sysLibDir,
+                                  stripCmd)
+    vlcLibName = ''
+
+    if targetPlatform == 'mac' or targetPlatform == 'windows':
+        vlcLibName = 'libvlc'
+    else:
+        vlcLibName = 'vlc'
+
+    for dep in solver.scanDependencies(dataDir):
+        libName = solver.name(dep)
+
+        if libName == vlcLibName:
+            return True
+
+    return False
+
 def vlcCacheGen(targetPlatform):
     cacheGen = DTUtils.whereBin('vlc-cache-gen')
 
@@ -77,58 +105,46 @@ def copyVlcPlugins(globs,
                    targetArch,
                    debug,
                    dataDir,
+                   haveVLC,
                    outputVlcPluginsDir,
                    vlcPlugins,
                    vlcPluginsDir,
                    sysLibDir,
                    stripCmd='strip'):
-    solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
-                                  targetPlatform,
-                                  targetArch,
-                                  debug,
-                                  sysLibDir,
-                                  stripCmd)
-    vlcLibName = ''
+    if not haveVLC:
+        haveVLC = dependsOnVLC(globs,
+                               targetPlatform,
+                               targetArch,
+                               debug,
+                               dataDir,
+                               sysLibDir,
+                               stripCmd)
 
-    if targetPlatform == 'mac' or targetPlatform == 'windows':
-        vlcLibName = 'libvlc'
-    else:
-        vlcLibName = 'vlc'
+    if haveVLC:
+        for root, _, files in os.walk(vlcPluginsDir):
+            relpath = os.path.relpath(root, vlcPluginsDir)
 
-    for dep in solver.scanDependencies(dataDir):
-        libName = solver.name(dep)
+            if relpath != '.' \
+                and vlcPlugins != [] \
+                and not (relpath in vlcPlugins):
+                continue
 
-        if libName == vlcLibName:
-            print('Found libVLC dependency')
+            for f in files:
+                sysPluginPath = os.path.join(root, f)
 
-            for root, _, files in os.walk(vlcPluginsDir):
-                relpath = os.path.relpath(root, vlcPluginsDir)
+                if relpath == '.':
+                    pluginPath = os.path.join(outputVlcPluginsDir, f)
+                else:
+                    pluginPath = os.path.join(outputVlcPluginsDir,
+                                                relpath,
+                                                f)
 
-                if relpath != '.' \
-                    and vlcPlugins != [] \
-                    and not (relpath in vlcPlugins):
+                if not os.path.exists(sysPluginPath):
                     continue
 
-                for f in files:
-                    sysPluginPath = os.path.join(root, f)
-
-                    if relpath == '.':
-                        pluginPath = os.path.join(outputVlcPluginsDir, f)
-                    else:
-                        pluginPath = os.path.join(outputVlcPluginsDir,
-                                                  relpath,
-                                                  f)
-
-                    if not os.path.exists(sysPluginPath):
-                        continue
-
-                    print('    {} -> {}'.format(sysPluginPath, pluginPath))
-                    DTUtils.copy(sysPluginPath, pluginPath)
-                    globs['dependencies'].add(sysPluginPath)
-
-            break
-        else:
-            print('LIB = {}'.format(libName))
+                print('    {} -> {}'.format(sysPluginPath, pluginPath))
+                DTUtils.copy(sysPluginPath, pluginPath)
+                globs['dependencies'].add(sysPluginPath)
 
 def regenerateCache(targetPlatform, outputVlcPluginsDir, verbose):
     cacheGen = vlcCacheGen(targetPlatform)
@@ -186,6 +202,8 @@ def preRun(globs, configs, dataDir):
     else:
         vlcPlugins = [plugin.strip() for plugin in vlcPlugins.split(',')]
 
+    haveVLC = configs.get('Vlc', 'haveVLC', fallback='false').strip()
+    haveVLC = DTUtils.toBool(haveVLC)
     verbose = configs.get('Vlc', 'verbose', fallback='false').strip()
     verbose = DTUtils.toBool(verbose)
 
@@ -201,6 +219,7 @@ def preRun(globs, configs, dataDir):
                    targetArch,
                    debug,
                    dataDir,
+                   haveVLC,
                    outputVlcPluginsDir,
                    vlcPlugins,
                    vlcPluginsDir,

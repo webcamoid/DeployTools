@@ -158,13 +158,17 @@ def preRun(globs, configs, dataDir):
     else:
         gstPlugins = [plugin.strip() for plugin in gstPlugins.split(',')]
 
+    haveGStreamer = configs.get('GStreamer', 'haveGStreamer', fallback='false').strip()
+    haveGStreamer = DTUtils.toBool(haveGStreamer)
     verbose = configs.get('GStreamer', 'verbose', fallback='false').strip()
     verbose = DTUtils.toBool(verbose)
-    depends = dependsOnGStreammer(targetPlatform,
-                                  targetArch,
-                                  debug,
-                                  dataDir,
-                                  sysLibDir)
+
+    if not haveGStreamer:
+        haveGStreamer = dependsOnGStreammer(targetPlatform,
+                                            targetArch,
+                                            debug,
+                                            dataDir,
+                                            sysLibDir)
 
     print('GStreamer information')
     print()
@@ -175,7 +179,7 @@ def preRun(globs, configs, dataDir):
     print('Copying required GStreamer plugins')
     print()
 
-    if depends:
+    if haveGStreamer:
         copyGStreamerPlugins(globs,
                              outputGstPluginsDir,
                              gstPlugins,
@@ -184,7 +188,7 @@ def preRun(globs, configs, dataDir):
     print('Copying GStreamer plugins scanner')
     print()
 
-    if depends and pluginScanner != '':
+    if haveGStreamer and pluginScanner != '':
         outPluginScanner = os.path.join(outputGstPluginsDir,
                                         os.path.basename(pluginScanner))
         print('    {} -> {}'.format(pluginScanner, outPluginScanner))

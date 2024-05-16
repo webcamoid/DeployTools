@@ -27,101 +27,85 @@ from . import DTBinary
 from . import DTUtils
 
 
+def dependsOnPipeWire(globs,
+                      targetPlatform,
+                      targetArch,
+                      debug,
+                      dataDir,
+                      sysLibDir,
+                      stripCmd):
+    solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
+                                  targetPlatform,
+                                  targetArch,
+                                  debug,
+                                  sysLibDir,
+                                  stripCmd)
+
+    for dep in solver.scanDependencies(dataDir):
+        libName = solver.name(dep)
+
+        if libName == 'pipewire-0.3':
+            return True
+
+    return False
+
 def copyPipeWireModules(globs,
-                        targetPlatform,
-                        targetArch,
-                        debug,
-                        dataDir,
                         outputPipeWireModulesDir,
                         pipeWireModules,
-                        pipeWireModulesDir,
-                        sysLibDir,
-                        stripCmd='strip'):
-    solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
-                                  targetPlatform,
-                                  targetArch,
-                                  debug,
-                                  sysLibDir,
-                                  stripCmd)
+                        pipeWireModulesDir):
+    for root, _, files in os.walk(pipeWireModulesDir):
+        relpath = os.path.relpath(root, pipeWireModulesDir)
 
-    for dep in solver.scanDependencies(dataDir):
-        libName = solver.name(dep)
+        if relpath != '.' \
+            and pipeWireModules != [] \
+            and not (relpath in pipeWireModules):
+            continue
 
-        if libName == 'pipewire-0.3':
-            for root, _, files in os.walk(pipeWireModulesDir):
-                relpath = os.path.relpath(root, pipeWireModulesDir)
+        for f in files:
+            sysPluginPath = os.path.join(root, f)
 
-                if relpath != '.' \
-                    and pipeWireModules != [] \
-                    and not (relpath in pipeWireModules):
-                    continue
+            if relpath == '.':
+                pluginPath = os.path.join(outputPipeWireModulesDir, f)
+            else:
+                pluginPath = os.path.join(outputPipeWireModulesDir,
+                                          relpath,
+                                          f)
 
-                for f in files:
-                    sysPluginPath = os.path.join(root, f)
+            if not os.path.exists(sysPluginPath):
+                continue
 
-                    if relpath == '.':
-                        pluginPath = os.path.join(outputPipeWireModulesDir, f)
-                    else:
-                        pluginPath = os.path.join(outputPipeWireModulesDir,
-                                                  relpath,
-                                                  f)
-
-                    if not os.path.exists(sysPluginPath):
-                        continue
-
-                    print('    {} -> {}'.format(sysPluginPath, pluginPath))
-                    DTUtils.copy(sysPluginPath, pluginPath)
-                    globs['dependencies'].add(sysPluginPath)
-
-            break
+            print('    {} -> {}'.format(sysPluginPath, pluginPath))
+            DTUtils.copy(sysPluginPath, pluginPath)
+            globs['dependencies'].add(sysPluginPath)
 
 def copySpaPlugins(globs,
-                   targetPlatform,
-                   targetArch,
-                   debug,
-                   dataDir,
                    outputSpaPluginsDir,
                    spaPlugins,
-                   spaPluginsDir,
-                   sysLibDir,
-                   stripCmd='strip'):
-    solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
-                                  targetPlatform,
-                                  targetArch,
-                                  debug,
-                                  sysLibDir,
-                                  stripCmd)
+                   spaPluginsDir):
+    for root, _, files in os.walk(spaPluginsDir):
+        relpath = os.path.relpath(root, spaPluginsDir)
 
-    for dep in solver.scanDependencies(dataDir):
-        libName = solver.name(dep)
+        if relpath != '.' \
+            and spaPlugins != [] \
+            and not (relpath in spaPlugins):
+            continue
 
-        if libName == 'pipewire-0.3':
-            for root, _, files in os.walk(spaPluginsDir):
-                relpath = os.path.relpath(root, spaPluginsDir)
+        for f in files:
+            sysPluginPath = os.path.join(root, f)
 
-                if relpath != '.' \
-                    and spaPlugins != [] \
-                    and not (relpath in spaPlugins):
-                    continue
+            if relpath == '.':
+                pluginPath = os.path.join(outputSpaPluginsDir, f)
+            else:
+                pluginPath = os.path.join(outputSpaPluginsDir,
+                                          relpath,
+                                          f)
 
-                for f in files:
-                    sysPluginPath = os.path.join(root, f)
+            if not os.path.exists(sysPluginPath):
+                continue
 
-                    if relpath == '.':
-                        pluginPath = os.path.join(outputSpaPluginsDir, f)
-                    else:
-                        pluginPath = os.path.join(outputSpaPluginsDir,
-                                                  relpath,
-                                                  f)
-
-                    if not os.path.exists(sysPluginPath):
-                        continue
-
-                    print('    {} -> {}'.format(sysPluginPath, pluginPath))
-                    DTUtils.copy(sysPluginPath, pluginPath)
-                    globs['dependencies'].add(sysPluginPath)
-
-            break
+            print('    {} -> {}'.format(sysPluginPath, pluginPath))
+            DTUtils.copy(sysPluginPath, pluginPath)
+            globs['dependencies'].add(sysPluginPath)
 
 def preRun(globs, configs, dataDir):
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
@@ -166,8 +150,17 @@ def preRun(globs, configs, dataDir):
 
     sysLibDir = list(libs)
     stripCmd = configs.get('System', 'stripCmd', fallback='strip').strip()
+    havePipeWire = configs.get('PipeWire', 'havePipeWire', fallback='false').strip()
+    havePipeWire = DTUtils.toBool(havePipeWire)
     verbose = configs.get('PipeWire', 'verbose', fallback='false').strip()
     verbose = DTUtils.toBool(verbose)
+
+    if not havePipeWire:
+        havePipeWire = dependsOnPipeWire(targetPlatform,
+                                         targetArch,
+                                         debug,
+                                         dataDir,
+                                         sysLibDir)
 
     print('PipeWire information')
     print()
@@ -176,16 +169,13 @@ def preRun(globs, configs, dataDir):
     print()
     print('Copying required PipeWire modules')
     print()
-    copyPipeWireModules(globs,
-                        targetPlatform,
-                        targetArch,
-                        debug,
-                        dataDir,
-                        outputPipeWireModulesDir,
-                        pipeWireModules,
-                        pipeWireModulesDir,
-                        sysLibDir,
-                        stripCmd)
+
+    if havePipeWire:
+        copyPipeWireModules(globs,
+                            outputPipeWireModulesDir,
+                            pipeWireModules,
+                            pipeWireModulesDir)
+
     print()
     print('PipeWire SPA information')
     print()
@@ -194,16 +184,12 @@ def preRun(globs, configs, dataDir):
     print()
     print('Copying required PipeWire SPA plugins')
     print()
-    copySpaPlugins(globs,
-                   targetPlatform,
-                   targetArch,
-                   debug,
-                   dataDir,
-                   outputSpaPluginsDir,
-                   spaPlugins,
-                   spaPluginsDir,
-                   sysLibDir,
-                   stripCmd)
+
+    if havePipeWire:
+        copySpaPlugins(globs,
+                       outputSpaPluginsDir,
+                       spaPlugins,
+                       spaPluginsDir)
 
 def postRun(globs, configs, dataDir):
     pass

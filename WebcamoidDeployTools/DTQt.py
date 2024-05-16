@@ -186,7 +186,7 @@ def mergeXmlLibs(libsXmlDir, keep=False):
     for f in os.listdir(libsXmlDir):
         xmlPath = os.path.join(libsXmlDir, f)
 
-        if os.path.isfile(xmlPath) and re.match('^libs-.+\.xml$' , f):
+        if os.path.isfile(xmlPath) and re.match('^libs-.+ \\.xml$' , f):
             items = readXmlLibs(xmlPath)
 
             for key in items:
@@ -541,6 +541,9 @@ def qmakeQuery(var=''):
     return ''
 
 def modulePath(importLine):
+    if len(importLine) < 1:
+        return ''
+
     if not importLine.startswith('import ') \
         and not importLine.startswith('depends '):
         importLine = 'import ' + importLine

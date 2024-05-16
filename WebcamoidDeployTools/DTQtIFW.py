@@ -78,7 +78,7 @@ def readChangeLog(changeLog, appName, version):
                 changeLogText = ''
 
                 for line_ in f:
-                    if re.match('{} \d+\.\d+\.\d+:'.format(appName), line):
+                    if re.match('{} \\d+\\.\\d+\\.\\d+:'.format(appName), line):
                         # Remove last line.
                         i = changeLogText.rfind('\n')
 

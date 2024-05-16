@@ -541,6 +541,9 @@ def qmakeQuery(var=''):
     return ''
 
 def modulePath(importLine):
+    if importLine.startswith('import ') or importLine.startswith('depends '):
+        importLine = 'import ' + importLine
+
     imp = importLine.strip().split()
     path = imp[1].replace('.', '/')
 
@@ -591,7 +594,11 @@ def listQmlFiles(path):
 
     return list(qmlFiles)
 
-def solvedepsQml(globs, sourcesQmlDirs, outputQmlDir, qtQmlDir):
+def solvedepsQml(globs,
+                 sourcesQmlDirs,
+                 outputQmlDir,
+                 qtQmlDir,
+                 qtExtraQmlImports):
     qmlFiles = set()
 
     for path in sourcesQmlDirs:
@@ -603,6 +610,21 @@ def solvedepsQml(globs, sourcesQmlDirs, outputQmlDir, qtQmlDir):
 
     if not 'dependencies' in globs:
         globs['dependencies'] = set()
+
+    for module in qtExtraQmlImports:
+        imp = modulePath(module)
+        sysModulePath = os.path.join(qtQmlDir, imp)
+        installModulePath = os.path.join(outputQmlDir, imp)
+
+        if os.path.exists(sysModulePath):
+            print('    {} -> {}'.format(sysModulePath, installModulePath))
+            DTUtils.copy(sysModulePath, installModulePath)
+            solvedImports.add(imp)
+            globs['dependencies'].add(os.path.join(sysModulePath, 'qmldir'))
+
+            for f in listQmlFiles(sysModulePath):
+                if not f in solved:
+                    qmlFiles.add(f)
 
     while len(qmlFiles) > 0:
         qmlFile = qmlFiles.pop()
@@ -635,6 +657,7 @@ def solvedepsPlugins(globs,
                      qtVersion,
                      outputQtPluginsDir,
                      qtPluginsDir,
+                     qtExtraPlugins,
                      libDir,
                      sysLibDir,
                      stripCmd='strip'):
@@ -733,6 +756,19 @@ def solvedepsPlugins(globs,
                 plugins.append(plugin)
                 globs['dependencies'].add(sysPluginPath)
 
+    for plugin in qtExtraPlugins:
+        if not plugin in plugins:
+            sysPluginPath = os.path.join(qtPluginsDir, plugin)
+            pluginPath = os.path.join(outputQtPluginsDir, plugin)
+
+            if not os.path.exists(sysPluginPath):
+                continue
+
+            print('    {} -> {}'.format(sysPluginPath, pluginPath))
+            DTUtils.copy(sysPluginPath, pluginPath)
+            plugins.append(plugin)
+            globs['dependencies'].add(sysPluginPath)
+
 def removeDebugs(dataDir):
     dbgFiles = set()
     libQtInstallDir = \
@@ -825,6 +861,23 @@ def preRun(globs, configs, dataDir):
     mainExecutable = os.path.join(dataDir, mainExecutable)
     qtConfFile = configs.get('Qt', 'qtConfFile', fallback='qt.conf').strip()
     qtConfFile = os.path.join(dataDir, qtConfFile)
+
+    qtExtraQmlImports = configs.get('Qt', 'extraQmlImports', fallback='').strip()
+    extraQmlImports = set()
+
+    for module in qtExtraQmlImports.split(','):
+        extraQmlImports.add(module.strip())
+
+    qtExtraQmlImports = list(extraQmlImports)
+
+    qtExtraPlugins = configs.get('Qt', 'extraPlugins', fallback='').strip()
+    extraPlugins = set()
+
+    for plugin in qtExtraPlugins.split(','):
+        extraPlugins.add(plugin.strip())
+
+    qtExtraPlugins = list(extraPlugins)
+
     stripCmd = configs.get('System', 'stripCmd', fallback='strip').strip()
     ndkABIFilters = configs.get('Android', 'ndkABIFilters', fallback=targetArch).strip()
 
@@ -841,7 +894,11 @@ def preRun(globs, configs, dataDir):
     print()
     print('Copying Qml modules')
     print()
-    solvedepsQml(globs, sourcesQmlDirs, outputQmlDir, qtQmlDir)
+    solvedepsQml(globs,
+                 sourcesQmlDirs,
+                 outputQmlDir,
+                 qtQmlDir,
+                 qtExtraQmlImports)
     print()
     print('Copying required plugins')
     print()
@@ -854,6 +911,7 @@ def preRun(globs, configs, dataDir):
                      qtVersion,
                      outputQtPluginsDir,
                      qtPluginsDir,
+                     qtExtraPlugins,
                      libDir,
                      sysLibDir,
                      stripCmd)

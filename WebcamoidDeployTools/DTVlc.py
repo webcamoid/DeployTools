@@ -51,19 +51,16 @@ def pkgconfVariable(package, var):
 
     return stdout.decode(sys.getdefaultencoding()).strip()
 
-def dependsOnVLC(globs,
-                 targetPlatform,
+def dependsOnVLC(targetPlatform,
                  targetArch,
                  debug,
                  dataDir,
-                 sysLibDir,
-                 stripCmd):
+                 sysLibDir):
     solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
                                   debug,
-                                  sysLibDir,
-                                  stripCmd)
+                                  sysLibDir)
     vlcLibName = ''
 
     if targetPlatform == 'mac' or targetPlatform == 'windows':
@@ -109,16 +106,13 @@ def copyVlcPlugins(globs,
                    outputVlcPluginsDir,
                    vlcPlugins,
                    vlcPluginsDir,
-                   sysLibDir,
-                   stripCmd='strip'):
+                   sysLibDir):
     if not haveVLC:
-        haveVLC = dependsOnVLC(globs,
-                               targetPlatform,
+        haveVLC = dependsOnVLC(targetPlatform,
                                targetArch,
                                debug,
                                dataDir,
-                               sysLibDir,
-                               stripCmd)
+                               sysLibDir)
 
     if haveVLC:
         for root, _, files in os.walk(vlcPluginsDir):
@@ -194,7 +188,6 @@ def preRun(globs, configs, dataDir):
         libs.add(lib.strip())
 
     sysLibDir = list(libs)
-    stripCmd = configs.get('System', 'stripCmd', fallback='strip').strip()
     vlcPlugins = configs.get('Vlc', 'plugins', fallback='')
 
     if vlcPlugins == '':
@@ -223,8 +216,7 @@ def preRun(globs, configs, dataDir):
                    outputVlcPluginsDir,
                    vlcPlugins,
                    vlcPluginsDir,
-                   sysLibDir,
-                   stripCmd)
+                   sysLibDir)
     print()
     print('Regenerating VLC plugins cache')
     print()

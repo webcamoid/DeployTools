@@ -27,19 +27,16 @@ from . import DTBinary
 from . import DTUtils
 
 
-def dependsOnPipeWire(globs,
-                      targetPlatform,
+def dependsOnPipeWire(targetPlatform,
                       targetArch,
                       debug,
                       dataDir,
-                      sysLibDir,
-                      stripCmd):
+                      sysLibDir):
     solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
                                   debug,
-                                  sysLibDir,
-                                  stripCmd)
+                                  sysLibDir)
 
     for dep in solver.scanDependencies(dataDir):
         libName = solver.name(dep)

@@ -903,6 +903,7 @@ def preRun(globs, configs, dataDir):
     print('Qt plugins output directory: {}'.format(outputQtPluginsDir))
     print('Qt Qml files directory: {}'.format(qtQmlDir))
     print('Qt Qml files output directory: {}'.format(outputQmlDir))
+    print('Qt qmake executable: {}'.format(qmakeExcutable))
     print()
     print('Copying Qml modules')
     print()

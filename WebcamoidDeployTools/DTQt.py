@@ -290,16 +290,18 @@ def copyAndroidTemplates(dataDir,
 
     if minSdkVersion < 31:
         buildGradle = os.path.join(dataDir, 'build.gradle')
-        lines = []
 
-        with open(buildGradle, 'r') as f:
-            for line in f:
-                if not "implementation 'androidx.core:" in line:
-                    lines.append(line)
+        if os.path.exists(buildGradle):
+            lines = []
 
-        with open(buildGradle, 'w') as f:
-            for line in lines:
-                f.write(line)
+            with open(buildGradle, 'r') as f:
+                for line in f:
+                    if not "implementation 'androidx.core:" in line:
+                        lines.append(line)
+
+            with open(buildGradle, 'w') as f:
+                for line in lines:
+                    f.write(line)
 
 def solvedepsAndroid(globs,
                      dataDir,
@@ -926,7 +928,7 @@ def preRun(globs, configs, dataDir):
     print('Copying Qml modules')
     print()
     solvedepsQml(globs,
-                 sourcesDir,
+                  ,
                  sourcesQmlDirs,
                  outputQmlDir,
                  qtQmlDir,

@@ -928,7 +928,7 @@ def preRun(globs, configs, dataDir):
     print('Copying Qml modules')
     print()
     solvedepsQml(globs,
-                  ,
+                 sourcesDir,
                  sourcesQmlDirs,
                  outputQmlDir,
                  qtQmlDir,

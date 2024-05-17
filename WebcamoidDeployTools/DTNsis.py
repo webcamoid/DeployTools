@@ -246,9 +246,9 @@ def createInstaller(globs,
                 f.write('InstallDir "${TARGET_DIR}"\n')
             else:
                 if targetArch == 'win64' or targetArch == 'win64_arm':
-                    f.write('InstallDir "$PROGRAMFILES64\${APP_NAME}"\n')
+                    f.write('InstallDir "$PROGRAMFILES64\\${APP_NAME}"\n')
                 else:
-                    f.write('InstallDir "$PROGRAMFILES\${APP_NAME}"\n')
+                    f.write('InstallDir "$PROGRAMFILES\\${APP_NAME}"\n')
 
             f.write('XPStyle on\n')
             f.write('\n')

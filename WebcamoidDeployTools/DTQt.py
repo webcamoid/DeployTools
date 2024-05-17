@@ -310,7 +310,7 @@ def solvedepsAndroid(globs,
                      version,
                      minSdkVersion,
                      targetSdkVersion,
-                     qmakeExcutable):
+                     qmakeExecutable):
     jars = []
     permissions = set()
     features = set()
@@ -356,7 +356,7 @@ def solvedepsAndroid(globs,
         globs['localLibs'].add(os.path.basename(lib))
 
     print('Copying jar files')
-    qtInstallPrefx = qmakeQuery('QT_INSTALL_PREFIX', qmakeExcutable)
+    qtInstallPrefx = qmakeQuery('QT_INSTALL_PREFIX', qmakeExecutable)
     outJarsDir = os.path.join(dataDir, 'libs')
     print()
     print('From: ', os.path.join(qtInstallPrefx, 'jar'))
@@ -523,9 +523,9 @@ def fixQtLibs(globs, libDir, outputQtPluginsDir, outputAssetsDir):
     except:
         pass
 
-def qmakeQuery(var='', qmakeExcutable='qmake'):
+def qmakeQuery(var='', qmakeExecutable='qmake'):
     try:
-        args = [qmakeExcutable, '-query']
+        args = [qmakeExecutable, '-query']
 
         if var != '':
             args += [var]
@@ -774,11 +774,11 @@ def solvedepsPlugins(globs,
             plugins.append(plugin)
             globs['dependencies'].add(sysPluginPath)
 
-def removeDebugs(dataDir, qmakeExcutable):
+def removeDebugs(dataDir, qmakeExecutable):
     dbgFiles = set()
     libQtInstallDir = \
-        qmakeQuery('QT_INSTALL_ARCHDATA', qmakeExcutable) \
-            .replace(qmakeQuery('QT_INSTALL_PREFIX', qmakeExcutable), dataDir)
+        qmakeQuery('QT_INSTALL_ARCHDATA', qmakeExecutable) \
+            .replace(qmakeQuery('QT_INSTALL_PREFIX', qmakeExecutable), dataDir)
 
     for root, _, files in os.walk(libQtInstallDir):
         for f in files:
@@ -841,7 +841,7 @@ def preRun(globs, configs, dataDir):
     except:
         qtVersion = 6
 
-    qmakeExcutable = configs.get('Qt', 'qmakeExcutable', fallback='qmake').strip()
+    qmakeExecutable = configs.get('Qt', 'qmakeExecutable', fallback='qmake').strip()
     libDir = os.path.join(dataDir, libDir)
     defaultSysLibDir = ''
 
@@ -861,11 +861,11 @@ def preRun(globs, configs, dataDir):
     sourcesQmlDirs = [os.path.join(sourcesDir, module.strip()) for module in sourcesQmlDirs]
     outputQmlDir = configs.get('Qt', 'outputQmlDir', fallback='qml').strip()
     outputQmlDir = os.path.join(dataDir, outputQmlDir)
-    defaultQtQmlDir = qmakeQuery('QT_INSTALL_QML', qmakeExcutable)
+    defaultQtQmlDir = qmakeQuery('QT_INSTALL_QML', qmakeExecutable)
     qtQmlDir = configs.get('Qt', 'qtQmlDir', fallback=defaultQtQmlDir).strip()
     outputQtPluginsDir = configs.get('Qt', 'outputQtPluginsDir', fallback='plugins').strip()
     outputQtPluginsDir = os.path.join(dataDir, outputQtPluginsDir)
-    defaultQtPluginsDir = qmakeQuery('QT_INSTALL_PLUGINS', qmakeExcutable)
+    defaultQtPluginsDir = qmakeQuery('QT_INSTALL_PLUGINS', qmakeExecutable)
     qtPluginsDir = configs.get('Qt', 'qtPluginsDir', fallback=defaultQtPluginsDir).strip()
     outputAssetsDir = configs.get('Android', 'outputAssetsDir', fallback='assets').strip()
     outputAssetsDir = os.path.join(dataDir, outputAssetsDir)
@@ -903,7 +903,7 @@ def preRun(globs, configs, dataDir):
     print('Qt plugins output directory: {}'.format(outputQtPluginsDir))
     print('Qt Qml files directory: {}'.format(qtQmlDir))
     print('Qt Qml files output directory: {}'.format(outputQmlDir))
-    print('Qt qmake executable: {}'.format(qmakeExcutable))
+    print('Qt qmake executable: {}'.format(qmakeExecutable))
     print()
     print('Copying Qml modules')
     print()
@@ -932,7 +932,7 @@ def preRun(globs, configs, dataDir):
 
     if targetPlatform == 'windows':
         print('Removing Qt debug libraries')
-        removeDebugs(dataDir, qmakeExcutable)
+        removeDebugs(dataDir, qmakeExecutable)
     elif targetPlatform == 'android':
         assetsDir = configs.get('Package', 'assetsDir', fallback='assets').strip()
         assetsDir = os.path.join(dataDir, assetsDir)
@@ -1003,7 +1003,7 @@ def postRun(globs, configs, dataDir):
     except:
         qtVersion = 6
 
-    qmakeExcutable = configs.get('Qt', 'qmakeExcutable', fallback='qmake').strip()
+    qmakeExecutable = configs.get('Qt', 'qmakeExecutable', fallback='qmake').strip()
     libDir = configs.get('Package', 'libDir', fallback='').strip()
     libDir = os.path.join(dataDir, libDir)
     defaultSysLibDir = ''
@@ -1048,7 +1048,7 @@ def postRun(globs, configs, dataDir):
                          version,
                          minSdkVersion,
                          targetSdkVersion,
-                         qmakeExcutable)
+                         qmakeExecutable)
         print()
         print('Fixing libs.xml file')
         fixLibsXml(globs, targetArch, dataDir)

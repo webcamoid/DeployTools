@@ -218,7 +218,10 @@ def preRun(globs, configs, dataDir):
 
     if sysLibDir != '':
         for lib in sysLibDir.split(','):
-            libs.add(lib.strip())
+            lib = lib.strip()
+
+            if len(lib) > 0:
+                libs.add(lib.strip())
 
     sysLibDir = list(libs)
     extraLibs = configs.get('System', 'extraLibs', fallback='')
@@ -226,7 +229,10 @@ def preRun(globs, configs, dataDir):
 
     if extraLibs != '':
         for lib in extraLibs.split(','):
-            elibs.add(lib.strip())
+            lib = lib.strip()
+
+            if len(lib) > 0:
+                elibs.add(lib.strip())
 
     extraLibs = list(elibs)
     solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),

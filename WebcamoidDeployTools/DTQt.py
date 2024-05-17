@@ -600,6 +600,7 @@ def listQmlFiles(path):
     return list(qmlFiles)
 
 def solvedepsQml(globs,
+                 sourcesDir,
                  sourcesQmlDirs,
                  outputQmlDir,
                  qtQmlDir,
@@ -607,6 +608,8 @@ def solvedepsQml(globs,
     qmlFiles = set()
 
     for path in sourcesQmlDirs:
+        path = os.path.join(sourcesDir, path)
+
         for f in listQmlFiles(path):
             qmlFiles.add(f)
 
@@ -854,11 +857,22 @@ def preRun(globs, configs, dataDir):
     libs = set()
 
     for lib in sysLibDir.split(','):
-        libs.add(lib.strip())
+        lib = lib.strip()
+
+        if len(lib) > 0:
+            libs.add(lib.strip())
 
     sysLibDir = list(libs)
-    sourcesQmlDirs = configs.get('Qt', 'sourcesQmlDirs', fallback='').split(',')
-    sourcesQmlDirs = [os.path.join(sourcesDir, module.strip()) for module in sourcesQmlDirs]
+    qtSourcesQmlDirs = configs.get('Qt', 'sourcesQmlDirs', fallback='').strip()
+    sourcesQmlDirs = set()
+
+    for qmlDir in qtSourcesQmlDirs.split(','):
+        qmlDir = qmlDir.strip()
+
+        if len(qmlDir) > 0:
+            sourcesQmlDirs.add(qmlDir.strip())
+
+    sourcesQmlDirs = list(sourcesQmlDirs)
     outputQmlDir = configs.get('Qt', 'outputQmlDir', fallback='qml').strip()
     outputQmlDir = os.path.join(dataDir, outputQmlDir)
     defaultQtQmlDir = qmakeQuery('QT_INSTALL_QML', qmakeExecutable)
@@ -873,20 +887,24 @@ def preRun(globs, configs, dataDir):
     mainExecutable = os.path.join(dataDir, mainExecutable)
     qtConfFile = configs.get('Qt', 'qtConfFile', fallback='qt.conf').strip()
     qtConfFile = os.path.join(dataDir, qtConfFile)
-
     qtExtraQmlImports = configs.get('Qt', 'extraQmlImports', fallback='').strip()
     extraQmlImports = set()
 
     for module in qtExtraQmlImports.split(','):
-        extraQmlImports.add(module.strip())
+        module = module.strip()
+
+        if len(module) > 0:
+            extraQmlImports.add(module.strip())
 
     qtExtraQmlImports = list(extraQmlImports)
-
     qtExtraPlugins = configs.get('Qt', 'extraPlugins', fallback='').strip()
     extraPlugins = set()
 
     for plugin in qtExtraPlugins.split(','):
-        extraPlugins.add(plugin.strip())
+        plugin = plugin.strip()
+
+        if len(plugin) > 0:
+            extraPlugins.add(plugin.strip())
 
     qtExtraPlugins = list(extraPlugins)
 
@@ -908,6 +926,7 @@ def preRun(globs, configs, dataDir):
     print('Copying Qml modules')
     print()
     solvedepsQml(globs,
+                 sourcesDir,
                  sourcesQmlDirs,
                  outputQmlDir,
                  qtQmlDir,
@@ -1017,7 +1036,10 @@ def postRun(globs, configs, dataDir):
     libs = set()
 
     for lib in sysLibDir.split(','):
-        libs.add(lib.strip())
+        lib = lib.strip()
+
+        if len(lib) > 0:
+            libs.add(lib.strip())
 
     sysLibDir = list(libs)
     outputAssetsDir = configs.get('Android', 'outputAssetsDir', fallback='assets').strip()

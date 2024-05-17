@@ -148,7 +148,10 @@ def preRun(globs, configs, dataDir):
     libs = set()
 
     for lib in sysLibDir.split(','):
-        libs.add(lib.strip())
+        lib = lib.strip()
+
+        if len(lib) > 0:
+            libs.add(lib.strip())
 
     sysLibDir = list(libs)
     gstPlugins = configs.get('GStreamer', 'plugins', fallback='')

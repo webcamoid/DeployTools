@@ -252,6 +252,13 @@ def copyAndroidTemplates(dataDir,
                  os.path.join(qtSourcesDir, 'android/templates')]
 
     for template in templates:
+        for root, dirs, files in os.walk(template):
+            for f in files:
+                src = os.path.join(root, f)
+                dst = os.path.join(dataDir, f)
+                status = 'OK' if os.path.exists(src) else 'MISSING'
+                print('{} -> {} {}'.format(src, dst, status))
+
         DTUtils.copy(template, dataDir, overwrite=False)
 
     androidNDK = ''

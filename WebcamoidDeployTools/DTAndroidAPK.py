@@ -248,9 +248,9 @@ def createApk(globs,
     if  os.path.exists(gradleSript):
         os.chmod(gradleSript, 0o755)
         params = [gradleSript,
-                '--no-daemon',
-                '--info',
-                'assembleRelease']
+                  '--no-daemon',
+                  '--info',
+                  'assembleRelease']
 
         if verbose:
             process = subprocess.Popen(params, # nosec

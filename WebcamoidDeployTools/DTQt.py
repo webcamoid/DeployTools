@@ -54,6 +54,10 @@ def fixLibsXml(globs, targetArch, dataDir):
                 bundledInAssets += [(srcPath, dstPath)]
 
     libsXml = os.path.join(dataDir, 'res', 'values', 'libs.xml')
+
+    if not os.path.exists(libsXml):
+        return
+
     libsXmlTemp = os.path.join(dataDir, 'res', 'values', 'libsTemp.xml')
 
     tree = ET.parse(libsXml)

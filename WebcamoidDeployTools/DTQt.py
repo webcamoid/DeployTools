@@ -32,6 +32,7 @@ import xml.etree.ElementTree as ET
 
 from . import DTAndroid
 from . import DTBinary
+from . import DTMac
 from . import DTUtils
 
 
@@ -740,10 +741,19 @@ def solvedepsPlugins(globs,
 
         # QtMultimediaQuick seems to be a dynamically loaded library so copy it
         # to the libary directory.
-        if re.match('.*Qt[0-9]*Multimedia' , libName) \
+        if targetPlatform == 'mac' and re.match('.*Qt[0-9]*Multimedia\\.framework', libName) \
             and not 'MultimediaQuick' in libName:
-                pluginPath = os.path.join(outputQtPluginsDir, plugin)
+                if os.path.exists(dep):
+                    multimediaQuickLibName = \
+                        libName.replace('Multimedia', 'MultimediaQuick')
+                    multimediaQuickLib = \
+                        dep.replace(libName, multimediaQuickLibName)
+                    dst = os.path.join(libDir, os.path.basename(multimediaQuickLib))
 
+                    print('    {} -> {}'.format(multimediaQuickLib, dst))
+                    DTMac.copyBundle(multimediaQuickLib, dst)
+        elif re.match('.*Qt[0-9]*Multimedia' , libName) \
+            and not 'MultimediaQuick' in libName:
                 if os.path.exists(dep):
                     multimediaQuickLibName = \
                         libName.replace('Multimedia', 'MultimediaQuick')

@@ -949,6 +949,12 @@ def preRun(globs, configs, dataDir):
     print('Qt Qml files directory: {}'.format(qtQmlDir))
     print('Qt Qml files output directory: {}'.format(outputQmlDir))
     print('Qt qmake executable: {}'.format(qmakeExecutable))
+    qtSourcesDir = ''
+
+    if targetPlatform == 'android':
+        qtSourcesDir = configs.get('Qt', 'sourcesDir', fallback='').strip()
+        print('Qt sources directory: {}'.format(qtSourcesDir))
+
     print()
     print('Copying Qml modules')
     print()
@@ -982,7 +988,6 @@ def preRun(globs, configs, dataDir):
     elif targetPlatform == 'android':
         assetsDir = configs.get('Package', 'assetsDir', fallback='assets').strip()
         assetsDir = os.path.join(dataDir, assetsDir)
-        qtSourcesDir = configs.get('Qt', 'sourcesDir', fallback='').strip()
         sdkBuildToolsRevision = DTAndroid.buildToolsVersion(configs)
         minSdkVersion = configs.get('Android', 'minSdkVersion', fallback='24').strip()
 

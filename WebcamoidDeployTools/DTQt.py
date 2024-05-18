@@ -185,6 +185,9 @@ def readXmlLibs(libsXml):
     return libs
 
 def mergeXmlLibs(libsXmlDir, keep=False):
+    if not os.path.exists(libsXmlDir):
+        return
+
     libs = {}
     deleteFiles = []
 

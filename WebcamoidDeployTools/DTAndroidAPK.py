@@ -245,22 +245,24 @@ def createApk(globs,
     if DTUtils.hostPlatform() == 'windows':
         gradleSript += '.bat'
 
-    os.chmod(gradleSript, 0o755)
-    params = [gradleSript,
-              '--no-daemon',
-              '--info',
-              'assembleRelease']
+    if  os.path.exists(gradleSript):
+        os.chmod(gradleSript, 0o755)
+        params = [gradleSript,
+                '--no-daemon',
+                '--info',
+                'assembleRelease']
 
-    if verbose:
-        process = subprocess.Popen(params, # nosec
-                                   cwd=dataDir)
-    else:
-        process = subprocess.Popen(params, # nosec
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE,
-                                   cwd=dataDir)
+        if verbose:
+            process = subprocess.Popen(params, # nosec
+                                    cwd=dataDir)
+        else:
+            process = subprocess.Popen(params, # nosec
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    cwd=dataDir)
 
-    process.communicate()
+        process.communicate()
+
     name = os.path.basename(dataDir)
     apk = os.path.join(dataDir,
                        'build',

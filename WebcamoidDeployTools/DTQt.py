@@ -749,9 +749,10 @@ def solvedepsPlugins(globs,
                         libName.replace('Multimedia', 'MultimediaQuick')
                     multimediaQuickLib = \
                         dep.replace(libName, multimediaQuickLibName)
+                    dst = os.path.join(libDir, os.path.basename(multimediaQuickLib))
 
-                    print('    {} -> {}'.format(multimediaQuickLib, libDir))
-                    DTUtils.copy(multimediaQuickLib, libDir)
+                    print('    {} -> {}'.format(multimediaQuickLib, dst))
+                    DTUtils.copy(multimediaQuickLib, dst)
 
         for plugin in pluginsMap[libName]:
             if not plugin in plugins:

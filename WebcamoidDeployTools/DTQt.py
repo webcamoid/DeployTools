@@ -470,6 +470,10 @@ def solvedepsAndroid(globs,
 
 def createRccBundle(outputAssetsDir, verbose):
     outputAssetsDir = os.path.join(outputAssetsDir, 'android_rcc_bundle')
+
+    if not os.path.exists(outputAssetsDir):
+        return
+
     assetsDir = os.path.abspath(os.path.join(outputAssetsDir, '..'))
     assetsFolder = os.path.relpath(outputAssetsDir, assetsDir)
     qrcFile = os.path.join(outputAssetsDir, assetsFolder + '.qrc')

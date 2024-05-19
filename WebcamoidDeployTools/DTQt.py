@@ -256,8 +256,7 @@ def copyAndroidTemplates(dataDir,
             for f in files:
                 src = os.path.join(root, f)
                 dst = os.path.join(dataDir, f)
-                status = 'OK' if os.path.exists(src) else 'MISSING'
-                print('{} -> {} {}'.format(src, dst, status))
+                print('{} -> {}'.format(src, dst))
 
         DTUtils.copy(template, dataDir, overwrite=False)
 
@@ -1009,6 +1008,7 @@ def preRun(globs, configs, dataDir):
         fixQtLibs(globs, libDir, outputQtPluginsDir, outputAssetsDir)
         print()
         print('Copying Android build templates')
+        print()
         copyAndroidTemplates(dataDir,
                              qtVersion,
                              qtSourcesDir,

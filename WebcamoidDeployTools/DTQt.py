@@ -214,6 +214,8 @@ def mergeXmlLibs(libsXmlDir, keep=False):
     with open(os.path.join(libsXmlDir, 'libs.xml'), 'w') as outFile:
         outFile.write('<?xml version=\'1.0\' encoding=\'utf-8\'?>\n')
         outFile.write('<resources>\n')
+        outFile.write('<array name="qt_sources">\n')
+        outFile.write('</array>\n')
 
         for key in libs:
             if key in strings:

@@ -327,7 +327,7 @@ def solvedepsAndroid(globs,
                      minSdkVersion,
                      targetSdkVersion,
                      qmakeExecutable):
-    jars = []
+    jars = set()
     permissions = set()
     features = set()
     initClasses = set()
@@ -349,7 +349,7 @@ def solvedepsAndroid(globs,
                 root = tree.getroot()
 
                 for jar in root.iter('jar'):
-                    jars.append(jar.attrib['file'])
+                    jars.add(jar.attrib['file'])
 
                     if 'initClass' in jar.attrib:
                         initClasses.add(jar.attrib['initClass'])
@@ -379,7 +379,7 @@ def solvedepsAndroid(globs,
     print('To: ', outJarsDir)
     print()
 
-    for jar in sorted(jars):
+    for jar in sorted(list(jars)):
         srcPath = os.path.join(qtInstallPrefx, jar)
 
         if os.path.exists(srcPath):
@@ -1009,6 +1009,7 @@ def preRun(globs, configs, dataDir):
         print('Removing unused architectures')
         removeInvalidAndroidArchs(targetArch, assetsDir)
         print('Fixing Android libs')
+        print()
         fixQtLibs(globs, libDir, outputQtPluginsDir, outputAssetsDir)
         print()
         print('Copying Android build templates')

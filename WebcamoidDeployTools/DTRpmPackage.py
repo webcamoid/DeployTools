@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -26,8 +27,12 @@ import tempfile
 from . import DTUtils
 
 
+# https://www.redhat.com/sysadmin/create-rpm-package
+
 def fakeroot():
     return DTUtils.whereBin('fakeroot')
+
+# rpmdev-setuptree
 
 def dpkgDeb():
     return DTUtils.whereBin('dpkg-deb')
@@ -42,16 +47,6 @@ def createDebFile(globs,
                   outPackage,
                   packageName,
                   version,
-                  section,
-                  priority,
-                  maintainer,
-                  title,
-                  descriptionFile,
-                  homepage,
-                  depends,
-                  suggests,
-                  recommends,
-                  conflicts,
                   installPrefix,
                   links,
                   verbose):
@@ -64,106 +59,6 @@ def createDebFile(globs,
             os.makedirs(prefixDir)
 
         DTUtils.copy(dataDir, prefixDir)
-
-        # Create DEBIAN folder
-
-        debianDir = os.path.join(debDataDir, 'DEBIAN')
-
-        if not os.path.exists(debianDir):
-            os.makedirs(debianDir)
-
-        # Write the files links
-
-        for link in links:
-            try:
-                lnk = os.path.join(debDataDir, link[0])
-                os.makedirs(os.path.dirname(lnk))
-                os.symlink(link[1], lnk)
-            except:
-                return False
-
-        # Write the control file
-
-        controlFile = os.path.join(debianDir, 'control')
-
-        with open(controlFile, 'w', encoding='utf-8') as ctrlFile:
-            ctrlFile.write('Package: {}\n'.format(packageName))
-            ctrlFile.write('Version: {}\n'.format(version))
-
-            if len(section) > 0:
-                ctrlFile.write('Section: {}\n'.format(section))
-
-            if len(priority) > 0:
-                ctrlFile.write('Priority: {}\n'.format(priority))
-
-            ctrlFile.write('Architecture: {}\n'.format(targetArch))
-            ctrlFile.write('Maintainer: {}\n'.format(maintainer))
-            ctrlFile.write('Description: {}\n'.format(title))
-
-            if len(descriptionFile) > 0 and os.path.exists(descriptionFile):
-                with open(descriptionFile) as description:
-                    for line in description:
-                        description.write(' {}'.format(line))
-
-            if len(depends) > 0:
-                ctrlFile.write('Depends: {}\n'.format(', '.join(depends)))
-
-            if len(suggests) > 0:
-                ctrlFile.write('Suggests: {}\n'.format(', '.join(suggests)))
-
-            if len(recommends) > 0:
-                ctrlFile.write('Recommends: {}\n'.format(', '.join(recommends)))
-
-            if len(conflicts) > 0:
-                ctrlFile.write('Conflicts: {}\n'.format(', '.join(conflicts)))
-
-            if len(homepage) > 0:
-                ctrlFile.write('Homepage: {}\n'.format(homepage))
-
-        # Build the package
-
-        params = [fakeroot(),
-                  dpkgDeb(),
-                  '-v',
-                  '--build',
-                  debDataDir,
-                  outPackage]
-
-        if verbose:
-            process = subprocess.Popen(params) # nosec
-        else:
-            process = subprocess.Popen(params, # nosec
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE)
-
-        process.communicate()
-
-        # Check with the linter
-
-        lint = lintian()
-
-        if len(lint) > 0:
-            params = [lint, outPackage]
-
-            if verbose:
-                process = subprocess.Popen(params) # nosec
-            else:
-                process = subprocess.Popen(params, # nosec
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE)
-
-            process.communicate()
-
-        if not os.path.exists(outPackage):
-            return
-
-        mutex.acquire()
-
-        if not 'outputPackages' in globs:
-            globs['outputPackages'] = []
-
-        globs['outputPackages'].append(outPackage)
-        mutex.release()
 
 def platforms():
     return ['posix']
@@ -244,17 +139,18 @@ def run(globs, configs, dataDir, outputDir, mutex):
 
     links = [lnk.split(':') for lnk in lnks]
     installPrefix = configs.get('DebPackage', 'installPrefix', fallback='').strip()
-    verbose = configs.get('DebPackage', 'verbose', fallback='false').strip()
+    verbose = configs.get('DebPackage', 'verbose', fallback='true').strip()
     verbose = DTUtils.toBool(verbose)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
     hideArch = configs.get('AppImage', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
-    outPackage = os.path.join(outputDir, '{}_{}'.format(packageName, version))
+    releaseVersion = 1
+    outPackage = os.path.join(outputDir, '{}-{}-{}'.format(packageName, version, releaseVersion))
 
     if not hideArch:
-        outPackage += '_{}'.format(targetArch)
+        outPackage += '.{}'.format(targetArch)
 
-    outPackage += '.deb'
+    outPackage += '.rpm'
 
     # Remove old file
     if os.path.exists(outPackage):
@@ -267,16 +163,6 @@ def run(globs, configs, dataDir, outputDir, mutex):
                   outPackage,
                   packageName,
                   version,
-                  section,
-                  priority,
-                  maintainer,
-                  title,
-                  descriptionFile,
-                  homepage,
-                  depends,
-                  suggests,
-                  recommends,
-                  conflicts,
                   installPrefix,
                   links,
                   verbose)

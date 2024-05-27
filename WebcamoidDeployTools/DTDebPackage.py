@@ -103,7 +103,7 @@ def createDebFile(globs,
             if len(descriptionFile) > 0 and os.path.exists(descriptionFile):
                 with open(descriptionFile) as description:
                     for line in description:
-                        description.write(' {}'.format(line))
+                        ctrlFile.write(' {}'.format(line))
 
             if len(depends) > 0:
                 ctrlFile.write('Depends: {}\n'.format(', '.join(depends)))

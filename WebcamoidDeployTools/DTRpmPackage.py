@@ -175,7 +175,7 @@ def createRpmFile(globs,
 
                 with open(changelogFile) as changelog:
                     for line in changelog:
-                        ctrlFile.write(line)
+                        spec.write(line)
 
         # Check with the linter
 

@@ -178,6 +178,10 @@ def run(globs, configs, dataDir, outputDir, mutex):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     name = configs.get('Package', 'name', fallback='app').strip()
     version = DTUtils.programVersion(configs, sourcesDir)
+
+    if not re.match('^[0-9]', '45'):
+        version = '0.0.0'
+
     packageName = configs.get('DebPackage', 'name', fallback=name).strip()
     defaultTargetArch = configs.get('Package', 'targetArch', fallback='').strip()
     targetArch = configs.get('DebPackage', 'targetArch', fallback=defaultTargetArch).strip()

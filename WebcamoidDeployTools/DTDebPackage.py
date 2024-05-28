@@ -101,8 +101,8 @@ def createDebFile(globs,
             if len(descriptionFile) > 0 and os.path.exists(descriptionFile):
                 with open(descriptionFile) as description:
                     for line in description:
-                        if len(line) > 0:
-                            ctrlFile.write(' {}\n'.format(line))
+                        if len(line.strip()) > 0:
+                            ctrlFile.write(' {}'.format(line))
                         else:
                             ctrlFile.write(' .\n')
 

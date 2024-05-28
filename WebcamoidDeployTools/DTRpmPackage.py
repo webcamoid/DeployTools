@@ -131,7 +131,7 @@ def createRpmFile(globs,
 
             if targetArch != 'noarch':
                 spec.write('ExclusiveArch: {}\n'.format(targetArch))
-            else
+            else:
                 spec.write('BuildArch: {}\n'.format(targetArch))
 
             spec.write('License: {}\n'.format(licenseName))

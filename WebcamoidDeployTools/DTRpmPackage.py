@@ -29,9 +29,6 @@ import tempfile
 from . import DTUtils
 
 
-def fakeroot():
-    return DTUtils.whereBin('fakeroot')
-
 def rpmbuild():
     return DTUtils.whereBin('rpmbuild')
 
@@ -195,8 +192,7 @@ def createRpmFile(globs,
 
         # Build the package
 
-        params = [fakeroot(),
-                  rpmbuild(),
+        params = [rpmbuild(),
                   '-v',
                   '-bb',
                   specFile]
@@ -249,15 +245,16 @@ def platforms():
     return ['posix']
 
 def isAvailable(configs):
-    if fakeroot() == '':
-        return False
-
     return rpmbuild() != ''
 
 def run(globs, configs, dataDir, outputDir, mutex):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     name = configs.get('Package', 'name', fallback='app').strip()
     version = DTUtils.programVersion(configs, sourcesDir)
+
+    if not re.match('^[0-9]', version):
+        version = '0.0.0'
+
     packageName = configs.get('RpmPackage', 'name', fallback=name).strip()
     defaultTargetArch = configs.get('Package', 'targetArch', fallback='').strip()
     targetArch = configs.get('RpmPackage', 'targetArch', fallback=defaultTargetArch).strip()

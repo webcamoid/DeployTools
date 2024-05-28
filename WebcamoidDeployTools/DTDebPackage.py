@@ -180,7 +180,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     name = configs.get('Package', 'name', fallback='app').strip()
     version = DTUtils.programVersion(configs, sourcesDir)
 
-    if not re.match('^[0-9]', '45'):
+    if not re.match('^[0-9]', version):
         version = '0.0.0'
 
     packageName = configs.get('DebPackage', 'name', fallback=name).strip()

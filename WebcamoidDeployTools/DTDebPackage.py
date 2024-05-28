@@ -104,7 +104,7 @@ def createDebFile(globs,
                         if len(line) > 0:
                             ctrlFile.write(' {}'.format(line))
                         else:
-                            ctrlFile.write(' .')
+                            ctrlFile.write(' .\n')
 
             if len(depends) > 0:
                 ctrlFile.write('Depends: {}\n'.format(', '.join(depends)))

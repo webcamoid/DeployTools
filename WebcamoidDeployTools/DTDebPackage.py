@@ -20,6 +20,7 @@
 # Web-Site: http://github.com/webcamoid/DeployTools/
 
 import os
+import re
 import subprocess
 import tempfile
 

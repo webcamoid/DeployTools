@@ -153,7 +153,7 @@ def createRpmFile(globs,
             if len(descriptionFile) > 0 and os.path.exists(descriptionFile):
                 with open(descriptionFile) as description:
                     for line in description:
-                        ctrlFile.write(line)
+                        spec.write(line)
 
             spec.write('\n')
             spec.write('%prep\n')

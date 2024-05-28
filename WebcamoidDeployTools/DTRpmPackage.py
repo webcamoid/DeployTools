@@ -21,6 +21,7 @@
 # Web-Site: http://github.com/webcamoid/DeployTools/
 
 import os
+import re
 import shutil
 import subprocess
 import tarfile

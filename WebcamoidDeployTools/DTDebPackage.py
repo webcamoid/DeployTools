@@ -27,9 +27,6 @@ import tempfile
 from . import DTUtils
 
 
-def fakeroot():
-    return DTUtils.whereBin('fakeroot')
-
 def dpkgDeb():
     return DTUtils.whereBin('dpkg-deb')
 
@@ -104,7 +101,10 @@ def createDebFile(globs,
             if len(descriptionFile) > 0 and os.path.exists(descriptionFile):
                 with open(descriptionFile) as description:
                     for line in description:
-                        ctrlFile.write(' {}'.format(line))
+                        if len(line) > 0:
+                            ctrlFile.write(' {}'.format(line))
+                        else:
+                            ctrlFile.write(' .')
 
             if len(depends) > 0:
                 ctrlFile.write('Depends: {}\n'.format(', '.join(depends)))
@@ -123,8 +123,7 @@ def createDebFile(globs,
 
         # Build the package
 
-        params = [fakeroot(),
-                  dpkgDeb(),
+        params = [dpkgDeb(),
                   '-v',
                   '--build',
                   debDataDir,
@@ -170,9 +169,6 @@ def platforms():
     return ['posix']
 
 def isAvailable(configs):
-    if fakeroot() == '':
-        return False
-
     return dpkgDeb() != ''
 
 def run(globs, configs, dataDir, outputDir, mutex):

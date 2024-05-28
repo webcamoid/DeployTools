@@ -128,10 +128,16 @@ def createRpmFile(globs,
             spec.write('Version: {}\n'.format(version))
             spec.write('Release: 1%{?dist}\n')
             spec.write('Summary: {}\n'.format(summary))
-            spec.write('BuildArch: {}\n'.format(targetArch))
+
+            if targetArch != 'noarch':
+                spec.write('ExclusiveArch: {}\n'.format(targetArch))
+            else
+                spec.write('BuildArch: {}\n'.format(targetArch))
+
             spec.write('License: {}\n'.format(licenseName))
             spec.write('URL: {}\n'.format(homepage))
             spec.write('Source0: {}\n'.format(sourceFileName))
+            spec.write('BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-build\n')
 
             for dep in requires:
                 spec.write('Requires: {}\n'.format(dep))

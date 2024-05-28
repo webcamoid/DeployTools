@@ -102,7 +102,7 @@ def createDebFile(globs,
                 with open(descriptionFile) as description:
                     for line in description:
                         if len(line) > 0:
-                            ctrlFile.write(' {}'.format(line))
+                            ctrlFile.write(' {}\n'.format(line))
                         else:
                             ctrlFile.write(' .\n')
 
@@ -120,6 +120,10 @@ def createDebFile(globs,
 
             if len(homepage) > 0:
                 ctrlFile.write('Homepage: {}\n'.format(homepage))
+
+        with open(controlFile) as ctrlFile:
+            for line in ctrlFile:
+                print('> ' + line)
 
         # Build the package
 

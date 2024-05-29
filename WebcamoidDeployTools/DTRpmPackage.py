@@ -336,7 +336,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
 
     links = [lnk.split(':') for lnk in lnks]
     installPrefix = configs.get('RpmPackage', 'installPrefix', fallback='').strip()
-    verbose = configs.get('RpmPackage', 'verbose', fallback='true').strip()
+    verbose = configs.get('RpmPackage', 'verbose', fallback='false').strip()
     verbose = DTUtils.toBool(verbose)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
     hideArch = configs.get('RpmPackage', 'hideArch', fallback=defaultHideArch).strip()

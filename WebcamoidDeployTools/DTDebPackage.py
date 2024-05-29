@@ -292,7 +292,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
 
     links = [lnk.split(':') for lnk in lnks]
     installPrefix = configs.get('DebPackage', 'installPrefix', fallback='').strip()
-    verbose = configs.get('DebPackage', 'verbose', fallback='true').strip()
+    verbose = configs.get('DebPackage', 'verbose', fallback='false').strip()
     verbose = DTUtils.toBool(verbose)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
     hideArch = configs.get('DebPackage', 'hideArch', fallback=defaultHideArch).strip()

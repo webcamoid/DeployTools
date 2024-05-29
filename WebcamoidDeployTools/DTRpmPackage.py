@@ -94,10 +94,14 @@ def createRpmFile(globs,
         for link in links:
             try:
                 lnk = os.path.join(tempDataDir, link[0])
-                os.makedirs(os.path.dirname(lnk))
+                lnkDir = os.path.dirname(lnk)
+
+                if not os.path.exists(lnkDir):
+                    os.makedirs(lnkDir)
+
                 os.symlink(link[1], lnk)
             except:
-                return False
+                pass
 
         # List installed files
 
@@ -161,6 +165,7 @@ def createRpmFile(globs,
 
             spec.write('\n')
             spec.write('%prep\n')
+            spec.write('tar -xvf "%{SOURCE0}" -C "%{_builddir}"\n')
             spec.write('\n')
             spec.write('%build\n')
             spec.write('\n')
@@ -267,7 +272,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     targetArch = configs.get('RpmPackage', 'targetArch', fallback=defaultTargetArch).strip()
     summary = configs.get('RpmPackage', 'summary', fallback='').strip()
     descriptionFile = configs.get('RpmPackage', 'descriptionFile', fallback='').strip()
-    changeLogFile = configs.get('RpmPackage', 'changelog', fallback='').strip()
+    changeLogFile = configs.get('RpmPackage', 'changeLog', fallback='').strip()
 
     if len(changeLogFile) > 0:
         changeLogFile = os.path.join(sourcesDir, changeLogFile)
@@ -334,7 +339,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     verbose = configs.get('RpmPackage', 'verbose', fallback='true').strip()
     verbose = DTUtils.toBool(verbose)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
-    hideArch = configs.get('AppImage', 'hideArch', fallback=defaultHideArch).strip()
+    hideArch = configs.get('RpmPackage', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
     releaseVersion = 1
     outPackage = os.path.join(outputDir, '{}-{}-{}'.format(packageName, version, releaseVersion))

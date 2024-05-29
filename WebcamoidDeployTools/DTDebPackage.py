@@ -19,6 +19,7 @@
 #
 # Web-Site: http://github.com/webcamoid/DeployTools/
 
+import gzip
 import os
 import re
 import subprocess
@@ -45,7 +46,9 @@ def createDebFile(globs,
                   maintainer,
                   title,
                   descriptionFile,
+                  changeLogFile,
                   homepage,
+                  copyrightFile,
                   depends,
                   suggests,
                   recommends,
@@ -78,7 +81,42 @@ def createDebFile(globs,
                 os.makedirs(os.path.dirname(lnk))
                 os.symlink(link[1], lnk)
             except:
-                return False
+                pass
+
+        # Also link the copyright file
+
+        link = os.path.join('/', installPrefix, copyrightFile)
+        outCopyrightFile = os.path.join(debDataDir,
+                                        'usr',
+                                        'share',
+                                        'doc',
+                                        packageName,
+                                        'copyright')
+
+        try:
+            lnkDir = os.path.dirname(outCopyrightFile)
+
+            if not os.path.exists(lnkDir):
+                os.makedirs(lnkDir)
+
+            os.symlink(link, outCopyrightFile)
+        except:
+            pass
+
+        # Write the changelog file
+
+        outChangeLogFile = os.path.join(debDataDir,
+                                        'usr',
+                                        'share',
+                                        'doc',
+                                        packageName,
+                                        'changelog.gz')
+
+        if os.path.exists(changeLogFile):
+            with open(changeLogFile) as clf:
+                with gzip.open(outChangeLogFile, 'wb') as gz:
+                    for line in clf:
+                        gz.write(line.encode('utf-8'))
 
         # Write the control file
 
@@ -102,6 +140,9 @@ def createDebFile(globs,
                 with open(descriptionFile) as description:
                     for line in description:
                         if len(line.strip()) > 0:
+                            if line.startswith('-') or  line.startswith('*'):
+                                ctrlFile.write(' ')
+
                             ctrlFile.write(' {}'.format(line))
                         else:
                             ctrlFile.write(' .\n')
@@ -120,10 +161,6 @@ def createDebFile(globs,
 
             if len(homepage) > 0:
                 ctrlFile.write('Homepage: {}\n'.format(homepage))
-
-        with open(controlFile) as ctrlFile:
-            for line in ctrlFile:
-                print('> ' + line)
 
         # Build the package
 
@@ -191,7 +228,13 @@ def run(globs, configs, dataDir, outputDir, mutex):
     maintainer = configs.get('DebPackage', 'maintainer', fallback='').strip()
     title = configs.get('DebPackage', 'title', fallback='').strip()
     descriptionFile = configs.get('DebPackage', 'descriptionFile', fallback='').strip()
+    changeLogFile = configs.get('DebPackage', 'changeLog', fallback='').strip()
+
+    if len(changeLogFile) > 0:
+        changeLogFile = os.path.join(sourcesDir, changeLogFile)
+
     homepage = configs.get('DebPackage', 'homepage', fallback='').strip()
+    copyrightFile = configs.get('DebPackage', 'copyrightFile', fallback='').strip()
     depends = configs.get('DebPackage', 'depends', fallback='').strip()
     deps = set()
 
@@ -252,7 +295,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     verbose = configs.get('DebPackage', 'verbose', fallback='true').strip()
     verbose = DTUtils.toBool(verbose)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
-    hideArch = configs.get('AppImage', 'hideArch', fallback=defaultHideArch).strip()
+    hideArch = configs.get('DebPackage', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
     outPackage = os.path.join(outputDir, '{}_{}'.format(packageName, version))
 
@@ -277,7 +320,9 @@ def run(globs, configs, dataDir, outputDir, mutex):
                   maintainer,
                   title,
                   descriptionFile,
+                  changeLogFile,
                   homepage,
+                  copyrightFile,
                   depends,
                   suggests,
                   recommends,

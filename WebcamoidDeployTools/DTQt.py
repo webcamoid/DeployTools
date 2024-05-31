@@ -1045,6 +1045,7 @@ def preRun(globs, configs, dataDir):
         globs['environment'].add(('QT_QUICK_BACKEND', '', 'Default values: software | d3d12 | openvg', True))
 
     globs['environment'].add(('QT_DEBUG_PLUGINS', 1, 'Enable plugin debugging', True))
+    globs['environment'].add(('QT_LOGGING_RULES', '"*.debug=true"', 'Enable logging', True))
 
 def postRun(globs, configs, dataDir):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()

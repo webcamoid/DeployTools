@@ -156,7 +156,9 @@ if __name__ =='__main__':
         packagedFiles = sorted(packagedFiles)
 
         for f in packagedFiles:
-            print('    ' + os.path.relpath(f, options.data_dir))
+            path = os.path.relpath(f, options.data_dir)
+            fileSize = DTUtils.hrSize(os.path.getsize(f))
+            print('    {} {}'.format(path, fileSize))
 
         print()
         size = DTUtils.pathSize(options.data_dir)
@@ -209,7 +211,9 @@ if __name__ =='__main__':
                 print('Packages created:')
 
                 for package in globs['outputPackages']:
-                    print('   ', os.path.basename(package), DTUtils.hrSize(os.path.getsize(package)))
+                    path = os.path.basename(package)
+                    fileSize = DTUtils.hrSize(os.path.getsize(package))
+                    print('    {} {}'.format(path, fileSize))
                     print('        md5sum:', DTUtils.md5sum(package))
 
             else:

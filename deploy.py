@@ -157,8 +157,12 @@ if __name__ =='__main__':
 
         for f in packagedFiles:
             path = os.path.relpath(f, options.data_dir)
-            fileSize = DTUtils.hrSize(os.path.getsize(f))
-            print('    {} {}'.format(path, fileSize))
+
+            if os.path.exists(f):
+                fileSize = DTUtils.hrSize(os.path.getsize(f))
+                print('    {} {}'.format(path, fileSize))
+            else:
+                print('    {}'.format(path))
 
         print()
         size = DTUtils.pathSize(options.data_dir)

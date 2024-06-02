@@ -680,6 +680,7 @@ def solvedepsQml(globs,
 
 def solvedepsPlugins(globs,
                      configs,
+                     mainExecutable,
                      targetPlatform,
                      targetArch,
                      debug,
@@ -760,7 +761,7 @@ def solvedepsPlugins(globs,
             continue
 
         # QtMultimediaQuick seems to be a dynamically loaded library so copy it
-        # to the libary directory.
+        # to the library directory.
         if targetPlatform == 'mac' and re.match('.*Qt[0-9]*Multimedia\\.framework', libName) \
             and not 'MultimediaQuick' in libName:
                 if os.path.exists(dep):
@@ -779,7 +780,13 @@ def solvedepsPlugins(globs,
                         libName.replace('Multimedia', 'MultimediaQuick')
                     multimediaQuickLib = \
                         dep.replace(libName, multimediaQuickLibName)
-                    dst = os.path.join(libDir, os.path.basename(multimediaQuickLib))
+                    dst = ''
+
+                    if targetPlatform == 'windows':
+                        binDir = os.path.dirname(mainExecutable)
+                        dst = os.path.join(binDir, os.path.basename(multimediaQuickLib))
+                    else:
+                        dst = os.path.join(libDir, os.path.basename(multimediaQuickLib))
 
                     print('    {} -> {}'.format(multimediaQuickLib, dst))
                     DTUtils.copy(multimediaQuickLib, dst)
@@ -869,6 +876,8 @@ def preRun(globs, configs, dataDir):
     debug =  configs.get('Package', 'debug', fallback='false').strip()
     debug = DTUtils.toBool(debug)
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
+    mainExecutable = configs.get('Package', 'mainExecutable', fallback='').strip()
+    mainExecutable = os.path.join(dataDir, mainExecutable)
     libDir = configs.get('Package', 'libDir', fallback='').strip()
     qtVersion = configs.get('Qt', 'version', fallback='6').strip()
 
@@ -975,6 +984,7 @@ def preRun(globs, configs, dataDir):
     print()
     solvedepsPlugins(globs,
                      configs,
+                     mainExecutable,
                      targetPlatform,
                      targetArch,
                      debug,

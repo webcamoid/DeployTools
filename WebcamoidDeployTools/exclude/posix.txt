@@ -19,42 +19,42 @@
 (.*/)*libstdc\+\+.so.[0-9]+
 
 # Core libraries
-(.*/)*libSM.so.6
-(.*/)*libblkid.so.1
-(.*/)*libcap.so.2
-(.*/)*libcom_err.so.2
+(.*/)*libSM.so.[0-9]+
+(.*/)*libblkid.so.[0-9]+
+(.*/)*libcap.so.[0-9]+
+(.*/)*libcom_err.so.[0-9]+
 (.*/)*libcrypto.so.1.0.0
 (.*/)*libdb-5.3.so
-(.*/)*libdbus-1.so.3
-(.*/)*libexpat.so.1
-(.*/)*libfontconfig.so.1
-(.*/)*libfreetype.so.6
-(.*/)*libgcrypt.so.20
-(.*/)*libgmp.so.10
-(.*/)*libgpg-error.so.0
-(.*/)*libgssapi_krb5.so.2
-(.*/)*libharfbuzz.so.0
-(.*/)*libk5crypto.so.3
-(.*/)*libkeyutils.so.1
-(.*/)*libkrb5.so.3
-(.*/)*libkrb5support.so.0
-(.*/)*liblz4.so.1
-(.*/)*liblzma.so.5
-(.*/)*libmount.so.1
+(.*/)*libdbus-1.so.[0-9]+
+(.*/)*libexpat.so.[0-9]+
+(.*/)*libfontconfig.so.[0-9]+
+(.*/)*libfreetype.so.[0-9]+
+(.*/)*libgcrypt.so.[0-9]+
+(.*/)*libgmp.so.[0-9]+
+(.*/)*libgpg-error.so.[0-9]+
+(.*/)*libgssapi_krb5.so.[0-9]+
+(.*/)*libharfbuzz.so.[0-9]+
+(.*/)*libk5crypto.so.[0-9]+
+(.*/)*libkeyutils.so.[0-9]+
+(.*/)*libkrb5.so.[0-9]+
+(.*/)*libkrb5support.so.[0-9]+
+(.*/)*liblz4.so.[0-9]+
+(.*/)*liblzma.so.[0-9]+
+(.*/)*libmount.so.[0-9]+
 (.*/)*libpcre.so.[0-9]+$
-(.*/)*libpcre16.so.0
-(.*/)*libssh2.so.1
+(.*/)*libpcre16.so.[0-9]+
+(.*/)*libssh2.so.[0-9]+
 (.*/)*libssl.so.1.0.0
-(.*/)*libtasn1.so.6
-(.*/)*libusb-1.0.so.0
-(.*/)*libuuid.so.1
-(.*/)*libz.so.1
+(.*/)*libtasn1.so.[0-9]+
+(.*/)*libusb-1.0.so.[0-9]+
+(.*/)*libuuid.so.[0-9]+
+(.*/)*libz.so.[0-9]+
 
 # Glib2
-(.*/)*libgio-2.0.so.0
-(.*/)*libglib-2.0.so.0
-(.*/)*libgmodule-2.0.so.0
-(.*/)*libgobject-2.0.so.0
+(.*/)*libgio-2.0.so.[0-9]+
+(.*/)*libglib-2.0.so.[0-9]+
+(.*/)*libgmodule-2.0.so.[0-9]+
+(.*/)*libgobject-2.0.so.[0-9]+
 
 # X11
 (.*/)*libX11-xcb.so.[0-9]+
@@ -97,19 +97,20 @@
 (.*/)*libxshmfence.so.[0-9]+
 
 # OpenGL
-(.*/)*libdrm.so.2
-(.*/)*libgbm.so.1
-(.*/)*libEGL.so.1
-(.*/)*libGL.so.1
-(.*/)*libGLX.so.0
-(.*/)*libGLdispatch.so.0
+(.*/)*libEGL.so.[0-9]+
+(.*/)*libGL.so.[0-9]+
+(.*/)*libGLX.so.[0-9]+
+(.*/)*libGLdispatch.so.[0-9]+
+(.*/)*libOpenGL.so.[0-9]+
+(.*/)*libdrm.so.[0-9]+
+(.*/)*libgbm.so.[0-9]+
 
 # Use system library instead
-(.*/)*libasound.so.2
-(.*/)*libpulse.so.0
-(.*/)*libpulse-simple.so.0
-(.*/)*libjack.so.0
-(.*/)*libv4l2.so.0
+(.*/)*libasound.so.[0-9]+
+(.*/)*libjack.so.[0-9]+
+(.*/)*libpulse-simple.so.[0-9]+
+(.*/)*libpulse.so.[0-9]+
+(.*/)*libv4l2.so.[0-9]+
 
 # KDE
 (.*/)*libKF5.*.so.[0-9]+

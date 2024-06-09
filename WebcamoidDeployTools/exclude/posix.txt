@@ -96,6 +96,9 @@
 (.*/)*libxkbcommon.so.[0-9]+
 (.*/)*libxshmfence.so.[0-9]+
 
+# Wayland
+(.*/)*libwayland-[a-z]+.so.[0-9]+
+
 # OpenGL
 (.*/)*libEGL.so.[0-9]+
 (.*/)*libGL.so.[0-9]+

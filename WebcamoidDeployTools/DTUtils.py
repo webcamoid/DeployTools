@@ -288,6 +288,9 @@ def md5sum(fileName):
     return sha.hexdigest()
 
 def hrSize(size):
+    if size < 1:
+        return '0 B'
+
     i = int(math.log(size) // math.log(1024))
 
     if i < 1:

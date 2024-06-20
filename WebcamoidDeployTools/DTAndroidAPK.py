@@ -333,7 +333,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     defaultPkgTargetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     pkgTargetPlatform = configs.get('AndroidAPK', 'pkgTargetPlatform', fallback=defaultPkgTargetPlatform).strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
-    verbose = configs.get('AndroidAPK', 'verbose', fallback='true').strip()
+    verbose = configs.get('AndroidAPK', 'verbose', fallback='false').strip()
     verbose = DTUtils.toBool(verbose)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
     hideArch = configs.get('AndroidAPK', 'hideArch', fallback=defaultHideArch).strip()

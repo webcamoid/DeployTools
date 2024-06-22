@@ -251,7 +251,10 @@ def copyAndroidTemplates(dataDir,
                          sdkBuildToolsRevision,
                          minSdkVersion,
                          targetSdkVersion,
-                         ndkABIFilters):
+                         ndkABIFilters,
+                         gradleParallel,
+                         gradleDaemon,
+                         gradleConfigureOnDemand):
     templates = [os.path.join(qtSourcesDir, '3rdparty/gradle'),
                  os.path.join(qtSourcesDir, 'android/templates')]
 
@@ -287,8 +290,9 @@ def copyAndroidTemplates(dataDir,
 
     with open(properties, 'w') as f:
         f.write('android.useAndroidX=false\n')
-        f.write('org.gradle.parallel=false\n')
-        f.write('org.gradle.daemon=false\n')
+        f.write('org.gradle.parallel={}\n'.format('true' if gradleParallel else 'false'))
+        f.write('org.gradle.daemon={}\n'format('true' if gradleDaemon else 'false'))
+        f.write('org.gradle.configureondemand={}\n'format('true' if gradleConfigureOnDemand else 'false'))
         f.write('org.gradle.configuration-cache=true\n')
         f.write('org.gradle.caching=true\n')
         f.write('org.gradle.jvmargs=-Xmx2048M\n')
@@ -962,6 +966,13 @@ def preRun(globs, configs, dataDir):
     if len(ndkABIFilters) < 1:
         ndkABIFilters = targetArch
 
+    gradleParallel = configs.get('AndroidAPK', 'gradleParallel', fallback='false').strip()
+    gradleParallel = DTUtils.toBool(gradleParallel)
+    gradleDaemon = configs.get('AndroidAPK', 'gradleDaemon', fallback='false').strip()
+    gradleDaemon = DTUtils.toBool(Daemon)
+    gradleConfigureOnDemand = configs.get('AndroidAPK', 'gradleConfigureOnDemand', fallback='false').strip()
+    gradleConfigureOnDemand = DTUtils.toBool(gradleConfigureOnDemand)
+
     print('Qt information')
     print()
     print('Qml sources directory: {}'.format(sourcesQmlDirs))
@@ -1039,7 +1050,10 @@ def preRun(globs, configs, dataDir):
                              sdkBuildToolsRevision,
                              minSdkVersion,
                              targetSdkVersion,
-                             ndkABIFilters)
+                             ndkABIFilters,
+                             gradleParallel,
+                             gradleDaemon,
+                             gradleConfigureOnDemand)
 
     if targetPlatform != 'android':
         print('Writting qt.conf file')

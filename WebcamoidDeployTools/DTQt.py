@@ -969,7 +969,7 @@ def preRun(globs, configs, dataDir):
     gradleParallel = configs.get('AndroidAPK', 'gradleParallel', fallback='false').strip()
     gradleParallel = DTUtils.toBool(gradleParallel)
     gradleDaemon = configs.get('AndroidAPK', 'gradleDaemon', fallback='false').strip()
-    gradleDaemon = DTUtils.toBool(Daemon)
+    gradleDaemon = DTUtils.toBool(gradleDaemon)
     gradleConfigureOnDemand = configs.get('AndroidAPK', 'gradleConfigureOnDemand', fallback='false').strip()
     gradleConfigureOnDemand = DTUtils.toBool(gradleConfigureOnDemand)
 

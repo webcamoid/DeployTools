@@ -291,8 +291,8 @@ def copyAndroidTemplates(dataDir,
     with open(properties, 'w') as f:
         f.write('android.useAndroidX=false\n')
         f.write('org.gradle.parallel={}\n'.format('true' if gradleParallel else 'false'))
-        f.write('org.gradle.daemon={}\n'format('true' if gradleDaemon else 'false'))
-        f.write('org.gradle.configureondemand={}\n'format('true' if gradleConfigureOnDemand else 'false'))
+        f.write('org.gradle.daemon={}\n'.format('true' if gradleDaemon else 'false'))
+        f.write('org.gradle.configureondemand={}\n'.format('true' if gradleConfigureOnDemand else 'false'))
         f.write('org.gradle.configuration-cache=true\n')
         f.write('org.gradle.caching=true\n')
         f.write('org.gradle.jvmargs=-Xmx2048M\n')

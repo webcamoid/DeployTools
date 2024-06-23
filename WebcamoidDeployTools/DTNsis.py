@@ -222,7 +222,7 @@ def createInstaller(globs,
                 f.write('!define MULTIUSER_INSTALLMODE_COMMANDLINE\n')
                 f.write('!define MULTIUSER_MUI\n')
 
-            f.write('!define UNINST_KEY "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${APP_NAME}"\n')
+            f.write('!define UNINST_KEY "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${' + 'APP_NAME' + '}"\n')
 
             f.write('SetCompressor /SOLID lzma\n')
             f.write('\n')
@@ -232,49 +232,49 @@ def createInstaller(globs,
                 f.write('!include MultiUser.nsh\n')
 
             if installScript != '':
-                f.write('!include "${INSTALL_SCRIPT}"\n')
+                f.write('!include "${' + 'INSTALL_SCRIPT' + '}"\n')
 
             f.write('\n')
-            f.write('Name "${APP_NAME} ${VERSION}"\n')
+            f.write('Name "${' + 'APP_NAME' + '} ${' + 'VERSION' + '}"\n')
 
             if icon != '':
-                f.write('Icon "${ICON}"\n')
+                f.write('Icon "${' + 'ICON' + '}"\n')
 
-            f.write('OutFile "${OUT_PACKAGE}"\n')
+            f.write('OutFile "${' + 'OUT_PACKAGE' + '}"\n')
 
             if targetDir != '':
-                f.write('InstallDir "${TARGET_DIR}"\n')
+                f.write('InstallDir "${' + 'TARGET_DIR' + '}"\n')
             else:
                 if targetArch == 'win64' or targetArch == 'win64_arm':
-                    f.write('InstallDir "$PROGRAMFILES64\\${APP_NAME}"\n')
+                    f.write('InstallDir "$PROGRAMFILES64\\${' + 'APP_NAME' + '}"\n')
                 else:
-                    f.write('InstallDir "$PROGRAMFILES\\${APP_NAME}"\n')
+                    f.write('InstallDir "$PROGRAMFILES\\${' + 'APP_NAME' + '}"\n')
 
             f.write('XPStyle on\n')
             f.write('\n')
-            f.write('VIFileVersion "${PRODUCT_VERSION}"\n')
-            f.write('VIProductVersion "${PRODUCT_VERSION}"\n')
-            f.write('VIAddVersionKey "ProductName" "${APP_NAME}"\n')
-            f.write('VIAddVersionKey "CompanyName" "${ORGANIZATION}"\n')
-            f.write('VIAddVersionKey "LegalCopyright" "${COPYRIGHT}"\n')
-            f.write('VIAddVersionKey "FileDescription" "${DESCRIPTION}"\n')
-            f.write('VIAddVersionKey "FileVersion" "${VERSION}"\n')
-            f.write('VIAddVersionKey "ProductVersion" "${PRODUCT_VERSION}"\n')
+            f.write('VIFileVersion "${' + 'PRODUCT_VERSION' + '}"\n')
+            f.write('VIProductVersion "${' + 'PRODUCT_VERSION' + '}"\n')
+            f.write('VIAddVersionKey "ProductName" "${' + 'APP_NAME' + '}"\n')
+            f.write('VIAddVersionKey "CompanyName" "${' + 'ORGANIZATION' + '}"\n')
+            f.write('VIAddVersionKey "LegalCopyright" "${' + 'COPYRIGHT' + '}"\n')
+            f.write('VIAddVersionKey "FileDescription" "${' + 'DESCRIPTION' + '}"\n')
+            f.write('VIAddVersionKey "FileVersion" "${' + 'VERSION' + '}"\n')
+            f.write('VIAddVersionKey "ProductVersion" "${' + 'PRODUCT_VERSION' + '}"\n')
             f.write('\n')
 
             if icon != '':
-                f.write('!define MUI_ICON "${ICON}"\n')
+                f.write('!define MUI_ICON "${' + 'ICON' + '}"\n')
 
             f.write('\n')
             f.write('!define MUI_ABORTWARNING\n')
             f.write('!define MUI_UNABORTWARNING\n')
             f.write('!define MUI_LANGDLL_ALLLANGUAGES\n')
             f.write('!define MUI_LANGDLL_REGISTRY_ROOT "HKCU"\n')
-            f.write('!define MUI_LANGDLL_REGISTRY_KEY "Software\${APP_NAME}"\n')
+            f.write('!define MUI_LANGDLL_REGISTRY_KEY "Software\\${' + 'APP_NAME' + '}"\n')
             f.write('!define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"\n')
             f.write('\n')
             f.write('!insertmacro MUI_PAGE_WELCOME\n')
-            f.write('!insertmacro MUI_PAGE_LICENSE "${LICENSE_FILE}"\n')
+            f.write('!insertmacro MUI_PAGE_LICENSE "${' + 'LICENSE_FILE' + '}"\n')
             f.write('!insertmacro MUI_PAGE_COMPONENTS\n')
 
             if multiUserInstall:
@@ -287,7 +287,7 @@ def createInstaller(globs,
             f.write('!insertmacro MUI_PAGE_INSTFILES\n')
 
             if runProgram != '':
-                f.write('!define MUI_FINISHPAGE_RUN "$INSTDIR\${RUN_PROGRAM}"\n')
+                f.write('!define MUI_FINISHPAGE_RUN "$INSTDIR\\${' + 'RUN_PROGRAM' + '}"\n')
 
             f.write('!insertmacro MUI_PAGE_FINISH\n')
             f.write('\n')
@@ -307,7 +307,7 @@ def createInstaller(globs,
             f.write('\n')
             f.write('!insertmacro MUI_RESERVEFILE_LANGDLL\n')
             f.write('\n')
-            f.write('Section "${APP_NAME}"\n')
+            f.write('Section "${' + 'APP_NAME' + '}"\n')
             f.write('SectionIn RO\n')
             f.write('!ifmacrodef INSTALL_SCRIPT_BEFORE_INSTALL\n')
             f.write('!insertmacro INSTALL_SCRIPT_BEFORE_INSTALL\n')
@@ -332,12 +332,12 @@ def createInstaller(globs,
 
             f.write('SetOutPath $INSTDIR\n')
             f.write('WriteUninstaller $INSTDIR\\uninstall.exe\n')
-            f.write('CreateDirectory "$SMPROGRAMS\${APP_NAME}"\n')
+            f.write('CreateDirectory "$SMPROGRAMS\\${' + 'APP_NAME' + '}"\n')
 
             if multiUserInstall:
-                f.write('CreateShortCut "$SMPROGRAMS\${APP_NAME}\\Uninstall.lnk" "$INSTDIR\\uninstall.exe" /$MultiUser.InstallMode\n')
+                f.write('CreateShortCut "$SMPROGRAMS\\${' + 'APP_NAME' + '}\\Uninstall.lnk" "$INSTDIR\\uninstall.exe" /$MultiUser.InstallMode\n')
             else:
-                f.write('CreateShortCut "$SMPROGRAMS\${APP_NAME}\\Uninstall.lnk" "$INSTDIR\\uninstall.exe"\n')
+                f.write('CreateShortCut "$SMPROGRAMS\\${' + 'APP_NAME' + '}\\Uninstall.lnk" "$INSTDIR\\uninstall.exe"\n')
 
             f.write('!ifmacrodef INSTALL_SCRIPT_AFTER_INSTALL\n')
             f.write('!insertmacro INSTALL_SCRIPT_AFTER_INSTALL\n')
@@ -345,17 +345,17 @@ def createInstaller(globs,
 
             # Add uninstall information to Add/Remove Programs
 
-            f.write('WriteRegStr SHCTX "${UNINST_KEY}" "DisplayName" "${APP_NAME}"\n')
+            f.write('WriteRegStr SHCTX "${' + 'UNINST_KEY' + '}" "DisplayName" "${' + 'APP_NAME' + '}"\n')
 
             if runProgram != '':
-                f.write('WriteRegStr SHCTX "${UNINST_KEY}" "DisplayIcon" "$\\"$INSTDIR\\${RUN_PROGRAM},0"\n')
+                f.write('WriteRegStr SHCTX "${' + 'UNINST_KEY' + '}" "DisplayIcon" "$\\"$INSTDIR\\${' + 'RUN_PROGRAM' + '},0"\n')
 
             if multiUserInstall:
-                f.write('WriteRegStr SHCTX "${UNINST_KEY}" "UninstallString" "$\\"$INSTDIR\\uninstall.exe$\\" /$MultiUser.InstallMode"\n')
-                f.write('WriteRegStr SHCTX "${UNINST_KEY}" "QuietUninstallString" "$\\"$INSTDIR\\uninstall.exe$\\" /$MultiUser.InstallMode /S"\n')
+                f.write('WriteRegStr SHCTX "${' + 'UNINST_KEY' + '}" "UninstallString" "$\\"$INSTDIR\\uninstall.exe$\\" /$MultiUser.InstallMode"\n')
+                f.write('WriteRegStr SHCTX "${' + 'UNINST_KEY' + '}" "QuietUninstallString" "$\\"$INSTDIR\\uninstall.exe$\\" /$MultiUser.InstallMode /S"\n')
             else:
-                f.write('WriteRegStr SHCTX "${UNINST_KEY}" "UninstallString" "$\\"$INSTDIR\\uninstall.exe$\\""\n')
-                f.write('WriteRegStr SHCTX "${UNINST_KEY}" "QuietUninstallString" "$\\"$INSTDIR\\uninstall.exe$\\" /S"\n')
+                f.write('WriteRegStr SHCTX "${' + 'UNINST_KEY' + '}" "UninstallString" "$\\"$INSTDIR\\uninstall.exe$\\""\n')
+                f.write('WriteRegStr SHCTX "${' + 'UNINST_KEY' + '}" "QuietUninstallString" "$\\"$INSTDIR\\uninstall.exe$\\" /S"\n')
 
             f.write('SectionEnd\n')
             f.write('\n')
@@ -376,12 +376,12 @@ def createInstaller(globs,
 
                 f.write('Section "Start menu"\n')
                 f.write('SectionIn RO\n')
-                f.write('CreateShortCut "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk" "$INSTDIR\${RUN_PROGRAM}"\n')
+                f.write('CreateShortCut "$SMPROGRAMS\\${' + 'APP_NAME' + '}\\${' + 'APP_NAME' + '}.lnk" "$INSTDIR\\${' + 'RUN_PROGRAM' + '}"\n')
                 f.write('SectionEnd\n')
                 f.write('\n')
 
                 f.write('Section "Desktop"\n')
-                f.write('CreateShortCut "$DESKTOP\${APP_NAME}.lnk" "$INSTDIR\${RUN_PROGRAM}"\n')
+                f.write('CreateShortCut "$DESKTOP\\${' + 'APP_NAME' + '}.lnk" "$INSTDIR\\${' + 'RUN_PROGRAM' + '}"\n')
                 f.write('SectionEnd\n')
                 f.write('\n')
 
@@ -416,10 +416,10 @@ def createInstaller(globs,
 
                 f.write('RMDir "{}"\n'.format(outPath))
 
-            f.write('RMDir /r "$SMPROGRAMS\${APP_NAME}"\n')
-            f.write('Delete "$DESKTOP\${APP_NAME}.lnk"\n')
-            f.write('Delete "$SMSTARTUP\${APP_NAME}.lnk"\n')
-            f.write('DeleteRegKey SHCTX "${UNINST_KEY}"\n')
+            f.write('RMDir /r "$SMPROGRAMS\\${' + 'APP_NAME' + '}"\n')
+            f.write('Delete "$DESKTOP\\${' + 'APP_NAME' + '}.lnk"\n')
+            f.write('Delete "$SMSTARTUP\\${' + 'APP_NAME' + '}.lnk"\n')
+            f.write('DeleteRegKey SHCTX "${' + 'UNINST_KEY' + '}"\n')
             f.write('SectionEnd\n')
             f.write('\n')
             f.write('Function un.onInit\n')
@@ -510,7 +510,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     requiresAdminRights = DTUtils.toBool(requiresAdminRights)
     multiUserInstall = configs.get('Nsis', 'multiUserInstall', fallback='false').strip()
     multiUserInstall = DTUtils.toBool(multiUserInstall)
-    verbose = configs.get('Nsis', 'verbose', fallback='false').strip()
+    verbose = configs.get('Nsis', 'verbose', fallback='true').strip()
     verbose = DTUtils.toBool(verbose)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
     hideArch = configs.get('Nsis', 'hideArch', fallback=defaultHideArch).strip()

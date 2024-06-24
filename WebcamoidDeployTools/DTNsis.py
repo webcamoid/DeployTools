@@ -205,7 +205,10 @@ def createInstaller(globs,
         }
 
         if installScript != '':
-            DTUtils.copy(installScript, tmpdir)
+            copyed = DTUtils.copy(installScript, tmpdir)
+
+            if copyed and verbose:
+                print('Copyed {} -> {}'.format(installScript, tmpdir))
 
         nsiScript = os.path.join(tmpdir, 'script.nsi')
 

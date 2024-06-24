@@ -337,7 +337,8 @@ def createInstaller(globs,
                     for fil in files:
                         filpath = os.path.join(root, fil)
                         filpath = filpath.replace('/', '\\')
-                        f.write('File "${' + 'BUILD_RESOURCES_DIR' + '}/{}"\n'.format(filpath))
+                        # f.write('File "{}"\n'.format(filpath))
+                        f.write('File "${' + 'BUILD_RESOURCES_DIR' + '}/' + filpath + '"\n')
 
             f.write('SetOutPath $INSTDIR\n')
             f.write('WriteUninstaller $INSTDIR\\uninstall.exe\n')

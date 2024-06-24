@@ -188,6 +188,8 @@ def createInstaller(globs,
         langs = ['English']
 
     with tempfile.TemporaryDirectory() as tmpdir:
+        installScriptBn = os.path.basename(installScript)
+
         installerVars = {
             'DATA_DIR': winPath(dataDir),
             'OUT_PACKAGE': winPath(outPackage),
@@ -200,15 +202,16 @@ def createInstaller(globs,
             'LICENSE_FILE': winPath(licenseFile),
             'RUN_PROGRAM': runProgram.replace('/', '\\'),
             'ICON': winPath(icon),
-            'INSTALL_SCRIPT': os.path.basename(installScript),
+            'INSTALL_SCRIPT': installScriptBn,
             'TARGET_DIR': targetDir
         }
 
         if installScript != '':
-            copyed = DTUtils.copy(installScript, tmpdir)
+            outInstallScript = os.path.join(tmpdir, installScriptBn)
+            copyed = DTUtils.copy(installScript, outInstallScript)
 
             if copyed and verbose:
-                print('Copyed {} -> {}'.format(installScript, tmpdir))
+                print('Copyed {} -> {}'.format(installScript, outInstallScript))
 
         nsiScript = os.path.join(tmpdir, 'script.nsi')
 

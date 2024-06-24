@@ -60,8 +60,6 @@ def winPath(path):
 def nsisDataDir():
     makeNSIS = 'makensis'
 
-    # if 'MSYSTEM' in os.environ:
-
     if DTUtils.hostPlatform() == 'windows':
         for rootDir in ['C:', '/c']:
             homeNSIS = [os.path.join(rootDir, 'Program Files (x86)', 'NSIS'),
@@ -169,6 +167,7 @@ def createInstaller(globs,
                     requiresAdminRights,
                     multiUserInstall,
                     verbose):
+    embedInstallScript = True
     nsisdataDir = nsisDataDir()
     langs = []
 
@@ -206,12 +205,9 @@ def createInstaller(globs,
             'TARGET_DIR': targetDir
         }
 
-        if installScript != '':
+        if installScript != '' and not embedInstallScript:
             outInstallScript = os.path.join(tmpdir, installScriptBn)
-            copyed = DTUtils.copy(installScript, outInstallScript)
-
-            if copyed and verbose:
-                print('Copyed {} -> {}'.format(installScript, outInstallScript))
+            DTUtils.copy(installScript, outInstallScript)
 
         nsiScript = os.path.join(tmpdir, 'script.nsi')
 
@@ -238,10 +234,11 @@ def createInstaller(globs,
                 f.write('!include MultiUser.nsh\n')
 
             if installScript != '':
-                #f.write('!include "${' + 'BUILD_RESOURCES_DIR' + '}/${' + 'INSTALL_SCRIPT' + '}"\n')
-
-                with open(installScript) as script:
-                    f.write(script.read())
+                if embedInstallScript:
+                    with open(installScript) as script:
+                        f.write(script.read())
+                else:
+                    f.write('!include "${' + 'INSTALL_SCRIPT' + '}"\n')
 
             f.write('\n')
             f.write('Name "${' + 'APP_NAME' + '} ${' + 'VERSION' + '}"\n')
@@ -337,8 +334,7 @@ def createInstaller(globs,
                     for fil in files:
                         filpath = os.path.join(root, fil)
                         filpath = filpath.replace('/', '\\')
-                        # f.write('File "{}"\n'.format(filpath))
-                        f.write('File "${' + 'BUILD_RESOURCES_DIR' + '}/' + filpath + '"\n')
+                        f.write('File "{}"\n'.format(winPath(filpath)))
 
             f.write('SetOutPath $INSTDIR\n')
             f.write('WriteUninstaller $INSTDIR\\uninstall.exe\n')

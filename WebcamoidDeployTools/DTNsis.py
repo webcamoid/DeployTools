@@ -232,7 +232,7 @@ def createInstaller(globs,
                 f.write('!include MultiUser.nsh\n')
 
             if installScript != '':
-                f.write('!include "${' + 'INSTALL_SCRIPT' + '}"\n')
+                f.write('!include "${' + 'BUILD_RESOURCES_DIR' + '}/${' + 'INSTALL_SCRIPT' + '}"\n')
 
             f.write('\n')
             f.write('Name "${' + 'APP_NAME' + '} ${' + 'VERSION' + '}"\n')

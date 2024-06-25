@@ -32,6 +32,7 @@ from . import DTUtils
 def winPath(path, verbose=False):
     if DTUtils.hostPlatform() == 'windows':
         cygpath = DTUtils.whereBin('cygpath')
+        print('cygpath: {}'.format(cygpath))
 
         if len(cygpath) < 1:
             if re.match('^/[a-zA-Z]/', path):

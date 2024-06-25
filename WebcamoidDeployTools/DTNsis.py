@@ -333,7 +333,6 @@ def createInstaller(globs,
 
                     for fil in files:
                         filpath = os.path.join(root, fil)
-                        filpath = filpath.replace('/', '\\')
                         f.write('File "{}"\n'.format(winPath(filpath)))
 
             f.write('SetOutPath $INSTDIR\n')

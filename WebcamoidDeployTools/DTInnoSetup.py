@@ -44,6 +44,9 @@ def cygpath():
     return ''
 
 def winPath(path, verbose=False):
+    if len(path) < 1:
+        return ''
+
     if DTUtils.hostPlatform() == 'windows':
         cygpathBin = cygpath()
         print('cygpath: {}'.format(cygpathBin))
@@ -56,15 +59,9 @@ def winPath(path, verbose=False):
             return path
 
         params = [cygpathBin, '-w', path]
-        process = None
-
-        if verbose:
-            process = subprocess.Popen(params) # nosec
-        else:
-            process = subprocess.Popen(params, # nosec
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE)
-
+        process = subprocess.Popen(params, # nosec
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
         stdout, _ = process.communicate()
 
         if process.returncode != 0:
@@ -76,15 +73,9 @@ def winPath(path, verbose=False):
         return stdout.decode(sys.getdefaultencoding()).strip()
     elif DTUtils.whereBin('makensis') == '':
         params = ['winepath', '-w', path]
-        process = None
-
-        if verbose:
-            process = subprocess.Popen(params) # nosec
-        else:
-            process = subprocess.Popen(params, # nosec
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE)
-
+        process = subprocess.Popen(params, # nosec
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
         stdout, _ = process.communicate()
 
         if process.returncode != 0:

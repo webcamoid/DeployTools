@@ -44,6 +44,9 @@ def cygpath():
     return ''
 
 def winPath(path, verbose=False):
+    if len(path) < 1:
+        return ''
+
     if DTUtils.hostPlatform() == 'windows':
         cygpathBin = cygpath()
         print('cygpath: {}'.format(cygpathBin))
@@ -56,15 +59,9 @@ def winPath(path, verbose=False):
             return path
 
         params = [cygpathBin, '-w', path]
-        process = None
-
-        if verbose:
-            process = subprocess.Popen(params) # nosec
-        else:
-            process = subprocess.Popen(params, # nosec
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE)
-
+        process = subprocess.Popen(params, # nosec
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
         stdout, _ = process.communicate()
 
         if process.returncode != 0:
@@ -76,15 +73,9 @@ def winPath(path, verbose=False):
         return stdout.decode(sys.getdefaultencoding()).strip()
     elif DTUtils.whereBin('makensis') == '':
         params = ['winepath', '-w', path]
-        process = None
-
-        if verbose:
-            process = subprocess.Popen(params) # nosec
-        else:
-            process = subprocess.Popen(params, # nosec
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.PIPE)
-
+        process = subprocess.Popen(params, # nosec
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
         stdout, _ = process.communicate()
 
         if process.returncode != 0:
@@ -230,17 +221,17 @@ def createInstaller(globs,
         installScriptBn = os.path.basename(installScript)
 
         installerVars = {
-            'DATA_DIR': winPath(dataDir, verbose),
-            'OUT_PACKAGE': winPath(outPackage, verbose),
+            'DATA_DIR': winPath(dataDir),
+            'OUT_PACKAGE': winPath(outPackage),
             'APP_NAME': appName,
             'VERSION': version,
             'PRODUCT_VERSION': productVersion,
             'DESCRIPTION': description,
             'ORGANIZATION': organization,
             'COPYRIGHT': copyright,
-            'LICENSE_FILE': winPath(licenseFile, verbose),
+            'LICENSE_FILE': winPath(licenseFile),
             'RUN_PROGRAM': runProgram.replace('/', '\\'),
-            'ICON': winPath(icon, verbose),
+            'ICON': winPath(icon),
             'INSTALL_SCRIPT': installScriptBn,
             'TARGET_DIR': targetDir
         }
@@ -373,7 +364,7 @@ def createInstaller(globs,
 
                     for fil in files:
                         filpath = os.path.join(root, fil)
-                        f.write('File "{}"\n'.format(winPath(filpath, verbose)))
+                        f.write('File "{}"\n'.format(winPath(filpath)))
 
             f.write('SetOutPath $INSTDIR\n')
             f.write('WriteUninstaller $INSTDIR\\uninstall.exe\n')
@@ -495,7 +486,7 @@ def createInstaller(globs,
         for key in installerVars:
             params += [optmrk + 'D{}={}'.format(key, installerVars[key])]
 
-        params += [winPath(nsiScript, verbose)]
+        params += [winPath(nsiScript)]
         process = None
         print('Params: {}'.format(params))
 

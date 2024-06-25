@@ -70,6 +70,9 @@ def winPath(path, verbose=False):
         if process.returncode != 0:
             return ''
 
+        if not stdout:
+            return ''
+
         return stdout.decode(sys.getdefaultencoding()).strip()
     elif DTUtils.whereBin('makensis') == '':
         params = ['winepath', '-w', path]
@@ -85,6 +88,9 @@ def winPath(path, verbose=False):
         stdout, _ = process.communicate()
 
         if process.returncode != 0:
+            return ''
+
+        if not stdout:
             return ''
 
         return stdout.decode(sys.getdefaultencoding()).strip()

@@ -340,7 +340,6 @@ def createInstaller(globs,
 
                     for fil in files:
                         filpath = os.path.join(root, fil)
-                        print('File "{}"\n'.format(winPath(filpath)))
                         f.write('File "{}"\n'.format(winPath(filpath)))
 
             f.write('SetOutPath $INSTDIR\n')
@@ -465,6 +464,7 @@ def createInstaller(globs,
 
         params += [winPath(nsiScript)]
         process = None
+        print('Params: {}'.format(params))
 
         if verbose:
             process = subprocess.Popen(params) # nosec

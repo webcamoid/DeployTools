@@ -29,7 +29,7 @@ import time
 from . import DTUtils
 
 
-def winPath(path):
+def winPath(path, verbose=False):
     if DTUtils.hostPlatform() == 'windows':
         cygpath = DTUtils.whereBin('cygpath')
 
@@ -41,9 +41,15 @@ def winPath(path):
             return path
 
         params = [cygpath, '-w', path]
-        process = subprocess.Popen(params, # nosec
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+        process = None
+
+        if verbose:
+            process = subprocess.Popen(params) # nosec
+        else:
+            process = subprocess.Popen(params, # nosec
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+
         stdout, _ = process.communicate()
 
         if process.returncode != 0:
@@ -52,9 +58,15 @@ def winPath(path):
         return stdout.decode(sys.getdefaultencoding()).strip()
     elif DTUtils.whereBin('makensis') == '':
         params = ['winepath', '-w', path]
-        process = subprocess.Popen(params, # nosec
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
+        process = None
+
+        if verbose:
+            process = subprocess.Popen(params) # nosec
+        else:
+            process = subprocess.Popen(params, # nosec
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+
         stdout, _ = process.communicate()
 
         if process.returncode != 0:

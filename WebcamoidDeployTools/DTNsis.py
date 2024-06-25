@@ -481,14 +481,13 @@ def createInstaller(globs,
             and makensisbin.lower().endswith('.exe'):
             params = ['wine']
 
-        params += [makensisbin, optmrk + 'V4']
+        params += [makensisbin, '{}V4'.format(optmrk)]
 
         for key in installerVars:
-            params += [optmrk + 'D{}={}'.format(key, installerVars[key])]
+            params += ['{}D{}={}'.format(optmrk, key, installerVars[key])]
 
         params += [winPath(nsiScript)]
         process = None
-        print('Params: {}'.format(params))
 
         if verbose:
             process = subprocess.Popen(params) # nosec
@@ -547,7 +546,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     requiresAdminRights = DTUtils.toBool(requiresAdminRights)
     multiUserInstall = configs.get('Nsis', 'multiUserInstall', fallback='false').strip()
     multiUserInstall = DTUtils.toBool(multiUserInstall)
-    verbose = configs.get('Nsis', 'verbose', fallback='true').strip()
+    verbose = configs.get('Nsis', 'verbose', fallback='false').strip()
     verbose = DTUtils.toBool(verbose)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
     hideArch = configs.get('Nsis', 'hideArch', fallback=defaultHideArch).strip()

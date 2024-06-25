@@ -49,7 +49,6 @@ def winPath(path, verbose=False):
 
     if DTUtils.hostPlatform() == 'windows':
         cygpathBin = cygpath()
-        print('cygpath: {}'.format(cygpathBin))
 
         if len(cygpathBin) < 1:
             if re.match('^/[a-zA-Z]/', path):
@@ -471,7 +470,8 @@ def createInstaller(globs,
 
         optmrk = '/'
 
-        if DTUtils.hostPlatform() != 'windows':
+        if DTUtils.hostPlatform() != 'windows' \
+            or sys.platform.startswith('cygwin'):
             optmrk = '-'
 
         params = []

@@ -29,18 +29,33 @@ import time
 from . import DTUtils
 
 
+def cygpath():
+    path = DTUtils.whereBin('cygpath')
+
+    if os.path.exists(path):
+        return path
+
+    for rootDir in ['C:', '/c']:
+        path = os.path.join(rootDir, 'msys64', 'usr', 'bin', 'cygpath.exe')
+
+        if os.path.exists(path):
+            return path
+
+    return ''
+
 def winPath(path, verbose=False):
     if DTUtils.hostPlatform() == 'windows':
-        cygpath = DTUtils.whereBin('cygpath')
+        cygpathBin = cygpath()
+        print('cygpath: {}'.format(cygpathBin))
 
-        if len(cygpath) < 1:
+        if len(cygpathBin) < 1:
             if re.match('^/[a-zA-Z]/', path):
                 path = '{}:{}'.format(path[1].upper(), path[2:])
                 path = path.replace('/', '\\')
 
             return path
 
-        params = [cygpath, '-w', path]
+        params = [cygpathBin, '-w', path]
         process = None
 
         if verbose:

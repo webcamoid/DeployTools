@@ -30,19 +30,23 @@ from . import DTUtils
 
 
 def winPath(path):
-    if 'MSYSTEM' in os.environ and DTUtils.hostPlatform() == 'windows':
-        params = ['cygpath', '-w', path]
+    if DTUtils.hostPlatform() == 'windows':
+        cygpath = DTUtils.whereBin('cygpath')
+
+        if len(cygpath) < 1:
+            return path
+
+        params = [cygpath, '-w', path]
         process = subprocess.Popen(params, # nosec
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
         stdout, _ = process.communicate()
 
         if process.returncode != 0:
             return ''
 
         return stdout.decode(sys.getdefaultencoding()).strip()
-
-    if DTUtils.hostPlatform() != 'windows':
+    elif DTUtils.whereBin('makensis') == '':
         params = ['winepath', '-w', path]
         process = subprocess.Popen(params, # nosec
                                    stdout=subprocess.PIPE,

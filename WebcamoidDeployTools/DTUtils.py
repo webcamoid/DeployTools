@@ -34,6 +34,9 @@ from . import DTUtils
 
 
 def hostPlatform():
+    # sys.executable
+    print('System {} - {}'.format(os.name, sys.platform))
+
     if os.name == 'posix' and sys.platform.startswith('darwin'):
         return 'mac'
     elif os.name == 'nt' and sys.platform.startswith('win32'):

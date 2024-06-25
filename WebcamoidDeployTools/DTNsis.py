@@ -34,6 +34,10 @@ def winPath(path):
         cygpath = DTUtils.whereBin('cygpath')
 
         if len(cygpath) < 1:
+            if re.match('^/[a-zA-Z]/', path):
+                path = '{}:{}'.format(path[1].upper(), path[2:])
+                path = path.replace('/', '\\')
+
             return path
 
         params = [cygpath, '-w', path]

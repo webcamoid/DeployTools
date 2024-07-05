@@ -20,8 +20,6 @@
 # Web-Site: http://github.com/webcamoid/DeployTools/
 
 import os
-import subprocess
-import sys
 
 from . import DTBinary
 from . import DTUtils
@@ -152,8 +150,6 @@ def preRun(globs, configs, dataDir):
     stripCmd = configs.get('System', 'stripCmd', fallback='strip').strip()
     havePipeWire = configs.get('PipeWire', 'havePipeWire', fallback='false').strip()
     havePipeWire = DTUtils.toBool(havePipeWire)
-    verbose = configs.get('PipeWire', 'verbose', fallback='false').strip()
-    verbose = DTUtils.toBool(verbose)
 
     if not havePipeWire:
         havePipeWire = dependsOnPipeWire(targetPlatform,

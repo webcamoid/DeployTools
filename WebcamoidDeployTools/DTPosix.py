@@ -233,7 +233,8 @@ def preRun(globs, configs, dataDir):
     extraLibs = list(elibs)
     runFixRpaths = configs.get('Posix', 'fixRpaths', fallback='true').strip()
     runFixRpaths = DTUtils.toBool(runFixRpaths)
-    solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
+    solver = DTBinary.BinaryTools(configs,
+                                  DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
                                   debug,
@@ -243,6 +244,7 @@ def preRun(globs, configs, dataDir):
     print('Copying required libs')
     print()
     DTUtils.solvedepsLibs(globs,
+                          configs,
                           mainExecutable,
                           targetPlatform,
                           targetArch,

@@ -25,15 +25,17 @@ import re
 import struct
 import sys
 
+from . import DTAndroid
 from . import DTBinary
 
 
 LD_LIBRARY_PATH = []
 LIBS_SEARCH_PATHS = []
-ANDROID_ARCH_MAP = [('arm64-v8a'  , 'aarch64', 'aarch64-linux-android'),
-                    ('armeabi-v7a', 'arm'    , 'arm-linux-androideabi'),
-                    ('x86'        , 'i686'   , 'i686-linux-android'   ),
-                    ('x86_64'     , 'x86_64' , 'x86_64-linux-android' )]
+ANDROID_ARCH_MAP = [('arm64-v8a'  , 'aarch64', 'aarch64-linux-android', 'aarch64'),
+                    ('armeabi-v7a', 'arm'    , 'arm-linux-androideabi', 'arm'    ),
+                    ('x86'        , 'i686'   , 'i686-linux-android'   , 'i386'   ),
+                    ('x86_64'     , 'x86_64' , 'x86_64-linux-android' , 'x86_64' ),
+                    ('riscv64'    , 'riscv64', 'riscv64-linux-android', 'riscv64')]
 
 def isValid(path):
     try:
@@ -90,7 +92,7 @@ def readLdconf(ldconf='/etc/ld.so.conf'):
 
     return libpaths
 
-def init(targetPlatform, targetArch, sysLibDir):
+def init(configs, targetPlatform, targetArch, sysLibDir):
     global LD_LIBRARY_PATH
     global LIBS_SEARCH_PATHS
 
@@ -104,18 +106,41 @@ def init(targetPlatform, targetArch, sysLibDir):
         elif 'ANDROID_NDK_ROOT' in os.environ:
             androidNDK = os.environ['ANDROID_NDK_ROOT']
 
+        androidToolchain = os.path.join(androidNDK,
+                                        'toolchains',
+                                        'llvm',
+                                        'prebuilt',
+                                        'linux-x86_64')
+        minSdkVersion = DTAndroid.readMinimumSdkVersion(configs)
+        ccVersion = DTAndroid.ccVersion(configs)
+        searchSdkLibs = False
+
+        try:
+            ccVersion = int(ccVersion[0])
+        except:
+            ccVersion = 0
+
         for arch in ANDROID_ARCH_MAP:
             if targetArch == arch[0]:
-                LIBS_SEARCH_PATHS = \
-                    [os.path.join(androidNDK,
-                                  'toolchains',
-                                  'llvm',
-                                  'prebuilt',
-                                  'linux-x86_64',
-                                  'sysroot',
-                                  'usr',
-                                  'lib',
-                                  arch[2])]
+                androidSysrootLib = os.path.join(androidToolchain,
+                                                 'sysroot',
+                                                 'usr',
+                                                 'lib',
+                                                 arch[2])
+
+                LIBS_SEARCH_PATHS = [androidSysrootLib]
+
+                if searchSdkLibs:
+                    LIBS_SEARCH_PATHS.append(os.path.join(androidSysrootLib,
+                                                          '{}'.format(minSdkVersion)))
+
+                LIBS_SEARCH_PATHS.append(os.path.join(androidToolchain,
+                                                      'lib',
+                                                      'clang',
+                                                      '{}'.format(ccVersion),
+                                                      'lib',
+                                                      'linux',
+                                                      arch[3]))
     else:
         LIBS_SEARCH_PATHS = readLdconf() \
                           + ['/usr/lib',

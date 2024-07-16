@@ -60,7 +60,7 @@ def name(binary, configs=None):
 
     return dep[: dep.lower().find('.dll')]
 
-def init(targetPlatform, targetArch, sysLibDir):
+def init(configs, targetPlatform, targetArch, sysLibDir):
     global EXTRA_LIBRARY_PATH
 
     EXTRA_LIBRARY_PATH = sysLibDir

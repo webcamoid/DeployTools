@@ -359,6 +359,7 @@ def compareVersions(version1, op, version2):
     return op(ver1, v2)
 
 def solvedepsLibs(globs,
+                  configs,
                   mainExecutable,
                   targetPlatform,
                   targetArch,
@@ -368,7 +369,8 @@ def solvedepsLibs(globs,
                   sysLibDir,
                   extraLibs,
                   stripCmd='strip'):
-    solver = DTBinary.BinaryTools(hostPlatform(),
+    solver = DTBinary.BinaryTools(configs,
+                                  hostPlatform(),
                                   targetPlatform,
                                   targetArch,
                                   debug,

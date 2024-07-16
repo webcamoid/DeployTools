@@ -31,6 +31,7 @@ from . import DTUtils
 
 class BinaryTools:
     def __init__(self,
+                 configs,
                  hostPlatform,
                  targetPlatform,
                  targetArch,
@@ -51,7 +52,7 @@ class BinaryTools:
         else:
             self.solver = importlib.import_module('WebcamoidDeployTools.DTBinaryElf')
 
-        self.solver.init(targetPlatform, targetArch, sysLibDir)
+        self.solver.init(configs, targetPlatform, targetArch, sysLibDir)
         self.excludes = []
         self.readExcludes()
 

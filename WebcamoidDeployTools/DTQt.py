@@ -756,7 +756,8 @@ def solvedepsPlugins(globs,
     if not 'dependencies' in globs:
         globs['dependencies'] = set()
 
-    solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
+    solver = DTBinary.BinaryTools(configs,
+                                  DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
                                   debug,
@@ -1022,19 +1023,8 @@ def preRun(globs, configs, dataDir):
         assetsDir = configs.get('Package', 'assetsDir', fallback='assets').strip()
         assetsDir = os.path.join(dataDir, assetsDir)
         sdkBuildToolsRevision = DTAndroid.buildToolsVersion(configs)
-        minSdkVersion = configs.get('Android', 'minSdkVersion', fallback='24').strip()
-
-        try:
-            minSdkVersion = int(minSdkVersion)
-        except:
-            minSdkVersion = 0
-
-        targetSdkVersion = configs.get('Android', 'targetSdkVersion', fallback='24').strip()
-
-        try:
-            targetSdkVersion = int(targetSdkVersion)
-        except:
-            targetSdkVersion = 0
+        minSdkVersion = DTAndroid.readMinimumSdkVersion(configs)
+        targetSdkVersion = DTAndroid.readTargetSdkVersion(configs)
 
         print('Removing unused architectures')
         removeInvalidAndroidArchs(targetArch, assetsDir)

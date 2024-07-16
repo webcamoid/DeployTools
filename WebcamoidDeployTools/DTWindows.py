@@ -222,7 +222,8 @@ def preRun(globs, configs, dataDir):
                 elibs.add(lib.strip())
 
     extraLibs = list(elibs)
-    solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
+    solver = DTBinary.BinaryTools(configs,
+                                  DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
                                   debug,
@@ -232,6 +233,7 @@ def preRun(globs, configs, dataDir):
     print('Copying required libs')
     print()
     DTUtils.solvedepsLibs(globs,
+                          configs,
                           mainExecutable,
                           targetPlatform,
                           targetArch,

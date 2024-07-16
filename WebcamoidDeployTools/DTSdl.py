@@ -25,12 +25,14 @@ from . import DTBinary
 from . import DTUtils
 
 
-def dependsOnSDL(targetPlatform,
+def dependsOnSDL(configs,
+                 targetPlatform,
                  targetArch,
                  debug,
                  dataDir,
                  sysLibDir):
-    solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
+    solver = DTBinary.BinaryTools(configs,
+                                  DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
                                   debug,
@@ -66,11 +68,12 @@ def preRun(globs, configs, dataDir):
     haveSDL = DTUtils.toBool(haveSDL)
 
     if not haveSDL:
-        haveSDL = dependsOnSDL(targetPlatform,
-                            targetArch,
-                            debug,
-                            dataDir,
-                            sysLibDir)
+        haveSDL = dependsOnSDL(configs,
+                               targetPlatform,
+                               targetArch,
+                               debug,
+                               dataDir,
+                               sysLibDir)
 
     if targetPlatform == 'android':
         print('Copying SDL classes file')

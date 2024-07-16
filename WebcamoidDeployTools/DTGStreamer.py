@@ -51,12 +51,14 @@ def pkgconfVariable(package, var):
 
     return stdout.decode(sys.getdefaultencoding()).strip()
 
-def dependsOnGStreammer(targetPlatform,
+def dependsOnGStreammer(configs,
+                        targetPlatform,
                         targetArch,
                         debug,
                         dataDir,
                         sysLibDir):
-    solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
+    solver = DTBinary.BinaryTools(configs,
+                                  DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
                                   debug,
@@ -167,7 +169,8 @@ def preRun(globs, configs, dataDir):
     verbose = DTUtils.toBool(verbose)
 
     if not haveGStreamer:
-        haveGStreamer = dependsOnGStreammer(targetPlatform,
+        haveGStreamer = dependsOnGStreammer(configs,
+                                            targetPlatform,
                                             targetArch,
                                             debug,
                                             dataDir,

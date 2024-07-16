@@ -73,7 +73,7 @@ def name(binary, configs=None):
 
     return dep
 
-def init(targetPlatform, targetArch, sysLibDir):
+def init(configs, targetPlatform, targetArch, sysLibDir):
     pass
 
 def solveRefpath(path):

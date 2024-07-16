@@ -25,12 +25,14 @@ from . import DTBinary
 from . import DTUtils
 
 
-def dependsOnPipeWire(targetPlatform,
+def dependsOnPipeWire(configs,
+                      targetPlatform,
                       targetArch,
                       debug,
                       dataDir,
                       sysLibDir):
-    solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
+    solver = DTBinary.BinaryTools(configs,
+                                  DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
                                   debug,
@@ -152,7 +154,8 @@ def preRun(globs, configs, dataDir):
     havePipeWire = DTUtils.toBool(havePipeWire)
 
     if not havePipeWire:
-        havePipeWire = dependsOnPipeWire(targetPlatform,
+        havePipeWire = dependsOnPipeWire(configs,
+                                         targetPlatform,
                                          targetArch,
                                          debug,
                                          dataDir,

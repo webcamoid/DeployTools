@@ -51,12 +51,14 @@ def pkgconfVariable(package, var):
 
     return stdout.decode(sys.getdefaultencoding()).strip()
 
-def dependsOnVLC(targetPlatform,
+def dependsOnVLC(configs,
+                 targetPlatform,
                  targetArch,
                  debug,
                  dataDir,
                  sysLibDir):
-    solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
+    solver = DTBinary.BinaryTools(configs,
+                                  DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
                                   debug,
@@ -98,6 +100,7 @@ def vlcCacheGen(targetPlatform):
     return cacheGen
 
 def copyVlcPlugins(globs,
+                   configs,
                    targetPlatform,
                    targetArch,
                    debug,
@@ -108,7 +111,8 @@ def copyVlcPlugins(globs,
                    vlcPluginsDir,
                    sysLibDir):
     if not haveVLC:
-        haveVLC = dependsOnVLC(targetPlatform,
+        haveVLC = dependsOnVLC(configs,
+                               targetPlatform,
                                targetArch,
                                debug,
                                dataDir,
@@ -211,6 +215,7 @@ def preRun(globs, configs, dataDir):
     print('Copying required VLC plugins')
     print()
     copyVlcPlugins(globs,
+                   configs,
                    targetPlatform,
                    targetArch,
                    debug,

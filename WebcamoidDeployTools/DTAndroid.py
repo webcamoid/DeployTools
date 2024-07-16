@@ -19,9 +19,12 @@
 #
 # Web-Site: http://github.com/webcamoid/DeployTools/
 
+import glob
 import os
 import platform
 import shutil
+import subprocess
+import sys
 import xml.etree.ElementTree as ET
 
 from . import DTBinary
@@ -29,6 +32,12 @@ from . import DTGit
 from . import DTSystemPackages
 from . import DTUtils
 
+
+ANDROID_ARCH_MAP = [('arm64-v8a'  , 'aarch64', ''    ),
+                    ('armeabi-v7a', 'armv7a' , 'eabi'),
+                    ('x86'        , 'i686'   , ''    ),
+                    ('x86_64'     , 'x86_64' , ''    ),
+                    ('riscv64'    , 'riscv64', ''    )]
 
 def buildToolsVersions():
     androidSDK = ''
@@ -56,6 +65,106 @@ def buildToolsVersion(configs=None):
         return latestVersion
 
     return configs.get('System', 'sdkBuildToolsRevision', fallback=latestVersion).strip()
+
+def readMinimumSdkVersion(configs):
+    androidNDK = ''
+
+    if 'ANDROID_NDK_ROOT' in os.environ:
+        androidNDK = os.environ['ANDROID_NDK_ROOT']
+
+    androidToolChain = os.path.join(androidNDK, 'toolchains', 'llvm', 'prebuilt', 'linux-x86_64')
+    androidCrossPrefix = os.path.join(androidToolChain, 'bin')
+
+    apiVersions = set()
+
+    for cc in glob.glob('*-linux-*-clang*', root_dir=androidCrossPrefix):
+        parts = os.path.basename(cc).split('-')
+
+        if len(parts) >= 3:
+            try:
+                apiVersions.add(int(parts[2].replace('android', '').replace('eabi', '')))
+            except:
+                pass
+
+    defaultMinSdkVersion = min(apiVersions) if len(apiVersions) > 0 else 24
+
+    minSdkVersion = configs.get('Android', 'minSdkVersion', fallback='').strip()
+
+    try:
+        minSdkVersion = int(minSdkVersion)
+    except:
+        minSdkVersion = defaultMinSdkVersion
+
+    return minSdkVersion
+
+def readTargetSdkVersion(configs):
+    androidSDK = ''
+
+    if 'ANDROID_HOME' in os.environ:
+        androidSDK = os.environ['ANDROID_HOME']
+
+    platformsDir = os.path.join(androidSDK, 'platforms')
+    apiVersions = set()
+
+    for jar in glob.glob('android.jar', root_dir=platformsDir):
+        try:
+            apiVersions.add(int(os.path.basename(os.path.dirname(jar)).replace('android-', '')))
+        except:
+            pass
+
+    defaultTargetSdkVersion = min(apiVersions) if len(apiVersions) > 0 else readMinimumSdkVersion(configs)
+
+    minTargetVersion = configs.get('Android', 'targetSdkVersion', fallback='').strip()
+
+    try:
+        targetSdkVersion = int(minTargetVersion)
+    except:
+        targetSdkVersion = defaultMinTargetVersion
+
+    return targetSdkVersion
+
+def ccBin(configs):
+    androidNDK = ''
+
+    if 'ANDROID_NDK_ROOT' in os.environ:
+        androidNDK = os.environ['ANDROID_NDK_ROOT']
+
+    targetArch = configs.get('Package', 'targetArch', fallback='').strip()
+    androidToolChain = os.path.join(androidNDK, 'toolchains', 'llvm', 'prebuilt', 'linux-x86_64')
+    androidCrossPrefix = os.path.join(androidToolChain, 'bin')
+    minimumSdkVersion = readMinimumSdkVersion(configs)
+
+    cc = ''
+
+    for arch in ANDROID_ARCH_MAP:
+        if targetArch == arch[0]:
+            cc = '{}-linux-android{}{}-clang'.format(arch[1], arch[2], minimumSdkVersion)
+
+    if len(cc) < 1:
+            cc = '{}-linux-android{}-clang'.format(targetArch, minimumSdkVersion)
+
+    cc = os.path.join(androidCrossPrefix, cc)
+
+    return cc if os.path.exists(cc) else ''
+
+def ccVersion(configs):
+    cc = ccBin(configs)
+
+    if len(cc) < 1:
+        return []
+
+    version = ''
+
+    try:
+        process = subprocess.Popen([cc, '-dumpversion'], # nosec
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        stdout, _ = process.communicate()
+        version = stdout.decode(sys.getdefaultencoding()).strip()
+    except:
+        pass
+
+    return version.split('.') if len(cc) > 0 else []
 
 def sysInfo():
     info = ''
@@ -235,7 +344,8 @@ def preRun(globs, configs, dataDir):
                 elibs.add(lib.strip())
 
     extraLibs = list(elibs)
-    solver = DTBinary.BinaryTools(DTUtils.hostPlatform(),
+    solver = DTBinary.BinaryTools(configs,
+                                  DTUtils.hostPlatform(),
                                   targetPlatform,
                                   targetArch,
                                   debug,
@@ -245,6 +355,7 @@ def preRun(globs, configs, dataDir):
     print('Copying required libs')
     print()
     DTUtils.solvedepsLibs(globs,
+                          configs,
                           mainExecutable,
                           targetPlatform,
                           targetArch,
@@ -280,8 +391,8 @@ def postRun(globs, configs, dataDir):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
     buildInfoFile = configs.get('Package', 'buildInfoFile', fallback='build-info.txt').strip()
     buildInfoFile = os.path.join(dataDir, buildInfoFile)
-    minSdkVersion = configs.get('Android', 'minSdkVersion', fallback='24').strip()
-    targetSdkVersion = configs.get('Android', 'targetSdkVersion', fallback='24').strip()
+    minSdkVersion = readMinimumSdkVersion(configs)
+    targetSdkVersion = readTargetSdkVersion(configs)
 
     print('Writting build system information')
     print()

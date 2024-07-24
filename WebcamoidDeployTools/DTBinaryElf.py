@@ -403,7 +403,7 @@ def guess(mainExecutable, dependency):
     elfInfo = dump(mainExecutable)
 
     if not elfInfo:
-        return []
+        return ''
 
     rpaths, runpaths = readRpaths(elfInfo, os.path.dirname(mainExecutable))
     machine = 0

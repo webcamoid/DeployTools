@@ -37,12 +37,14 @@ class BinaryTools:
                  targetArch,
                  debug,
                  sysLibDir,
-                 stripCmd='strip'):
+                 stripCmd='strip',
+                 stripExcludes=[]):
         super().__init__()
         self.hostPlatform = hostPlatform
         self.targetPlatform = targetPlatform
         self.debug = debug
         self.stripBin = DTUtils.whereBin(stripCmd)
+        self.stripExcludes = stripExcludes
         self.solver = None
 
         if targetPlatform == 'mac':
@@ -85,6 +87,9 @@ class BinaryTools:
 
         return False
 
+    def dependencies(self, binary):
+        return self.solver.dependencies(binary)
+
     def allDependencies(self, binary):
         deps = self.filterDependencies(self.solver.dependencies(binary))
         solved = set()
@@ -120,6 +125,9 @@ class BinaryTools:
 
     def strip(self, binary):
         if self.debug or self.stripBin == '':
+            return
+
+        if os.path.basename(binary) in self.stripExcludes:
             return
 
         process = subprocess.Popen([self.stripBin, binary], # nosec

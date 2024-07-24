@@ -333,6 +333,8 @@ def preRun(globs, configs, dataDir):
     libDir = os.path.join(dataDir, libDir)
     buildType = configs.get('Package', 'buildType', fallback='Debug').strip()
     sysLibDir = configs.get('System', 'libDir', fallback='/usr/local/lib')
+    stripSymbols = configs.get('System', 'strip', fallback='true').strip()
+    stripSymbols = DTUtils.toBool(stripSymbols)
     stripCmd = configs.get('System', 'stripCmd', fallback='strip').strip()
     libs = set()
 
@@ -378,7 +380,7 @@ def preRun(globs, configs, dataDir):
                           stripCmd)
     print()
 
-    if buildType == 'Release' or buildType == 'MinSizeRel':
+    if stripSymbols and (buildType == 'Release' or buildType == 'MinSizeRel'):
         print('Stripping symbols')
         solver.stripSymbols(dataDir)
 

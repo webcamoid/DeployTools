@@ -75,20 +75,21 @@ def preRun(globs, configs, dataDir):
                                dataDir,
                                sysLibDir)
 
-    if targetPlatform == 'android':
+    if targetPlatform == 'android' and haveSDL:
         print('Copying SDL classes file')
         print()
 
-        if haveSDL:
-            if len(classesFile) < 1:
-                print('Classes file not set')
-            elif os.path.exists(classesFile):
-                outJarsDir = os.path.join(dataDir, 'libs')
-                print('    {} -> {}'.format(classesFile, outJarsDir))
-                DTUtils.copy(classesFile, outJarsDir)
-                globs['dependencies'].add(classesFile)
-            else:
-                print('Classes file not found: {}'.format(classesFile))
+        if len(classesFile) < 1:
+            print('Classes file not set')
+        elif os.path.exists(classesFile):
+            outJarsDir = os.path.join(dataDir, 'libs')
+            print('    {} -> {}'.format(classesFile, outJarsDir))
+            DTUtils.copy(classesFile, outJarsDir)
+            globs['dependencies'].add(classesFile)
+        else:
+            print('Classes file not found: {}'.format(classesFile))
+
+        print()
 
 def postRun(globs, configs, dataDir):
     pass

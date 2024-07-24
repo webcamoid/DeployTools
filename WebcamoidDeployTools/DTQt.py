@@ -890,6 +890,7 @@ def preRun(globs, configs, dataDir):
     mainExecutable = configs.get('Package', 'mainExecutable', fallback='').strip()
     mainExecutable = os.path.join(dataDir, mainExecutable)
     libDir = configs.get('Package', 'libDir', fallback='').strip()
+    libDir = os.path.join(dataDir, libDir)
     qtVersion = configs.get('Qt', 'version', fallback='6').strip()
 
     try:
@@ -898,7 +899,6 @@ def preRun(globs, configs, dataDir):
         qtVersion = 6
 
     qmakeExecutable = configs.get('Qt', 'qmakeExecutable', fallback='qmake').strip()
-    libDir = os.path.join(dataDir, libDir)
     defaultSysLibDir = ''
 
     if targetPlatform == 'android':

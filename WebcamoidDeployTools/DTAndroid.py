@@ -324,7 +324,18 @@ def preRun(globs, configs, dataDir):
     sysLibDir = configs.get('System', 'libDir', fallback=defaultSysLibDir)
     stripSymbols = configs.get('System', 'strip', fallback='true').strip()
     stripSymbols = DTUtils.toBool(stripSymbols)
-    stripCmd = configs.get('System', 'stripCmd', fallback='strip').strip()
+
+    androidNDK = ''
+
+    if 'ANDROID_NDK_ROOT' in os.environ:
+        androidNDK = os.environ['ANDROID_NDK_ROOT']
+    elif 'ANDROID_NDK_ROOT' in os.environ:
+        androidNDK = os.environ['ANDROID_NDK_ROOT']
+
+    androidToolChain = os.path.join(androidNDK, 'toolchains', 'llvm', 'prebuilt', 'linux-x86_64')
+    androidCrossPrefix = os.path.join(androidToolChain, 'bin')
+    defaultStripCmd = os.path.join(androidCrossPrefix, 'llvm-strip')
+    stripCmd = configs.get('System', 'stripCmd', fallback=defaultStripCmd).strip()
     libs = set()
 
     if sysLibDir != '':

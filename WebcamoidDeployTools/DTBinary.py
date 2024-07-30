@@ -130,7 +130,11 @@ class BinaryTools:
         if os.path.basename(binary) in self.stripExcludes:
             return
 
-        process = subprocess.Popen([self.stripBin, binary], # nosec
+        params = [self.stripBin,
+                  '-g',
+                  '--strip-unneeded',
+                  binary]
+        process = subprocess.Popen(params, # nosec
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         process.communicate()

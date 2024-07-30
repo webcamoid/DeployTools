@@ -58,6 +58,9 @@ def toBool(string):
     return False
 
 def whereBin(binary, extraPaths=[]):
+    if os.path.isabs(binary):
+        return binary if os.path.exists(binary) and os.path.isfile(binary) else ''
+
     pathSep = ';' if hostPlatform() == 'windows' else ':'
     sysPath = os.environ['PATH'].split(pathSep) if 'PATH' in os.environ else []
     paths = extraPaths + sysPath

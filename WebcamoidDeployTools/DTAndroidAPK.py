@@ -228,6 +228,7 @@ def createApk(globs,
               dataDir,
               outPackage,
               sdkBuildToolsRevision,
+              qtVersion,
               verbose):
     localProperties = os.path.join(dataDir, 'local.properties')
 
@@ -239,7 +240,7 @@ def createApk(globs,
             if 'ANDROID_NDK_ROOT' in os.environ:
                 f.write('ndk.dir=' + os.environ['ANDROID_NDK_ROOT'] + '\n')
 
-    DTQt.mergeXmlLibs(os.path.join(dataDir, 'res', 'values'))
+    DTQt.mergeXmlLibs(os.path.join(dataDir, 'res', 'values'), qtVersion)
     gradleSript = os.path.join(dataDir, 'gradlew')
 
     if DTUtils.hostPlatform() == 'windows':
@@ -335,6 +336,13 @@ def run(globs, configs, dataDir, outputDir, mutex):
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     verbose = configs.get('AndroidAPK', 'verbose', fallback='false').strip()
     verbose = DTUtils.toBool(verbose)
+    qtVersion = configs.get('Qt', 'version', fallback='6').strip()
+
+    try:
+        qtVersion = int(qtVersion)
+    except:
+        qtVersion = 6
+
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
     hideArch = configs.get('AndroidAPK', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
@@ -362,4 +370,5 @@ def run(globs, configs, dataDir, outputDir, mutex):
               dataDir,
               outPackage,
               sdkBuildToolsRevision,
+              qtVersion,
               verbose)

@@ -39,7 +39,7 @@ def createPkg(globs,
               version,
               targetDir,
               subFolder,
-              identifier,
+              appIdentifier,
               componentPlist,
               installScripts,
               uninstallScript,
@@ -59,7 +59,7 @@ def createPkg(globs,
                      0o755)
 
         params = [pkgbuild(),
-                  '--identifier', identifier,
+                  '--identifier', appIdentifier,
                   '--version', version,
                   '--install-location', targetDir]
 
@@ -197,7 +197,7 @@ def createInstaller(globs,
                     productTitle,
                     targetDir,
                     subFolder,
-                    identifier,
+                    appIdentifier,
                     component,
                     resourcesDir,
                     installScripts,
@@ -256,7 +256,7 @@ def createInstaller(globs,
                   version,
                   targetDir,
                   subFolder,
-                  identifier,
+                  appIdentifier,
                   componentPlist,
                   tmpInstallScripts,
                   uninstallScript,
@@ -329,7 +329,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     targetDir = configs.get('MacPkg', 'targetDir', fallback=defaultTargetDir).strip()
     subFolder = configs.get('MacPkg', 'subFolder', fallback='').strip()
     defaultIdentifier = 'com.{}.{}'.format(name, appName)
-    identifier = configs.get('MacPkg', 'identifier', fallback=defaultIdentifier).strip()
+    appIdentifier = configs.get('Package', 'identifier', fallback=defaultIdentifier).strip()
     component = configs.get('MacPkg', 'component', fallback='').strip()
     description = configs.get('MacPkg', 'description', fallback='').strip()
     productTitle = configs.get('MacPkg', 'productTitle', fallback='').strip()
@@ -393,7 +393,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
                     productTitle,
                     targetDir,
                     subFolder,
-                    identifier,
+                    appIdentifier,
                     component,
                     resourcesDir,
                     installScripts,

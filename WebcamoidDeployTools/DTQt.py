@@ -41,7 +41,7 @@ def libBaseName(lib):
 
     return basename[3: len(basename) - 3]
 
-def fixLibsXml(globs, targetArch, dataDir):
+def fixLibsXml(globs, targetArch, dataDir, qtVersion):
     bundledInAssets = []
     assetsDir = os.path.join(dataDir, 'assets')
 
@@ -86,7 +86,13 @@ def fixLibsXml(globs, targetArch, dataDir):
     if 'libs' in globs:
         libs = globs['libs']
 
-    qtLibs = set(['<item>{};{}</item>'.format(targetArch, libBaseName(lib)) for lib in libs])
+    qtLibs = set()
+
+    for lib in libs:
+        libName = libBaseName(lib)
+
+        if libName == 'c++_shared' or libName.startswith('Qt{}'.format(qtVersion)):
+            qtLibs.add('<item>{};{}</item>'.format(targetArch, libName))
 
     if 'qt_libs' in resources:
         qtLibs -= resources['qt_libs']
@@ -184,7 +190,7 @@ def readXmlLibs(libsXml):
 
     return libs
 
-def mergeXmlLibs(libsXmlDir, keep=False):
+def mergeXmlLibs(libsXmlDir, qtVersion, keep=False):
     if not os.path.exists(libsXmlDir):
         return
 
@@ -232,8 +238,15 @@ def mergeXmlLibs(libsXmlDir, keep=False):
             else:
                 outFile.write('    <array name="{}">\n'.format(key))
 
-                for item in sorted(list(libs[key])):
-                    outFile.write('        <item>{}</item>\n'.format(item))
+                if key == 'qt_libs':
+                    for item in sorted(libs['qt_libs']):
+                        arch, libName = item.split(';')
+
+                        if libName == 'c++_shared' or libName.startswith('Qt{}'.format(qtVersion)):
+                            outFile.write('        <item>{};{}</item>\n'.format(arch, libName))
+                else:
+                    for item in sorted(list(libs[key])):
+                        outFile.write('        <item>{}</item>\n'.format(item))
 
                 outFile.write('    </array>\n')
 
@@ -246,6 +259,7 @@ def mergeXmlLibs(libsXmlDir, keep=False):
             pass
 
 def copyAndroidTemplates(dataDir,
+                         appIdentifier,
                          qtVersion,
                          qtSourcesDir,
                          sdkBuildToolsRevision,
@@ -300,6 +314,7 @@ def copyAndroidTemplates(dataDir,
         if len(sdkBuildToolsRevision) > 0:
             f.write('androidBuildToolsVersion={}\n'.format(sdkBuildToolsRevision))
 
+        f.write('androidPackageName={}\n'.format(appIdentifier))
         f.write('androidCompileSdkVersion=android-{}\n'.format(minSdkVersion))
         f.write('minSdkVersion=android-{}\n'.format(minSdkVersion))
         f.write('androidNdkVersion={}\n'.format(androidNdkVersion))
@@ -882,6 +897,7 @@ def writeQtConf(qtConfFile,
 
 def preRun(globs, configs, dataDir):
     sourcesDir = configs.get('Package', 'sourcesDir', fallback='.').strip()
+    name = configs.get('Package', 'name', fallback='app').strip()
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     debug =  configs.get('Package', 'debug', fallback='false').strip()
@@ -891,6 +907,8 @@ def preRun(globs, configs, dataDir):
     mainExecutable = os.path.join(dataDir, mainExecutable)
     libDir = configs.get('Package', 'libDir', fallback='').strip()
     libDir = os.path.join(dataDir, libDir)
+    defaultIdentifier = 'com.{}.{}'.format(name, name)
+    appIdentifier = configs.get('Package', 'identifier', fallback=defaultIdentifier).strip()
     qtVersion = configs.get('Qt', 'version', fallback='6').strip()
 
     try:
@@ -1035,6 +1053,7 @@ def preRun(globs, configs, dataDir):
         print('Copying Android build templates')
         print()
         copyAndroidTemplates(dataDir,
+                             appIdentifier,
                              qtVersion,
                              qtSourcesDir,
                              sdkBuildToolsRevision,
@@ -1134,7 +1153,7 @@ def postRun(globs, configs, dataDir):
                          qmakeExecutable)
         print()
         print('Fixing libs.xml file')
-        fixLibsXml(globs, targetArch, dataDir)
+        fixLibsXml(globs, targetArch, dataDir, qtVersion)
         print('Creating .rcc bundle file')
         createRccBundle(outputAssetsDir, verbose)
         print()

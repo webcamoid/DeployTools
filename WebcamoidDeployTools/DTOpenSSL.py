@@ -56,11 +56,6 @@ def renameLibraries(solver, mainExecutable, packageLibDir, androidOpensslSuffix,
         print('    {} -> {}'.format(libPath, dst))
         DTUtils.copy(libPath, dst)
 
-        try:
-            os.remove(os.path.join(packageLibDir, lib))
-        except:
-            pass
-
         if len(patchelfCmd) > 0:
             params = [patchelfCmd,
                       '--set-soname', dstbn,

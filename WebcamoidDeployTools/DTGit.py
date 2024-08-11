@@ -81,7 +81,7 @@ def branch(path):
     except:
         pass
 
-    if len(chash) < 1 and 'GIT_BRANCH_NAME' in os.environ and os.environ['GIT_BRANCH_NAME'] != '':
+    if len(branchName) < 1 and 'GIT_BRANCH_NAME' in os.environ and os.environ['GIT_BRANCH_NAME'] != '':
         branchName = os.environ['GIT_BRANCH_NAME']
 
     if len(branchName) < 1:

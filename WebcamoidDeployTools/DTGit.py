@@ -24,6 +24,8 @@ import sys
 
 
 def commitHash(path):
+    chash = ''
+
     try:
         process = subprocess.Popen(['git', 'rev-parse', 'HEAD'], # nosec
                                     stdout=subprocess.PIPE,
@@ -31,14 +33,19 @@ def commitHash(path):
                                     cwd=path)
         stdout, _ = process.communicate()
 
-        if process.returncode != 0:
-            return ''
-
-        return stdout.decode(sys.getdefaultencoding()).strip()
+        if process.returncode == 0:
+            chash = stdout.decode(sys.getdefaultencoding()).strip()
     except:
-        return ''
+        pass
+
+    if len(chash) < 1 and 'GIT_COMMIT_SHA' in os.environ and os.environ['GIT_COMMIT_SHA'] != '':
+        chash = os.environ['GIT_COMMIT_SHA']
+
+    return chash
 
 def commitShortHash(path):
+    chash = ''
+
     try:
         process = subprocess.Popen(['git', 'rev-parse', '--short', 'HEAD'], # nosec
                                     stdout=subprocess.PIPE,
@@ -46,14 +53,22 @@ def commitShortHash(path):
                                     cwd=path)
         stdout, _ = process.communicate()
 
-        if process.returncode != 0:
-            return ''
-
-        return stdout.decode(sys.getdefaultencoding()).strip()
+        if process.returncode == 0:
+            chash = stdout.decode(sys.getdefaultencoding()).strip()
     except:
-        return ''
+        pass
+
+    if len(chash) < 1:
+        chash = commitHash(path)
+
+        if len(chash) > 0:
+            chash = chash[:7]
+
+    return chash
 
 def branch(path):
+    branchName = ''
+
     try:
         process = subprocess.Popen(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], # nosec
                                     stdout=subprocess.PIPE,
@@ -61,12 +76,18 @@ def branch(path):
                                     cwd=path)
         stdout, _ = process.communicate()
 
-        if process.returncode != 0:
-            return 'master'
-
-        return stdout.decode(sys.getdefaultencoding()).strip()
+        if process.returncode == 0:
+            branchName = stdout.decode(sys.getdefaultencoding()).strip()
     except:
-        return 'master'
+        pass
+
+    if len(chash) < 1 and 'GIT_BRANCH_NAME' in os.environ and os.environ['GIT_BRANCH_NAME'] != '':
+        branchName = os.environ['GIT_BRANCH_NAME']
+
+    if len(branchName) < 1:
+        branchName = 'master'
+
+    return branchName
 
 def commitCount(path):
     try:

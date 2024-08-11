@@ -332,16 +332,7 @@ def programVersion(configs, sourcesDir):
     dailyBuild = DTUtils.toBool(dailyBuild)
 
     if dailyBuild:
-        branch = ''
-
-        if 'TRAVIS_BRANCH' in os.environ:
-            branch = os.environ['TRAVIS_BRANCH']
-        elif 'APPVEYOR_REPO_BRANCH' in os.environ:
-            branch = os.environ['APPVEYOR_REPO_BRANCH']
-        elif 'GITHUB_REF' in os.environ and os.environ['GITHUB_REF'] != '':
-            branch = os.path.basename(os.environ['GITHUB_REF'])
-        else:
-            branch = DTGit.branch(sourcesDir)
+        branch = DTGit.branch(sourcesDir)
 
         if hideCommitCount:
             return 'daily-' + branch
@@ -351,6 +342,26 @@ def programVersion(configs, sourcesDir):
         return 'daily-{}-{}'.format(branch, count)
 
     return configs.get('Package', 'version', fallback='0.0.0').strip()
+
+def buildLogUrl():
+    buildLogUrl = ''
+
+    if 'GITHUB_SERVER_URL' in os.environ and os.environ['GITHUB_SERVER_URL'] != '' \
+        and 'GITHUB_REPOSITORY' in os.environ and os.environ['GITHUB_REPOSITORY'] != '' \
+        and 'GITHUB_RUN_ID' in os.environ and os.environ['GITHUB_RUN_ID'] != '':
+        buildLogUrl = '{}/{}/actions/runs/{}'.format(os.environ['GITHUB_SERVER_URL'],
+                                                        os.environ['GITHUB_REPOSITORY'],
+                                                        os.environ['GITHUB_RUN_ID'])
+    elif 'APPVEYOR_ACCOUNT_NAME' in os.environ \
+        and 'APPVEYOR_PROJECT_NAME' in os.environ \
+        and 'APPVEYOR_JOB_ID' in os.environ:
+        buildLogUrl = 'https://ci.appveyor.com/project/{}/{}/build/job/{}'.format(os.environ['APPVEYOR_ACCOUNT_NAME'],
+                                                                                    os.environ['APPVEYOR_PROJECT_SLUG'],
+                                                                                    os.environ['APPVEYOR_JOB_ID'])
+    elif 'CIRRUS_TASK_ID' in os.environ:
+        buildLogUrl = 'https://cirrus-ci.com/task/{}'.format(os.environ['CIRRUS_TASK_ID'])
+
+    return buildLogUrl
 
 def versionCode(version):
     return ''.join([n.rjust(4, '0') for n in version.split('.')])

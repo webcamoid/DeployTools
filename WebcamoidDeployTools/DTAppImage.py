@@ -129,7 +129,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     desktopIcon = os.path.join(sourcesDir, desktopIcon)
     dirIcon = configs.get('AppImage', 'dirIcon', fallback='app.png').strip()
     dirIcon = os.path.join(sourcesDir, dirIcon)
-    verbose = configs.get('AppImage', 'verbose', fallback='false').strip()
+    verbose = configs.get('AppImage', 'verbose', fallback='true').strip()
     verbose = DTUtils.toBool(verbose)
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
     hideArch = configs.get('AppImage', 'hideArch', fallback=defaultHideArch).strip()

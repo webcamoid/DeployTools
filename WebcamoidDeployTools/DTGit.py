@@ -39,8 +39,8 @@ def commitHash(path):
     except:
         pass
 
-    if len(chash) < 1 and 'GIT_COMMIT_SHA' in os.environ and os.environ['GIT_COMMIT_SHA'] != '':
-        chash = os.environ['GIT_COMMIT_SHA']
+    if len(chash) < 1 and 'GIT_COMMIT_HASH' in os.environ and os.environ['GIT_COMMIT_HASH'] != '':
+        chash = os.environ['GIT_COMMIT_HASH']
 
     return chash
 

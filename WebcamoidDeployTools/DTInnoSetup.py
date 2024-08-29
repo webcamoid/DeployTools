@@ -70,7 +70,7 @@ def winPath(path, verbose=False):
             return ''
 
         return stdout.decode(sys.getdefaultencoding()).strip()
-    elif DTUtils.whereBin('makensis') == '':
+    elif DTUtils.whereBin('winepath') == '':
         params = ['winepath', '-w', path]
         process = subprocess.Popen(params, # nosec
                                     stdout=subprocess.PIPE,

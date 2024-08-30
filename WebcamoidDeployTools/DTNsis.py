@@ -157,7 +157,7 @@ def makensis():
         return DTUtils.whereBin(makeNSIS + '.exe')
     else:
         for ext in ['', '.exe']:
-            makeNSISPath = DTUtils.whereBin(makeNSIS)
+            makeNSISPath = DTUtils.whereBin(makeNSIS + ext)
 
             if makeNSISPath != '':
                 return makeNSISPath

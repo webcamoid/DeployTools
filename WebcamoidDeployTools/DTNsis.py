@@ -43,53 +43,6 @@ def cygpath():
 
     return ''
 
-def winPath(path, verbose=False):
-    if len(path) < 1:
-        return ''
-
-    if DTUtils.hostPlatform() == 'windows':
-        cygpathBin = cygpath()
-
-        if len(cygpathBin) < 1:
-            if re.match('^/[a-zA-Z]/', path):
-                path = '{}:{}'.format(path[1].upper(), path[2:])
-                path = path.replace('/', '\\')
-
-            return path
-
-        params = [cygpathBin, '-w', path]
-        process = subprocess.Popen(params, # nosec
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-        stdout, _ = process.communicate()
-
-        if process.returncode != 0:
-            return ''
-
-        if not stdout:
-            return ''
-
-        return stdout.decode(sys.getdefaultencoding()).strip()
-    else:
-        winepath = DTUtils.whereBin('winepath')
-
-        if winepath != '':
-            params = [winepath, '-w', path]
-            process = subprocess.Popen(params, # nosec
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE)
-            stdout, _ = process.communicate()
-
-            if process.returncode != 0:
-                return ''
-
-            if not stdout:
-                return ''
-
-            return stdout.decode(sys.getdefaultencoding()).strip()
-
-    return path
-
 def makensis():
     makeNSIS = 'makensis'
 
@@ -184,6 +137,58 @@ def nsisDataDir():
                     return path
 
     return ''
+
+def winPath(path, verbose=False):
+    if len(path) < 1:
+        return ''
+
+    if DTUtils.hostPlatform() == 'windows':
+        cygpathBin = cygpath()
+
+        if len(cygpathBin) < 1:
+            if re.match('^/[a-zA-Z]/', path):
+                path = '{}:{}'.format(path[1].upper(), path[2:])
+                path = path.replace('/', '\\')
+
+            return path
+
+        params = [cygpathBin, '-w', path]
+        process = subprocess.Popen(params, # nosec
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+        stdout, _ = process.communicate()
+
+        if process.returncode != 0:
+            return ''
+
+        if not stdout:
+            return ''
+
+        return stdout.decode(sys.getdefaultencoding()).strip()
+    else:
+        makeNSISPath = makensis()
+
+        if makeNSISPath.endswith('.exe'):
+            return path
+
+        winepath = DTUtils.whereBin('winepath')
+
+        if winepath != '':
+            params = [winepath, '-w', path]
+            process = subprocess.Popen(params, # nosec
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE)
+            stdout, _ = process.communicate()
+
+            if process.returncode != 0:
+                return ''
+
+            if not stdout:
+                return ''
+
+            return stdout.decode(sys.getdefaultencoding()).strip()
+
+    return path
 
 def createInstaller(globs,
                     mutex,

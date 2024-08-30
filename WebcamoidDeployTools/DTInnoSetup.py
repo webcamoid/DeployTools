@@ -70,20 +70,23 @@ def winPath(path, verbose=False):
             return ''
 
         return stdout.decode(sys.getdefaultencoding()).strip()
-    elif DTUtils.whereBin('winepath') == '':
-        params = ['winepath', '-w', path]
-        process = subprocess.Popen(params, # nosec
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-        stdout, _ = process.communicate()
+    else:
+        winepath = DTUtils.whereBin('winepath')
 
-        if process.returncode != 0:
-            return ''
+        if winepath != '':
+            params = [winepath, '-w', path]
+            process = subprocess.Popen(params, # nosec
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE)
+            stdout, _ = process.communicate()
 
-        if not stdout:
-            return ''
+            if process.returncode != 0:
+                return ''
 
-        return stdout.decode(sys.getdefaultencoding()).strip()
+            if not stdout:
+                return ''
+
+            return stdout.decode(sys.getdefaultencoding()).strip()
 
     return path
 

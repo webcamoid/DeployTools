@@ -70,75 +70,25 @@ def winPath(path, verbose=False):
             return ''
 
         return stdout.decode(sys.getdefaultencoding()).strip()
-    elif DTUtils.whereBin('winepath') == '':
-        params = ['winepath', '-w', path]
-        process = subprocess.Popen(params, # nosec
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-        stdout, _ = process.communicate()
+    else:
+        winepath = DTUtils.whereBin('winepath')
 
-        if process.returncode != 0:
-            return ''
+        if winepath != '':
+            params = [winepath, '-w', path]
+            process = subprocess.Popen(params, # nosec
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE)
+            stdout, _ = process.communicate()
 
-        if not stdout:
-            return ''
+            if process.returncode != 0:
+                return ''
 
-        return stdout.decode(sys.getdefaultencoding()).strip()
+            if not stdout:
+                return ''
+
+            return stdout.decode(sys.getdefaultencoding()).strip()
 
     return path
-
-def nsisDataDir():
-    makeNSIS = 'makensis'
-
-    if DTUtils.hostPlatform() == 'windows':
-        for rootDir in ['C:', '/c']:
-            homeNSIS = [os.path.join(rootDir, 'Program Files (x86)', 'NSIS'),
-                        os.path.join(rootDir, 'Program Files', 'NSIS')]
-
-            for path in homeNSIS:
-                if os.path.exists(path):
-                    return path
-
-        makeNSISPath = DTUtils.whereBin(makeNSIS + '.exe')
-
-        if makeNSISPath != '':
-            dataDir = os.path.join(os.path.dirname(makeNSISPath),
-                                   '..',
-                                   'share',
-                                   'nsis')
-            dataDir = os.path.abspath(dataDir)
-
-            if os.path.exists(dataDir):
-                return dataDir
-            else:
-                return os.path.dirname(makeNSISPath)
-    else:
-        makeNSISPath = DTUtils.whereBin(makeNSIS)
-
-        if makeNSISPath != '':
-            dataDir = os.path.join(os.path.dirname(makeNSISPath),
-                                   '..',
-                                   'share',
-                                   'nsis')
-            dataDir = os.path.abspath(dataDir)
-
-            if os.path.exists(dataDir):
-                return dataDir
-        else:
-            if 'WINEPREFIX' in os.environ:
-                rootPath = os.path.expanduser(os.path.join(os.environ['WINEPREFIX'],
-                                                           'drive_c'))
-            else:
-                rootPath = os.path.expanduser('~/.wine/drive_c')
-
-            homeNSIS = [os.path.join(rootPath, 'Program Files (x86)', 'NSIS'),
-                        os.path.join(rootPath, 'Program Files', 'NSIS')]
-
-            for path in homeNSIS:
-                if os.path.exists(path):
-                    return path
-
-    return ''
 
 def makensis():
     makeNSIS = 'makensis'
@@ -176,6 +126,62 @@ def makensis():
 
             if os.path.exists(makeNSISPath):
                 return makeNSISPath
+
+    return ''
+
+def nsisDataDir():
+    makeNSIS = 'makensis'
+
+    if DTUtils.hostPlatform() == 'windows':
+        for rootDir in ['C:', '/c']:
+            homeNSIS = [os.path.join(rootDir, 'Program Files (x86)', 'NSIS'),
+                        os.path.join(rootDir, 'Program Files', 'NSIS')]
+
+            for path in homeNSIS:
+                if os.path.exists(path):
+                    return path
+
+        makeNSISPath = DTUtils.whereBin(makeNSIS + '.exe')
+
+        if makeNSISPath != '':
+            dataDir = os.path.join(os.path.dirname(makeNSISPath),
+                                   '..',
+                                   'share',
+                                   'nsis')
+            dataDir = os.path.abspath(dataDir)
+
+            if os.path.exists(dataDir):
+                return dataDir
+            else:
+                return os.path.dirname(makeNSISPath)
+    else:
+        makeNSISPath = makensis()
+
+        if makeNSISPath != '':
+            if makeNSISPath.endswith('.exe'):
+                return os.path.dirname(makeNSISPath)
+            else:
+                dataDir = os.path.join(os.path.dirname(makeNSISPath),
+                                    '..',
+                                    'share',
+                                    'nsis')
+                dataDir = os.path.abspath(dataDir)
+
+                if os.path.exists(dataDir):
+                    return dataDir
+        else:
+            if 'WINEPREFIX' in os.environ:
+                rootPath = os.path.expanduser(os.path.join(os.environ['WINEPREFIX'],
+                                                           'drive_c'))
+            else:
+                rootPath = os.path.expanduser('~/.wine/drive_c')
+
+            homeNSIS = [os.path.join(rootPath, 'Program Files (x86)', 'NSIS'),
+                        os.path.join(rootPath, 'Program Files', 'NSIS')]
+
+            for path in homeNSIS:
+                if os.path.exists(path):
+                    return path
 
     return ''
 

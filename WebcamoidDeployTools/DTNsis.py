@@ -228,6 +228,10 @@ def createInstaller(globs,
     if langs == []:
         langs = ['English']
 
+    print('TMPDIR {}'.format(os.environ['TMPDIR'] if 'TMPDIR' in os.environ else ''))
+    print('TEMP {}'.format(os.environ['TEMP'] if 'TEMP' in os.environ else ''))
+    print('TMP {}'.format(os.environ['TMP'] if 'TMP' in os.environ else ''))
+
     with tempfile.TemporaryDirectory() as tmpdir:
         installScriptBn = os.path.basename(installScript)
 

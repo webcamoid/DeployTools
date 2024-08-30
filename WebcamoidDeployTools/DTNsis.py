@@ -156,25 +156,26 @@ def makensis():
 
         return DTUtils.whereBin(makeNSIS + '.exe')
     else:
-        makeNSISPath = DTUtils.whereBin(makeNSIS)
+        for ext in ['', '.exe']:
+            makeNSISPath = DTUtils.whereBin(makeNSIS)
 
-        if makeNSISPath != '':
-            return makeNSISPath
+            if makeNSISPath != '':
+                return makeNSISPath
+
+        if 'WINEPREFIX' in os.environ:
+            rootPath = os.path.expanduser(os.path.join(os.environ['WINEPREFIX'],
+                                                       'drive_c'))
         else:
-            if 'WINEPREFIX' in os.environ:
-                rootPath = os.path.expanduser(os.path.join(os.environ['WINEPREFIX'],
-                                                           'drive_c'))
-            else:
-                rootPath = os.path.expanduser('~/.wine/drive_c')
+            rootPath = os.path.expanduser('~/.wine/drive_c')
 
-            homeNSIS = [os.path.join(rootPath, 'Program Files (x86)', 'NSIS'),
-                        os.path.join(rootPath, 'Program Files', 'NSIS')]
+        homeNSIS = [os.path.join(rootPath, 'Program Files (x86)', 'NSIS'),
+                    os.path.join(rootPath, 'Program Files', 'NSIS')]
 
-            for path in homeNSIS:
-                makeNSISPath = os.path.join(path, makeNSIS + '.exe')
+        for path in homeNSIS:
+            makeNSISPath = os.path.join(path, makeNSIS + '.exe')
 
-                if os.path.exists(makeNSISPath):
-                    return makeNSISPath
+            if os.path.exists(makeNSISPath):
+                return makeNSISPath
 
     return ''
 

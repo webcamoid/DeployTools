@@ -83,8 +83,6 @@ def makensis():
     return ''
 
 def nsisDataDir():
-    makeNSIS = 'makensis'
-
     if DTUtils.hostPlatform() == 'windows':
         for rootDir in ['C:', '/c']:
             homeNSIS = [os.path.join(rootDir, 'Program Files (x86)', 'NSIS'),
@@ -94,7 +92,7 @@ def nsisDataDir():
                 if os.path.exists(path):
                     return path
 
-        makeNSISPath = DTUtils.whereBin(makeNSIS + '.exe')
+        makeNSISPath = DTUtils.whereBin('makensis.exe')
 
         if makeNSISPath != '':
             dataDir = os.path.join(os.path.dirname(makeNSISPath),
@@ -165,30 +163,30 @@ def winPath(path, verbose=False):
             return ''
 
         return stdout.decode(sys.getdefaultencoding()).strip()
-    else:
-        makeNSISPath = makensis()
 
-        if makeNSISPath.endswith('.exe'):
-            return path
+    makeNSISPath = makensis()
 
-        winepath = DTUtils.whereBin('winepath')
+    if not makeNSISPath.endswith('.exe'):
+        return path
 
-        if winepath != '':
-            params = [winepath, '-w', path]
-            process = subprocess.Popen(params, # nosec
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE)
-            stdout, _ = process.communicate()
+    winepath = DTUtils.whereBin('winepath')
 
-            if process.returncode != 0:
-                return ''
+    if len(winepath) < 1:
+        return ''
 
-            if not stdout:
-                return ''
+    params = [winepath, '-w', path]
+    process = subprocess.Popen(params, # nosec
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+    stdout, _ = process.communicate()
 
-            return stdout.decode(sys.getdefaultencoding()).strip()
+    if process.returncode != 0:
+        return ''
 
-    return path
+    if not stdout:
+        return ''
+
+    return stdout.decode(sys.getdefaultencoding()).strip()
 
 def createInstaller(globs,
                     mutex,
@@ -228,16 +226,7 @@ def createInstaller(globs,
     if langs == []:
         langs = ['English']
 
-    temDir = None
-
-    if 'TMPDIR' in os.environ:
-        temDir = os.environ['TMPDIR']
-    elif 'TEMP' in os.environ:
-        temDir = os.environ['TEMP']
-    elif 'TMP' in os.environ:
-        temDir = os.environ['TMP']
-
-    with tempfile.TemporaryDirectory(dir=temDir) as tmpdir:
+    with tempfile.TemporaryDirectory() as tmpdir:
         installScriptBn = os.path.basename(installScript)
 
         installerVars = {

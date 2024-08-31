@@ -43,52 +43,40 @@ def cygpath():
 
     return ''
 
-def winPath(path, verbose=False):
-    if len(path) < 1:
-        return ''
+def iscc(isccVersion):
+    issCompiler = 'iscc'
+    isFolder = 'Inno Setup {}'.format(isccVersion)
 
     if DTUtils.hostPlatform() == 'windows':
-        cygpathBin = cygpath()
+        for rootDir in ['C:', '/c']:
+            homeInnoSetup = \
+                [os.path.join(rootDir, 'Program Files (x86)', isFolder),
+                 os.path.join(rootDir, 'Program Files', isFolder)]
 
-        if len(cygpathBin) < 1:
-            if re.match('^/[a-zA-Z]/', path):
-                path = '{}:{}'.format(path[1].upper(), path[2:])
-                path = path.replace('/', '\\')
+            for path in homeInnoSetup:
+                issCompilerPath = os.path.join(path, issCompiler + '.exe')
 
-            return path
+                if os.path.exists(issCompilerPath):
+                    return issCompilerPath
 
-        params = [cygpathBin, '-w', path]
-        process = subprocess.Popen(params, # nosec
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-        stdout, _ = process.communicate()
-
-        if process.returncode != 0:
-            return ''
-
-        if not stdout:
-            return ''
-
-        return stdout.decode(sys.getdefaultencoding()).strip()
+        return DTUtils.whereBin(issCompiler + '.exe')
     else:
-        winepath = DTUtils.whereBin('winepath')
+        if 'WINEPREFIX' in os.environ:
+            rootPath = os.path.expanduser(os.path.join(os.environ['WINEPREFIX'],
+                                                       'drive_c'))
+        else:
+            rootPath = os.path.expanduser('~/.wine/drive_c')
 
-        if winepath != '':
-            params = [winepath, '-w', path]
-            process = subprocess.Popen(params, # nosec
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE)
-            stdout, _ = process.communicate()
+        homeInnoSetup = [os.path.join(rootPath, 'Program Files (x86)', isFolder),
+                         os.path.join(rootPath, 'Program Files', isFolder)]
 
-            if process.returncode != 0:
-                return ''
+        for path in homeInnoSetup:
+            issCompilerPath = os.path.join(path, issCompiler + '.exe')
 
-            if not stdout:
-                return ''
+            if os.path.exists(issCompilerPath):
+                return issCompilerPath
 
-            return stdout.decode(sys.getdefaultencoding()).strip()
-
-    return path
+    return ''
 
 def isccDataDir(isccVersion):
     issCompiler = 'iscc'
@@ -124,40 +112,52 @@ def isccDataDir(isccVersion):
 
     return ''
 
-def iscc(isccVersion):
-    issCompiler = 'iscc'
-    isFolder = 'Inno Setup {}'.format(isccVersion)
+def winPath(path, verbose=False):
+    if len(path) < 1:
+        return ''
 
     if DTUtils.hostPlatform() == 'windows':
-        for rootDir in ['C:', '/c']:
-            homeInnoSetup = \
-                [os.path.join(rootDir, 'Program Files (x86)', isFolder),
-                 os.path.join(rootDir, 'Program Files', isFolder)]
+        cygpathBin = cygpath()
 
-            for path in homeInnoSetup:
-                issCompilerPath = os.path.join(path, issCompiler + '.exe')
+        if len(cygpathBin) < 1:
+            if re.match('^/[a-zA-Z]/', path):
+                path = '{}:{}'.format(path[1].upper(), path[2:])
+                path = path.replace('/', '\\')
 
-                if os.path.exists(issCompilerPath):
-                    return issCompilerPath
+            return path
 
-        return DTUtils.whereBin(issCompiler + '.exe')
-    else:
-        if 'WINEPREFIX' in os.environ:
-            rootPath = os.path.expanduser(os.path.join(os.environ['WINEPREFIX'],
-                                                       'drive_c'))
-        else:
-            rootPath = os.path.expanduser('~/.wine/drive_c')
+        params = [cygpathBin, '-w', path]
+        process = subprocess.Popen(params, # nosec
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+        stdout, _ = process.communicate()
 
-        homeInnoSetup = [os.path.join(rootPath, 'Program Files (x86)', isFolder),
-                         os.path.join(rootPath, 'Program Files', isFolder)]
+        if process.returncode != 0:
+            return ''
 
-        for path in homeInnoSetup:
-            issCompilerPath = os.path.join(path, issCompiler + '.exe')
+        if not stdout:
+            return ''
 
-            if os.path.exists(issCompilerPath):
-                return issCompilerPath
+        return stdout.decode(sys.getdefaultencoding()).strip()
 
-    return ''
+    winepath = DTUtils.whereBin('winepath')
+
+    if len(winepath) < 1:
+        return ''
+
+    params = [winepath, '-w', path]
+    process = subprocess.Popen(params, # nosec
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+    stdout, _ = process.communicate()
+
+    if process.returncode != 0:
+        return ''
+
+    if not stdout:
+        return ''
+
+    return stdout.decode(sys.getdefaultencoding()).strip()
 
 def createInstaller(globs,
                     mutex,

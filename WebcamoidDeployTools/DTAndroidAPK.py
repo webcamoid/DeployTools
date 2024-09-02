@@ -380,7 +380,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     defaultPkgTargetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     pkgTargetPlatform = configs.get('AndroidAPK', 'pkgTargetPlatform', fallback=defaultPkgTargetPlatform).strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
-    packageTypes = configs.get('Package', 'packageTypes', fallback='apk').strip()
+    packageTypes = configs.get('AndroidAPK', 'packageTypes', fallback='apk').strip()
     pkgTypes = set()
 
     for t in packageTypes.split(','):

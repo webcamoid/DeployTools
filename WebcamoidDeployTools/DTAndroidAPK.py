@@ -140,7 +140,7 @@ def apkSignPackage(package, keystore, sdkBuildToolsRevision, verbose):
 
     return process.returncode == 0
 
-def jarSignPackage(package, keystore, verbose):
+def jarSignPackage(package, keystore, sdkBuildToolsRevision, verbose):
     jsigner = jarsigner()
 
     if len(jsigner) < 1:
@@ -174,7 +174,7 @@ def jarSignPackage(package, keystore, verbose):
 
     DTUtils.move(signedPackage, package)
 
-    return alignPackage(package, verbose)
+    return alignPackage(package, sdkBuildToolsRevision, verbose)
 
 def signPackage(package, dataDir, sdkBuildToolsRevision, verbose):
     ktool = keytool()
@@ -218,15 +218,17 @@ def signPackage(package, dataDir, sdkBuildToolsRevision, verbose):
         if process.returncode != 0:
             return False
 
-    if apkSignPackage(package, keystore, sdkBuildToolsRevision, verbose):
+    if package.endswith('.apk') \
+        and apkSignPackage(package, keystore, sdkBuildToolsRevision, verbose):
         return True
 
-    return jarSignPackage(package, keystore, verbose)
+    return jarSignPackage(package, keystore, sdkBuildToolsRevision, verbose)
 
 def createApk(globs,
               mutex,
               dataDir,
               outPackage,
+              packageTypes,
               sdkBuildToolsRevision,
               qtVersion,
               verbose):
@@ -246,7 +248,10 @@ def createApk(globs,
     if DTUtils.hostPlatform() == 'windows':
         gradleSript += '.bat'
 
-    if  os.path.exists(gradleSript):
+    if not os.path.exists(gradleSript):
+        return
+
+    if 'apk' in packageTypes:
         os.chmod(gradleSript, 0o755)
         params = [gradleSript,
                   '--no-daemon',
@@ -255,35 +260,76 @@ def createApk(globs,
 
         if verbose:
             process = subprocess.Popen(params, # nosec
-                                    cwd=dataDir)
+                                       cwd=dataDir)
         else:
             process = subprocess.Popen(params, # nosec
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE,
-                                    cwd=dataDir)
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE,
+                                       cwd=dataDir)
 
         process.communicate()
 
-    name = os.path.basename(dataDir)
-    apk = os.path.join(dataDir,
-                       'build',
-                       'outputs',
-                       'apk',
-                       'release',
-                       '{}-release-unsigned.apk'.format(name))
-    signPackage(apk, dataDir, sdkBuildToolsRevision, verbose)
-    DTUtils.copy(apk, outPackage)
+        name = os.path.basename(dataDir)
+        apk = os.path.join(dataDir,
+                           'build',
+                           'outputs',
+                           'apk',
+                           'release',
+                           '{}-release-unsigned.apk'.format(name))
+        signPackage(apk, dataDir, sdkBuildToolsRevision, verbose)
+        outApkPackage = outPackage + '.apk'
+        DTUtils.copy(apk, outApkPackage)
 
-    if not os.path.exists(outPackage):
-        return
+        if not os.path.exists(outApkPackage):
+            return
 
-    mutex.acquire()
+        mutex.acquire()
 
-    if not 'outputPackages' in globs:
-        globs['outputPackages'] = []
+        if not 'outputPackages' in globs:
+            globs['outputPackages'] = []
 
-    globs['outputPackages'].append(outPackage)
-    mutex.release()
+        globs['outputPackages'].append(outApkPackage)
+        mutex.release()
+
+    if 'aab' in packageTypes:
+        os.chmod(gradleSript, 0o755)
+        params = [gradleSript,
+                  '--no-daemon',
+                  '--info',
+                  'bundleRelease']
+
+        if verbose:
+            process = subprocess.Popen(params, # nosec
+                                       cwd=dataDir)
+        else:
+            process = subprocess.Popen(params, # nosec
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE,
+                                       cwd=dataDir)
+
+        process.communicate()
+
+        name = os.path.basename(dataDir)
+        aab = os.path.join(dataDir,
+                           'build',
+                           'outputs',
+                           'bundle',
+                           'release',
+                           '{}-release.aab'.format(name))
+        signPackage(aab, dataDir, sdkBuildToolsRevision, verbose)
+        outAabPackage = outPackage + '.aab'
+        DTUtils.copy(aab, outAabPackage)
+
+        if not os.path.exists(outAabPackage):
+            return
+
+        mutex.acquire()
+
+        if not 'outputPackages' in globs:
+            globs['outputPackages'] = []
+
+        globs['outputPackages'].append(outAabPackage)
+        mutex.release()
 
 def platforms():
     return ['android']
@@ -334,6 +380,16 @@ def run(globs, configs, dataDir, outputDir, mutex):
     defaultPkgTargetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     pkgTargetPlatform = configs.get('AndroidAPK', 'pkgTargetPlatform', fallback=defaultPkgTargetPlatform).strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
+    packageTypes = configs.get('Package', 'packageTypes', fallback='apk').strip()
+    pkgTypes = set()
+
+    for t in packageTypes.split(','):
+        t = t.strip()
+
+        if len(t) > 0:
+            pkgTypes.add(t.strip())
+
+    packageTypes = list(pkgTypes)
     verbose = configs.get('AndroidAPK', 'verbose', fallback='false').strip()
     verbose = DTUtils.toBool(verbose)
     qtVersion = configs.get('Qt', 'version', fallback='6').strip()
@@ -359,8 +415,6 @@ def run(globs, configs, dataDir, outputDir, mutex):
     if not hideArch:
         outPackage += '-' + targetArch
 
-    outPackage += '.apk'
-
     # Remove old file
     if os.path.exists(outPackage):
         os.remove(outPackage)
@@ -369,6 +423,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
               mutex,
               dataDir,
               outPackage,
+              packageTypes,
               sdkBuildToolsRevision,
               qtVersion,
               verbose)

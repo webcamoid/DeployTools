@@ -268,7 +268,8 @@ def copyAndroidTemplates(dataDir,
                          ndkABIFilters,
                          gradleParallel,
                          gradleDaemon,
-                         gradleConfigureOnDemand):
+                         gradleConfigureOnDemand,
+                         implementations):
     templates = [os.path.join(qtSourcesDir, '3rdparty/gradle'),
                  os.path.join(qtSourcesDir, 'android/templates')]
 
@@ -303,7 +304,8 @@ def copyAndroidTemplates(dataDir,
     javaDir = os.path.join(qtSourcesDir, 'android', 'java')
 
     with open(properties, 'w') as f:
-        f.write('android.useAndroidX=false\n')
+        f.write('android.useAndroidX={}\n'.format('true' if targetSdkVersion >= 31 else 'false'))
+        #f.write('android.enableJetifier={}\n'.format('true' if targetSdkVersion >= 31 else 'false'))
         f.write('org.gradle.parallel={}\n'.format('true' if gradleParallel else 'false'))
         f.write('org.gradle.daemon={}\n'.format('true' if gradleDaemon else 'false'))
         f.write('org.gradle.configureondemand={}\n'.format('true' if gradleConfigureOnDemand else 'false'))
@@ -315,7 +317,7 @@ def copyAndroidTemplates(dataDir,
             f.write('androidBuildToolsVersion={}\n'.format(sdkBuildToolsRevision))
 
         f.write('androidPackageName={}\n'.format(appIdentifier))
-        f.write('androidCompileSdkVersion=android-{}\n'.format(minSdkVersion))
+        f.write('androidCompileSdkVersion=android-{}\n'.format(targetSdkVersion))
         f.write('minSdkVersion=android-{}\n'.format(minSdkVersion))
         f.write('androidNdkVersion={}\n'.format(androidNdkVersion))
         f.write('qtMinSdkVersion={}\n'.format(minSdkVersion))
@@ -325,20 +327,70 @@ def copyAndroidTemplates(dataDir,
         f.write('qt{}AndroidDir={}\n'.format(qtVersion, javaDir))
         f.write('qtAndroidDir={}\n'.format(javaDir))
 
-    if minSdkVersion < 31:
-        buildGradle = os.path.join(dataDir, 'build.gradle')
+    buildGradle = os.path.join(dataDir, 'build.gradle')
 
-        if os.path.exists(buildGradle):
-            lines = []
+    if os.path.exists(buildGradle):
+        lines = []
+        i = 0
+        dependenciesStart = -1
+        dependenciesEnd = -1
+        depsImplementations = []
 
-            with open(buildGradle, 'r') as f:
-                for line in f:
-                    if not "implementation 'androidx.core:" in line:
-                        lines.append(line)
+        with open(buildGradle, 'r') as f:
+            for line in f:
+                # Anonate dependencies implementations
+                isImplLine = False
 
-            with open(buildGradle, 'w') as f:
-                for line in lines:
-                    f.write(line)
+                if line.startswith('dependencies {'):
+                    dependenciesStart = i
+
+                if line.startswith('}') and dependenciesStart >= 0:
+                    dependenciesEnd = i
+
+                if dependenciesStart >= 0 and dependenciesEnd < 0:
+                    sline = line.strip()
+
+                    if sline.startswith('implementation '):
+                        isImplLine = True
+                        impl = sline.replace('implementation ', '')
+
+                        if not impl in depsImplementations:
+                            depsImplementations += [impl]
+
+                # Anotate build.gradle file lines
+
+                if not isImplLine:
+                    lines.append(line)
+
+                i += 1
+
+        # join dependencies implementations
+
+        for impl in implementations:
+            qimpl = "'{}'".format(impl)
+
+            if not qimpl in depsImplementations:
+                depsImplementations += [qimpl]
+
+        # Remove AndroidX from implementations if necessary
+
+        tempImplementations = []
+
+        for impl in depsImplementations:
+            if targetSdkVersion < 31 and impl.startswith("'androidx.core:'"):
+                continue
+
+            tempImplementations += [impl]
+
+        # Write build.gradle
+
+        with open(buildGradle, 'w') as f:
+            for line in lines:
+                f.write(line)
+
+                if line.startswith('dependencies {'):
+                    for impl in depsImplementations:
+                        f.write('    implementation {}\n'.format(impl))
 
 def solvedepsAndroid(globs,
                      dataDir,
@@ -954,6 +1006,16 @@ def preRun(globs, configs, dataDir):
     qtPluginsDir = configs.get('Qt', 'qtPluginsDir', fallback=defaultQtPluginsDir).strip()
     outputAssetsDir = configs.get('Android', 'outputAssetsDir', fallback='assets').strip()
     outputAssetsDir = os.path.join(dataDir, outputAssetsDir)
+    implementations = configs.get('Android', 'implementations', fallback='').strip()
+    androidImplementations = set()
+
+    for implementation in implementations.split(','):
+        implementation = implementation.strip()
+
+        if len(implementation) > 0:
+            androidImplementations.add(implementation.strip())
+
+    implementations = list(androidImplementations)
     mainExecutable = configs.get('Package', 'mainExecutable', fallback='').strip()
     mainExecutable = os.path.join(dataDir, mainExecutable)
     qtConfFile = configs.get('Qt', 'qtConfFile', fallback='qt.conf').strip()
@@ -1062,7 +1124,8 @@ def preRun(globs, configs, dataDir):
                              ndkABIFilters,
                              gradleParallel,
                              gradleDaemon,
-                             gradleConfigureOnDemand)
+                             gradleConfigureOnDemand,
+                             implementations)
 
     if targetPlatform != 'android':
         print('Writting qt.conf file')

@@ -228,6 +228,7 @@ def createApk(globs,
               mutex,
               dataDir,
               outPackage,
+              buildType,
               packageTypes,
               sdkBuildToolsRevision,
               qtVersion,
@@ -251,12 +252,14 @@ def createApk(globs,
     if not os.path.exists(gradleSript):
         return
 
+    packageType = 'Release' if buildType == 'Release' or buildType == 'MinSizeRel' else 'Debug'
+
     if 'apk' in packageTypes:
         os.chmod(gradleSript, 0o755)
         params = [gradleSript,
                   '--no-daemon',
                   '--info',
-                  'assembleRelease']
+                  'assemble{}'.format(packageType)]
 
         if verbose:
             process = subprocess.Popen(params, # nosec
@@ -274,8 +277,8 @@ def createApk(globs,
                            'build',
                            'outputs',
                            'apk',
-                           'release',
-                           '{}-release-unsigned.apk'.format(name))
+                           packageType.lower(),
+                           '{}-{}-unsigned.apk'.format(name, packageType.lower()))
         signPackage(apk, dataDir, sdkBuildToolsRevision, verbose)
         outApkPackage = outPackage + '.apk'
         DTUtils.copy(apk, outApkPackage)
@@ -296,7 +299,7 @@ def createApk(globs,
         params = [gradleSript,
                   '--no-daemon',
                   '--info',
-                  'bundleRelease']
+                  'bundle{}'.format(packageType)]
 
         if verbose:
             process = subprocess.Popen(params, # nosec
@@ -314,8 +317,8 @@ def createApk(globs,
                            'build',
                            'outputs',
                            'bundle',
-                           'release',
-                           '{}-release.aab'.format(name))
+                           packageType.lower(),
+                           '{}-{}.aab'.format(name, packageType.lower()))
         signPackage(aab, dataDir, sdkBuildToolsRevision, verbose)
         outAabPackage = outPackage + '.aab'
         DTUtils.copy(aab, outAabPackage)
@@ -380,6 +383,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     defaultPkgTargetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     pkgTargetPlatform = configs.get('AndroidAPK', 'pkgTargetPlatform', fallback=defaultPkgTargetPlatform).strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
+    buildType = configs.get('Package', 'buildType', fallback='Debug').strip()
     packageTypes = configs.get('AndroidAPK', 'packageTypes', fallback='apk').strip()
     pkgTypes = set()
 
@@ -390,7 +394,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
             pkgTypes.add(t.strip())
 
     packageTypes = list(pkgTypes)
-    verbose = configs.get('AndroidAPK', 'verbose', fallback='false').strip()
+    verbose = configs.get('AndroidAPK', 'verbose', fallback='true').strip()
     verbose = DTUtils.toBool(verbose)
     qtVersion = configs.get('Qt', 'version', fallback='6').strip()
 
@@ -423,6 +427,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
               mutex,
               dataDir,
               outPackage,
+              buildType,
               packageTypes,
               sdkBuildToolsRevision,
               qtVersion,

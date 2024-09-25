@@ -41,14 +41,21 @@ def dirSize(path):
 
     return size
 
-def signPackage(package):
-    process = subprocess.Popen(['codesign', # nosec
-                                '--force',
-                                '--sign',
-                                '-',
-                                package],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+def signPackage(package, verbose):
+    params = ['codesign', # nosec
+              '--verbose',
+              '--force',
+              '--sign',
+              '-',
+              package]
+
+    if verbose:
+        process = subprocess.Popen(params) # nosec
+    else:
+        process = subprocess.Popen(params, # nosec
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+
     process.communicate()
 
 # https://asmaloney.com/2013/07/howto/packaging-a-mac-os-x-application-using-a-dmg/
@@ -58,7 +65,8 @@ def createDmg(globs,
               outPackage,
               name,
               version,
-              appIcon):
+              appIcon,
+              verbose):
     with tempfile.TemporaryDirectory() as tmpdir:
         staggingDir = os.path.join(tmpdir, 'stagging')
 
@@ -69,24 +77,41 @@ def createDmg(globs,
         imageSize = dirSize(staggingDir)
         tmpDmg = os.path.join(tmpdir, name + '_tmp.dmg')
         volumeName = "{}-{}".format(name, version)
+        params = ['hdiutil', 'create',
+                  '-verbose',
+                  '-srcfolder', staggingDir,
+                  '-volname', volumeName,
+                  '-fs', 'HFS+',
+                  '-fsargs', '-c c=64,a=16,e=16',
+                  '-format', 'UDRW',
+                  '-size', str(math.ceil(imageSize * 1.1)),
+                  tmpDmg]
 
-        process = subprocess.Popen(['hdiutil', 'create', # nosec
-                                    '-srcfolder', staggingDir,
-                                    '-volname', volumeName,
-                                    '-fs', 'HFS+',
-                                    '-fsargs', '-c c=64,a=16,e=16',
-                                    '-format', 'UDRW',
-                                    '-size', str(math.ceil(imageSize * 1.1)),
-                                    tmpDmg],
-                                    stdout=subprocess.PIPE)
+        if verbose:
+            process = subprocess.Popen(params) # nosec
+        else:
+            process = subprocess.Popen(params, # nosec
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+
         process.communicate()
 
-        process = subprocess.Popen(['hdiutil', # nosec
-                                    'attach',
-                                    '-readwrite',
-                                    '-noverify',
-                                    tmpDmg],
-                                    stdout=subprocess.PIPE)
+        params = ['hdiutil',
+                  'attach',
+                  '-readwrite',
+                  '-noverify',
+                  tmpDmg]
+
+        if verbose:
+            process = subprocess.Popen(params, # nosec
+                                       stdout=subprocess.PIPE}
+        else:
+            process = subprocess.Popen(params, # nosec
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+
+        process = subprocess.Popen(params, # nosec
+                                   stdout=subprocess.PIPE)
         stdout, _ = process.communicate()
         device = ''
 
@@ -108,16 +133,30 @@ def createDmg(globs,
         volumeIcon = os.path.join(volumePath, '.VolumeIcon.icns')
         DTUtils.copy(appIcon, volumeIcon)
 
-        process = subprocess.Popen(['SetFile', # nosec
-                                    '-c', 'icnC',
-                                    volumeIcon],
-                                    stdout=subprocess.PIPE)
+        params = ['SetFile',
+                  '-c', 'icnC',
+                  volumeIcon]
+
+        if verbose:
+            process = subprocess.Popen(params) # nosec
+        else:
+            process = subprocess.Popen(params, # nosec
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+
         process.communicate()
 
-        process = subprocess.Popen(['SetFile', # nosec
-                                    '-a', 'C',
-                                    volumePath],
-                                    stdout=subprocess.PIPE)
+        params = ['SetFile',
+                  '-a', 'C',
+                  volumeIcon]
+
+        if verbose:
+            process = subprocess.Popen(params) # nosec
+        else:
+            process = subprocess.Popen(params, # nosec
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+
         process.communicate()
 
         appsShortcut = os.path.join(volumePath, 'Applications')
@@ -130,18 +169,35 @@ def createDmg(globs,
 
         os.sync()
 
-        process = subprocess.Popen(['hdiutil', # nosec
-                                    'detach',
-                                    device],
-                                    stdout=subprocess.PIPE)
+        params = ['hdiutil', # nosec
+                  'detach',
+                  '-verbose',
+                  device]
+
+        if verbose:
+            process = subprocess.Popen(params) # nosec
+        else:
+            process = subprocess.Popen(params, # nosec
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+
         process.communicate()
-        process = subprocess.Popen(['hdiutil', # nosec
-                                    'convert',
-                                    tmpDmg,
-                                    '-format', 'UDZO',
-                                    '-imagekey', 'zlib-level=9',
-                                    '-o', outPackage],
-                                    stdout=subprocess.PIPE)
+
+        params = ['hdiutil', # nosec
+                  'convert',
+                  tmpDmg,
+                  '-verbose',
+                  '-format', 'UDZO',
+                  '-imagekey', 'zlib-level=9',
+                  '-o', outPackage]
+
+        if verbose:
+            process = subprocess.Popen(params) # nosec
+        else:
+            process = subprocess.Popen(params, # nosec
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+
         process.communicate()
 
         if not os.path.exists(outPackage):
@@ -183,6 +239,8 @@ def run(globs, configs, dataDir, outputDir, mutex):
     defaultHideArch = configs.get('Package', 'hideArch', fallback='false').strip()
     hideArch = configs.get('Dmg', 'hideArch', fallback=defaultHideArch).strip()
     hideArch = DTUtils.toBool(hideArch)
+    verbose = configs.get('AndroidAPK', 'verbose', fallback='false').strip()
+    verbose = DTUtils.toBool(verbose)
     defaultShowTargetPlatform = configs.get('Package', 'showTargetPlatform', fallback='true').strip()
     showTargetPlatform = configs.get('Dmg', 'showTargetPlatform', fallback=defaultShowTargetPlatform).strip()
     showTargetPlatform = DTUtils.toBool(showTargetPlatform)
@@ -208,4 +266,5 @@ def run(globs, configs, dataDir, outputDir, mutex):
               outPackage,
               packageName,
               version,
-              icon)
+              icon,
+              verbose)

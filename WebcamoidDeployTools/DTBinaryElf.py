@@ -290,7 +290,17 @@ def dump(binary):
 
             # Read the a pointer to the virtual address in the string table
             # that contains the name of this section.
-            sectionName = struct.unpack('I', f.read(4))[0]
+
+            try:
+                sectionName = struct.unpack('I', f.read(4))[0]
+            except:
+                # The file is damaged
+
+                return {'machine': machine,
+                        'imports': set(),
+                        'rpath': set(),
+                        'runpath': set(),
+                        'type': fileType}
 
             # Read the type of this section.
             sectionType = struct.unpack('I', f.read(4))[0]

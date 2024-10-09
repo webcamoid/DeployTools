@@ -332,9 +332,20 @@ def copyAndroidTemplates(dataDir,
     if os.path.exists(buildGradle):
         lines = []
         i = 0
+        indent = 0
+        indentSize = 4
+        indentSpace = indent * indentSize * ' '
+
         dependenciesStart = -1
         dependenciesEnd = -1
         depsImplementations = []
+
+        androidStart = -1
+        androidEnd = -1
+
+        packagingOptionsStart = -1
+        packagingOptionsEnd = -1
+        doNotStripLines = []
 
         with open(buildGradle, 'r') as f:
             for line in f:
@@ -343,9 +354,13 @@ def copyAndroidTemplates(dataDir,
 
                 if line.startswith('dependencies {'):
                     dependenciesStart = i
+                    indent += 1
+                    indentSpace = indent * indentSize * ' '
 
                 if line.startswith('}') and dependenciesStart >= 0:
                     dependenciesEnd = i
+                    indent -= 1
+                    indentSpace = indent * indentSize * ' '
 
                 if dependenciesStart >= 0 and dependenciesEnd < 0:
                     sline = line.strip()
@@ -357,9 +372,43 @@ def copyAndroidTemplates(dataDir,
                         if not impl in depsImplementations:
                             depsImplementations += [impl]
 
+                # Anonate doNotStrip lines
+                isDoNotStripLine = False
+
+                if line.startswith('android {'):
+                    androidStart = i
+                    indent += 1
+                    indentSpace = indent * indentSize * ' '
+
+                if line.startswith('}') and androidStart >= 0:
+                    androidEnd = i
+                    indent -= 1
+                    indentSpace = indent * indentSize * ' '
+
+                if androidStart >= 0 and androidEnd < 0:
+                    if line.startswith(indentSpace + 'packagingOptions {'):
+                        packagingOptionsStart = i
+                        indent += 1
+                        indentSpace = indent * indentSize * ' '
+
+                    if line.startswith(indentSpace + '}') and packagingOptionsStart >= 0:
+                        packagingOptionsEnd = i
+                        indent -= 1
+                        indentSpace = indent * indentSize * ' '
+
+                    if packagingOptionsStart >= 0 and packagingOptionsEnd < 0:
+                        sline = line.strip()
+
+                        if sline.startswith('doNotStrip '):
+                            isDoNotStripLine = True
+                            dns = sline.replace('doNotStrip ', '')
+
+                            if not dns in doNotStripLines:
+                                doNotStripLines += [dns]
+
                 # Anotate build.gradle file lines
 
-                if not isImplLine:
+                if not isImplLine and not isDoNotStripLine:
                     lines.append(line)
 
                 i += 1
@@ -382,6 +431,22 @@ def copyAndroidTemplates(dataDir,
 
             tempImplementations += [impl]
 
+        # join doNotStrip
+
+        doNotStrip = []
+
+        for d in os.listdir(os.path.join(dataDir, 'libs')):
+            path = os.path.join(dataDir, 'libs', d)
+
+            if os.path.isdir(path):
+                doNotStrip.append('*/{}/*.so'.format(d))
+
+        for dns in doNotStrip:
+            qdns = '"{}"'.format(dns)
+
+            if not qdns in doNotStripLines:
+                doNotStripLines += [qdns]
+
         # Write build.gradle
 
         with open(buildGradle, 'w') as f:
@@ -391,6 +456,24 @@ def copyAndroidTemplates(dataDir,
                 if line.startswith('dependencies {'):
                     for impl in depsImplementations:
                         f.write('    implementation {}\n'.format(impl))
+
+                writePackagingOptions = False
+
+                if line.startswith('android {') \
+                    and packagingOptionsStart < 0 \
+                    and len(doNotStripLines) > 0:
+                    f.write('    packagingOptions {\n')
+                    writePackagingOptions = True
+
+                if writePackagingOptions or \
+                    line.startswith((1 * indentSize * ' ') + 'packagingOptions {'):
+
+                    for dns in doNotStripLines:
+                        f.write('{}doNotStrip {}\n'.format(2 * indentSize * ' ', dns))
+
+                if writePackagingOptions:
+                    f.write('    }\n')
+                    f.write('\n')
 
 def solvedepsAndroid(globs,
                      dataDir,

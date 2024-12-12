@@ -320,6 +320,7 @@ def copyAndroidTemplates(dataDir,
         f.write('androidCompileSdkVersion=android-{}\n'.format(targetSdkVersion))
         f.write('minSdkVersion=android-{}\n'.format(minSdkVersion))
         f.write('androidNdkVersion={}\n'.format(androidNdkVersion))
+        f.write('qtGradlePluginType=com.android.application\n')
         f.write('qtMinSdkVersion={}\n'.format(minSdkVersion))
         f.write('qtTargetSdkVersion={}\n'.format(targetSdkVersion))
         f.write('qtTargetAbiList={}\n'.format(ndkABIFilters))

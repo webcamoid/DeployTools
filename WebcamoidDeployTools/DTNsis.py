@@ -154,9 +154,12 @@ def winPath(path, verbose=False):
         process = subprocess.Popen(params, # nosec
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
-        stdout, _ = process.communicate()
+        stdout, stderr = process.communicate()
 
         if process.returncode != 0:
+            if verbose:
+                print(stderr.decode(sys.getdefaultencoding()))
+
             return ''
 
         if not stdout:
@@ -178,9 +181,12 @@ def winPath(path, verbose=False):
     process = subprocess.Popen(params, # nosec
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
-    stdout, _ = process.communicate()
+    stdout, stderr = process.communicate()
 
     if process.returncode != 0:
+        if verbose:
+            print(stderr.decode(sys.getdefaultencoding()))
+
         return ''
 
     if not stdout:

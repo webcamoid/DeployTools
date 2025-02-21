@@ -136,6 +136,14 @@ def nsisDataDir():
 
     return ''
 
+def unixToWinPath(path):
+    if re.match('^/[a-zA-Z]/', path):
+        path = '{}:{}'.format(path[1].upper(), path[2:])
+
+        return path.replace('/', '\\')
+
+    return path
+
 def winPath(path, verbose=False):
     if len(path) < 1:
         return ''
@@ -143,38 +151,24 @@ def winPath(path, verbose=False):
     if DTUtils.hostPlatform() == 'windows':
         cygpathBin = cygpath()
 
-        print('Path: {}'.format(path))
-        print('cygpathBin: {}'.format(cygpathBin))
-
         if len(cygpathBin) < 1:
-            if re.match('^/[a-zA-Z]/', path):
-                path = '{}:{}'.format(path[1].upper(), path[2:])
-                path = path.replace('/', '\\')
-
-            print('Out path no cygpath: {}'.format(path))
-            return path
+            return unixToWinPath(path)
 
         params = [cygpathBin, '-w', path]
         process = subprocess.Popen(params, # nosec
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
+        stdout, _ = process.communicate()
 
         if process.returncode != 0:
-            #if verbose:
-            print('STDOUT: '.format(stdout.decode(sys.getdefaultencoding())))
-            print('STDERR: '.format(stderr.decode(sys.getdefaultencoding())))
-            print('Failed')
-            return ''
+            print('WINPATH: {}'.format(unixToWinPath(path)))
+
+            return unixToWinPath(path)
 
         if not stdout:
-            print('Empty out')
-            return ''
+            return unixToWinPath(path)
 
-        r = stdout.decode(sys.getdefaultencoding()).strip()
-        print('Cygpath result: {}'.format(r))
-
-        return r
+        return stdout.decode(sys.getdefaultencoding()).strip()
 
     makeNSISPath = makensis()
 
@@ -190,12 +184,9 @@ def winPath(path, verbose=False):
     process = subprocess.Popen(params, # nosec
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
+    stdout, _ = process.communicate()
 
     if process.returncode != 0:
-        if verbose:
-            print(stderr.decode(sys.getdefaultencoding()))
-
         return ''
 
     if not stdout:

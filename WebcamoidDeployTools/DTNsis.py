@@ -161,8 +161,6 @@ def winPath(path, verbose=False):
         stdout, _ = process.communicate()
 
         if process.returncode != 0:
-            print('WINPATH: {}'.format(unixToWinPath(path)))
-
             return unixToWinPath(path)
 
         if not stdout:

@@ -143,11 +143,15 @@ def winPath(path, verbose=False):
     if DTUtils.hostPlatform() == 'windows':
         cygpathBin = cygpath()
 
+        print('Path: {}'.format(path))
+        print('cygpathBin: {}'.format(cygpathBin))
+
         if len(cygpathBin) < 1:
             if re.match('^/[a-zA-Z]/', path):
                 path = '{}:{}'.format(path[1].upper(), path[2:])
                 path = path.replace('/', '\\')
 
+            print('Out path no cygpath: {}'.format(path))
             return path
 
         params = [cygpathBin, '-w', path]
@@ -160,12 +164,17 @@ def winPath(path, verbose=False):
             if verbose:
                 print(stderr.decode(sys.getdefaultencoding()))
 
+            print('Failed')
             return ''
 
         if not stdout:
+            print('Empty out')
             return ''
 
-        return stdout.decode(sys.getdefaultencoding()).strip()
+        r = stdout.decode(sys.getdefaultencoding()).strip()
+        print('Cygpath result: {}'.format(r))
+
+        return r
 
     makeNSISPath = makensis()
 
@@ -504,8 +513,6 @@ def createInstaller(globs,
 
         params += [winPath(nsiScript)]
         process = None
-
-        print('PARAMS: {}'.format(params))
 
         if verbose:
             process = subprocess.Popen(params) # nosec

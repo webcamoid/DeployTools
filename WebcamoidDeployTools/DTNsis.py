@@ -162,8 +162,8 @@ def winPath(path, verbose=False):
 
         if process.returncode != 0:
             #if verbose:
-            print(stderr.decode(sys.getdefaultencoding()))
-
+            print('STDOUT: '.format(stdout.decode(sys.getdefaultencoding())))
+            print('STDERR: '.format(stderr.decode(sys.getdefaultencoding())))
             print('Failed')
             return ''
 

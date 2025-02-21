@@ -505,6 +505,8 @@ def createInstaller(globs,
         params += [winPath(nsiScript)]
         process = None
 
+        print('PARAMS: {}'.format(params))
+
         if verbose:
             process = subprocess.Popen(params) # nosec
         else:

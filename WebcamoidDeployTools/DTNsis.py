@@ -500,7 +500,12 @@ def createInstaller(globs,
         for key in installerVars:
             params += ['{}D{}={}'.format(optmrk, key, installerVars[key])]
 
-        params += [winPath(nsiScript)]
+        #params += [winPath(nsiScript)]
+        params += [nsiScript]
+
+        print("Exists WP: " + os.path.exists(winPath(nsiScript)))
+        print("Exists: " + os.path.exists(nsiScript))
+
         process = None
 
         if verbose:

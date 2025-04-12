@@ -503,8 +503,8 @@ def createInstaller(globs,
         #params += [winPath(nsiScript)]
         params += [nsiScript]
 
-        print("Exists WP: " + os.path.exists(winPath(nsiScript)))
-        print("Exists: " + os.path.exists(nsiScript))
+        print("Exists WP: " + str(os.path.exists(winPath(nsiScript))))
+        print("Exists: " + str(os.path.exists(nsiScript)))
 
         process = None
 

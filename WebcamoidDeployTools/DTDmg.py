@@ -41,23 +41,6 @@ def dirSize(path):
 
     return size
 
-def signPackage(package, verbose):
-    params = ['codesign', # nosec
-              '--verbose',
-              '--force',
-              '--sign',
-              '-',
-              package]
-
-    if verbose:
-        process = subprocess.Popen(params) # nosec
-    else:
-        process = subprocess.Popen(params, # nosec
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
-
-    process.communicate()
-
 # https://asmaloney.com/2013/07/howto/packaging-a-mac-os-x-application-using-a-dmg/
 def createDmg(globs,
               mutex,

@@ -297,14 +297,21 @@ def writeBuildInfo(globs, buildInfoFile, sourcesDir):
             print('    ' + packge)
             f.write(packge + '\n')
 
-def signPackage(package):
-    process = subprocess.Popen(['codesign', # nosec
-                                '--force',
-                                '--sign',
-                                '-',
-                                package],
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE)
+def signPackage(package, verbose):
+    params = ['codesign', # nosec
+              '--verbose',
+              '--force',
+              '--sign',
+              '-',
+              package]
+
+    if verbose:
+        process = subprocess.Popen(params) # nosec
+    else:
+        process = subprocess.Popen(params, # nosec
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+
     process.communicate()
 
 def preRun(globs, configs, dataDir):
@@ -387,8 +394,14 @@ def postRun(globs, configs, dataDir):
     defaultAppBundle = os.path.basename(mainExecutable) + '.app'
     appBundle = configs.get('Package', 'appBundle', fallback=defaultAppBundle).strip()
     appBundle = os.path.join(dataDir, appBundle)
+    verbose = configs.get('Package', 'verbose', fallback='false').strip()
+    verbose = DTUtils.toBool(verbose)
+    signBinaries = configs.get('Package', 'signBinaries', fallback='true').strip()
+    signBinaries = DTUtils.toBool(verbose)
 
     print('\nWritting build system information\n')
     writeBuildInfo(globs, buildInfoFile, sourcesDir)
-    print('\nSigning bundle\n')
-    signPackage(appBundle)
+
+    if signBinaries:
+        print('\nSigning bundle\n')
+        signPackage(appBundle, verbose)

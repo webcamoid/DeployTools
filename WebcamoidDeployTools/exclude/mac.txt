@@ -1,2 +1,3 @@
 /usr/lib/.*
 /System/Library/Frameworks/.*
+/System/Volumes/Preboot/Cryptexes/OS/System/Library/Frameworks/.*

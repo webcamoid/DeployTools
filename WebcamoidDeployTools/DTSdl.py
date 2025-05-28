@@ -30,7 +30,8 @@ def dependsOnSDL(configs,
                  targetArch,
                  debug,
                  dataDir,
-                 sysLibDir):
+                 sysLibDir,
+                 sdlVersion):
     solver = DTBinary.BinaryTools(configs,
                                   DTUtils.hostPlatform(),
                                   targetPlatform,
@@ -41,7 +42,7 @@ def dependsOnSDL(configs,
     for dep in solver.scanDependencies(dataDir):
         libName = solver.name(dep)
 
-        if libName == 'SDL2':
+        if libName == 'SDL{}'.format(sdlVersion):
             return True
 
     return False
@@ -51,7 +52,15 @@ def preRun(globs, configs, dataDir):
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
     debug =  configs.get('Package', 'debug', fallback='false').strip()
     debug = DTUtils.toBool(debug)
-    defaultClassesFile = '/opt/android-libs/{}/share/java/sdl2.jar'.format(targetArch)
+    sdlVersion = configs.get('SDL', 'version', fallback='2').strip()
+
+    try:
+        sdlVersion = int(sdlVersion)
+    except:
+        sdlVersion = 2
+
+    defaultClassesFile = '/opt/android-libs/{}/share/java/sdl{}.jar'.format(targetArch,
+                                                                            sdlVersion)
     classesFile = configs.get('SDL', 'classesFile', fallback=defaultClassesFile).strip()
 
     sysLibDir = configs.get('System', 'libDir', fallback='')
@@ -73,7 +82,8 @@ def preRun(globs, configs, dataDir):
                                targetArch,
                                debug,
                                dataDir,
-                               sysLibDir)
+                               sysLibDir,
+                               sdlVersion)
 
     if targetPlatform == 'android' and haveSDL:
         print('Copying SDL classes file')

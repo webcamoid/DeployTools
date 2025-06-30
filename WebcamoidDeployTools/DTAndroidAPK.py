@@ -394,7 +394,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
             pkgTypes.add(t.strip())
 
     packageTypes = list(pkgTypes)
-    verbose = configs.get('AndroidAPK', 'verbose', fallback='false').strip()
+    verbose = configs.get('AndroidAPK', 'verbose', fallback='true').strip()
     verbose = DTUtils.toBool(verbose)
     qtVersion = configs.get('Qt', 'version', fallback='6').strip()
 

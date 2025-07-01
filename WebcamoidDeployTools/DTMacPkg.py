@@ -340,12 +340,12 @@ def run(globs, configs, dataDir, outputDir, mutex):
 
     installScripts = configs.get('MacPkg', 'installScripts', fallback='').strip()
 
-    if installScripts != '':
+    if installScripts != '' and not installScripts.startswith('/'):
         installScripts = os.path.join(sourcesDir, installScripts)
 
     uninstallScript = configs.get('MacPkg', 'uninstallScript', fallback='').strip()
 
-    if uninstallScript != '':
+    if uninstallScript != '' and not uninstallScript.startswith('/'):
         uninstallScript = os.path.join(sourcesDir, uninstallScript)
 
     backgroundImage = configs.get('MacPkg', 'backgroundImage', fallback='').strip()

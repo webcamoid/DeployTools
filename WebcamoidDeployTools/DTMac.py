@@ -398,9 +398,12 @@ def postRun(globs, configs, dataDir):
     verbose = DTUtils.toBool(verbose)
     signBinaries = configs.get('Package', 'signBinaries', fallback='true').strip()
     signBinaries = DTUtils.toBool(signBinaries)
+    writeInfo = configs.get('Package', 'writeBuildInfo', fallback='True').strip()
+    writeInfo = DTUtils.toBool(writeInfo)
 
-    print('\nWritting build system information\n')
-    writeBuildInfo(globs, buildInfoFile, sourcesDir)
+    if writeInfo:
+        print('\nWritting build system information\n')
+        writeBuildInfo(globs, buildInfoFile, sourcesDir)
 
     if signBinaries:
         print('\nSigning bundle\n')

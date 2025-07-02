@@ -391,11 +391,14 @@ def postRun(globs, configs, dataDir):
     buildInfoFile = os.path.join(dataDir, buildInfoFile)
     minSdkVersion = readMinimumSdkVersion(configs)
     targetSdkVersion = readTargetSdkVersion(configs)
+    writeInfo = configs.get('Package', 'writeBuildInfo', fallback='True').strip()
+    writeInfo = DTUtils.toBool(writeInfo)
 
-    print('Writting build system information')
-    print()
-    writeBuildInfo(globs,
-                   buildInfoFile,
-                   sourcesDir,
-                   minSdkVersion,
-                   targetSdkVersion)
+    if writeInfo:
+        print('Writting build system information')
+        print()
+        writeBuildInfo(globs,
+                    buildInfoFile,
+                    sourcesDir,
+                    minSdkVersion,
+                    targetSdkVersion)

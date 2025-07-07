@@ -33,10 +33,15 @@ def appimagetool(targetArch):
     if len(appimage) > 0:
         return appimage
 
-    if targetArch == 'x86_64':
-        return DTUtils.whereBin('appimagetool-x86_64.AppImage')
+    appImageArchs = {'x64': 'x86_64',
+                     'x86': 'i686',
+                     'arm64': 'aarch64',
+                     'arm32': 'armhf'}
 
-    return DTUtils.whereBin('appimagetool-i686.AppImage')
+    if not targetArch in appImageArchs:
+        return ''
+
+    return DTUtils.whereBin('appimagetool-{}.AppImage'.format(appImageArchs[targetArch]))
 
 def createAppImage(globs,
                    mutex,

@@ -82,7 +82,6 @@ def createAppImage(globs,
         params = [appimagetool(targetArch),
                   '-v',
                   '--no-appstream',
-                  '--comp', 'xz',
                   appDir,
                   outPackage]
         penv = os.environ.copy()

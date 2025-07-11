@@ -578,14 +578,25 @@ def solvedepsAndroid(globs,
                '-- %%INSERT_LOCAL_LIBS%% --'   : ':'.join(sorted(libs)),
                '-- %%INSERT_LOCAL_JARS%% --'   : ':'.join(sorted(jars))}
 
+    excludedMessages = ['android.app.ministro_not_found_msg',
+                        'android.app.ministro_needed_msg',
+                        'android.app.unsupported_android_version']
+
     with open(manifest) as inFile:
         with open(manifestTemp, 'w') as outFile:
             for line in inFile:
                 for key in replace:
                     line = line.replace(key, replace[key])
 
-                if not 'android.app.ministro_not_found_msg' in line \
-                   and not 'android.app.ministro_needed_msg' in line:
+                excludeLine = False
+
+                for message in excludedMessages:
+                    if message in line:
+                        excludeLine = True
+
+                        break
+
+                if not excludeLine:
                     outFile.write(line)
 
                 spaces = len(line)
@@ -623,9 +634,7 @@ def solvedepsAndroid(globs,
         if application != None:
             application.set('requestLegacyExternalStorage', 'true')
             application.set('allowNativeHeapPointerTagging', 'false')
-
-            with open('person.xml', 'wb') as f:
-                tree.write(manifest)
+            tree.write(manifest)
 
 def createRccBundle(outputAssetsDir, verbose):
     outputAssetsDir = os.path.join(outputAssetsDir, 'android_rcc_bundle')

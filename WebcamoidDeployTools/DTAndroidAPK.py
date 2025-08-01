@@ -111,7 +111,13 @@ def alignPackage(package, sdkBuildToolsRevision, verbose):
 
     return True
 
-def apkSignPackage(package, keystore, sdkBuildToolsRevision, verbose):
+def apkSignPackage(package,
+                   keystore,
+                   keystorePass,
+                   keystoreKeyAlias,
+                   keyPass,
+                   sdkBuildToolsRevision,
+                   verbose):
     if not alignPackage(package, sdkBuildToolsRevision, verbose):
         return False
 
@@ -124,9 +130,9 @@ def apkSignPackage(package, keystore, sdkBuildToolsRevision, verbose):
               'sign',
               '-v',
               '--ks', keystore,
-              '--ks-pass', 'pass:android',
-              '--ks-key-alias', 'androiddebugkey',
-              '--key-pass', 'pass:android',
+              '--ks-pass', 'pass:{}'.format(keystorePass),
+              '--ks-key-alias', keystoreKeyAlias,
+              '--key-pass', 'pass:{}'.format(keyPass),
               package]
 
     if verbose:
@@ -140,7 +146,13 @@ def apkSignPackage(package, keystore, sdkBuildToolsRevision, verbose):
 
     return process.returncode == 0
 
-def jarSignPackage(package, keystore, sdkBuildToolsRevision, verbose):
+def jarSignPackage(package,
+                   keystore,
+                   keystorePass,
+                   keystoreKeyAlias,
+                   keyPass,
+                   sdkBuildToolsRevision,
+                   verbose):
     jsigner = jarsigner()
 
     if len(jsigner) < 1:
@@ -151,14 +163,14 @@ def jarSignPackage(package, keystore, sdkBuildToolsRevision, verbose):
     params = [jsigner,
               '-verbose',
               '-keystore', keystore,
-              '-storepass', 'android',
-              '-keypass', 'android',
-              '-sigalg', 'SHA1withRSA',
-              '-digestalg', 'SHA1',
+              '-storepass', keystorePass,
+              '-keypass', keyPass,
+              '-sigalg', 'SHA256withRSA',
+              '-digestalg', 'SHA-256',
               '-sigfile', 'CERT',
               '-signedjar', signedPackage,
               package,
-              'androiddebugkey']
+              keystoreKeyAlias]
 
     if verbose:
         process = subprocess.Popen(params) # nosec
@@ -187,9 +199,27 @@ def signPackage(package, dataDir, sdkBuildToolsRevision, verbose):
     if 'KEYSTORE_PATH' in os.environ:
         keystore = os.environ['KEYSTORE_PATH']
 
+    keystorePass = 'android'
+
+    if 'KEYSTORE_PASS' in os.environ:
+        keystorePass = os.environ['KEYSTORE_PASS']
+
+    keystoreKeyAlias = 'androiddebugkey'
+
+    if 'KEYSTORE_KEY_ALIAS' in os.environ:
+        keystoreKeyAlias = os.environ['KEYSTORE_KEY_ALIAS']
+
+    keyPass = 'android'
+
+    if 'ANDROID_KEY_PASS' in os.environ:
+        keyPass = os.environ['ANDROID_KEY_PASS']
+
     if not os.path.exists(keystore):
         try:
-            os.makedirs(os.path.dirname(keystore))
+            keystoreDir = os.path.dirname(keystore)
+
+            if keystoreDir != '':
+                os.makedirs(keystoreDir)
         except:
             pass
 
@@ -198,9 +228,9 @@ def signPackage(package, dataDir, sdkBuildToolsRevision, verbose):
                   '-v',
                   '-storetype', 'pkcs12',
                   '-keystore', keystore,
-                  '-storepass', 'android',
-                  '-alias', 'androiddebugkey',
-                  '-keypass', 'android',
+                  '-storepass', keystorePass,
+                  '-alias', keystoreKeyAlias,
+                  '-keypass', keyPass,
                   '-keyalg', 'RSA',
                   '-keysize', '2048',
                   '-validity', '10000',
@@ -219,10 +249,22 @@ def signPackage(package, dataDir, sdkBuildToolsRevision, verbose):
             return False
 
     if package.endswith('.apk') \
-        and apkSignPackage(package, keystore, sdkBuildToolsRevision, verbose):
+        and apkSignPackage(package,
+                           keystore,
+                           keystorePass,
+                           keystoreKeyAlias,
+                           keyPass,
+                           sdkBuildToolsRevision,
+                           verbose):
         return True
 
-    return jarSignPackage(package, keystore, sdkBuildToolsRevision, verbose)
+    return jarSignPackage(package,
+                          keystore,
+                          keystorePass,
+                          keystoreKeyAlias,
+                          keyPass,
+                          sdkBuildToolsRevision,
+                          verbose)
 
 def createApk(globs,
               mutex,

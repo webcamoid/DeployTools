@@ -561,11 +561,6 @@ def createInstaller(globs,
                 params += [winPath(nsiScript)]
 
         process = None
-        print(params)
-
-        with open(nsiScript) as f:
-            for line in f:
-                print(line.replace('\n', ''))
 
         if verbose:
             process = subprocess.Popen(params) # nosec

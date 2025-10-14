@@ -192,6 +192,15 @@ def winPath(path, verbose=False):
 
     return stdout.decode(sys.getdefaultencoding()).strip()
 
+def isExtra(installerSections, filePath):
+    fpath = filePath.replace('\\', '/')
+
+    for section in installerSections:
+        if fpath in section['files']:
+            return True
+
+    return False
+
 def createInstaller(globs,
                     mutex,
                     dataDir,
@@ -210,6 +219,7 @@ def createInstaller(globs,
                     installScript,
                     requiresAdminRights,
                     multiUserInstall,
+                    installerSections,
                     verbose):
     embedInstallScript = True
     nsisdataDir = nsisDataDir()
@@ -241,13 +251,21 @@ def createInstaller(globs,
             'PRODUCT_VERSION': productVersion,
             'DESCRIPTION': description,
             'ORGANIZATION': organization,
-            'COPYRIGHT': copyright,
             'LICENSE_FILE': winPath(licenseFile),
-            'RUN_PROGRAM': runProgram.replace('/', '\\'),
-            'ICON': winPath(icon),
-            'INSTALL_SCRIPT': installScriptBn,
-            'TARGET_DIR': targetDir
+            'INSTALL_SCRIPT': installScriptBn
         }
+
+        if icon != '':
+            installerVars['ICON'] = winPath(icon)
+
+        if runProgram != '':
+            installerVars['RUN_PROGRAM'] = runProgram.replace('/', '\\')
+
+        if targetDir != '':
+            installerVars['TARGET_DIR'] = targetDir
+
+        if copyright != '':
+            installerVars['COPYRIGHT'] = copyright
 
         if installScript != '' and not embedInstallScript:
             outInstallScript = os.path.join(tmpdir, installScriptBn)
@@ -377,6 +395,10 @@ def createInstaller(globs,
 
                     for fil in files:
                         filpath = os.path.join(root, fil)
+
+                        if isExtra(installerSections, os.path.relpath(filpath, dataDir)):
+                            continue
+
                         f.write('File "{}"\n'.format(winPath(filpath)))
 
             f.write('SetOutPath $INSTDIR\n')
@@ -408,6 +430,28 @@ def createInstaller(globs,
 
             f.write('SectionEnd\n')
             f.write('\n')
+
+            for section in installerSections:
+                secName = f'Sec_{section["name"]}'
+
+                if section["checked"]:
+                    f.write(f'Section "{section["description"]}" {secName}\n')
+                else:
+                    f.write(f'Section /o "{section["description"]}" {secName}\n')
+
+                for fileRel in section["files"]:
+                    filpath = os.path.join(dataDir, fileRel)
+
+                    if not os.path.exists(filpath):
+                        continue
+
+                    outPath = os.path.join('$INSTDIR', os.path.dirname(fileRel)).replace('/', '\\')
+
+                    f.write(f'  SetOutPath "{outPath}"\n')
+                    f.write(f'  File "{winPath(filpath)}"\n')
+
+                f.write('SectionEnd\n\n')
+
             f.write('Function .onInit\n')
             f.write('    !insertmacro MUI_LANGDLL_DISPLAY\n')
 
@@ -450,20 +494,30 @@ def createInstaller(globs,
             f.write('!endif\n')
 
             for root, dirs, files in os.walk(dataDir, topdown=False):
-                outPath = ''
-
-                if root == dataDir:
-                    outPath = '$INSTDIR'
-                else:
-                    outPath = os.path.join('$INSTDIR', os.path.relpath(root, dataDir))
-                    outPath = outPath.replace('/', '\\')
-
                 for fil in files:
-                    filpath = os.path.join(outPath, fil)
-                    filpath = filpath.replace('/', '\\')
-                    f.write('Delete "{}"\n'.format(filpath))
+                    filpath = os.path.join(root, fil)
+                    relpath = os.path.relpath(filpath, dataDir)
 
-                f.write('RMDir "{}"\n'.format(outPath))
+                    if isExtra(installerSections, relpath):
+                        continue
+
+                    outPath = os.path.join('$INSTDIR', os.path.relpath(root, dataDir)).replace('/', '\\')
+                    f.write(f'Delete "{outPath}\\{fil}"\n')
+
+                outPath = os.path.join('$INSTDIR', os.path.relpath(root, dataDir)).replace('/', '\\')
+                f.write(f'RMDir "{outPath}"\n')
+
+            for section in installerSections:
+                for fileRel in reversed(section["files"]):
+                    fileDir = os.path.dirname(fileRel)
+                    outPath = os.path.join('$INSTDIR', fileDir).replace('/', '\\')
+                    f.write(f'Delete "{outPath}\\{os.path.basename(fileRel)}"\n')
+
+                uniqueDirs = sorted(set(os.path.dirname(f) for f in section["files"]), reverse=True)
+
+                for d in uniqueDirs:
+                    outPath = os.path.join('$INSTDIR', d).replace('/', '\\')
+                    f.write(f'RMDir "{outPath}"\n')
 
             f.write('RMDir /r "$SMPROGRAMS\\${' + 'APP_NAME' + '}"\n')
             f.write('Delete "$DESKTOP\\${' + 'APP_NAME' + '}.lnk"\n')
@@ -501,11 +555,17 @@ def createInstaller(globs,
             params += ['{}D{}={}'.format(optmrk, key, installerVars[key])]
 
         if os.path.exists(nsiScript):
-            params += [nsiScript]
-        else:
-            params += [winPath(nsiScript)]
+            if DTUtils.hostPlatform() == 'windows':
+                params += [nsiScript]
+            else:
+                params += [winPath(nsiScript)]
 
         process = None
+        print(params)
+
+        with open(nsiScript) as f:
+            for line in f:
+                print(line.replace('\n', ''))
 
         if verbose:
             process = subprocess.Popen(params) # nosec
@@ -572,6 +632,41 @@ def run(globs, configs, dataDir, outputDir, mutex):
     defaultShowTargetPlatform = configs.get('Package', 'showTargetPlatform', fallback='true').strip()
     showTargetPlatform = configs.get('Nsis', 'showTargetPlatform', fallback=defaultShowTargetPlatform).strip()
     showTargetPlatform = DTUtils.toBool(showTargetPlatform)
+
+    # Read extra sections
+
+    extraSections = configs.get('Nsis', 'extraSections', fallback='').strip()
+    pkgTypesSet = set()
+
+    for section in extraSections.split(','):
+        section = section.strip()
+
+        if len(section) > 0:
+            pkgTypesSet.add(section.strip())
+
+    installerSections = []
+
+    for section in pkgTypesSet:
+        sectionDescription = configs.get('Nsis_Section_{}'.format(section), 'description', fallback='').strip()
+        sectionChecked = configs.get('Nsis_Section_{}'.format(section), 'checked', fallback='true').strip()
+        sectionChecked = DTUtils.toBool(sectionChecked)
+
+        # Read section files
+
+        sectionFiles = configs.get('Nsis_Section_{}'.format(section), 'files', fallback='').strip()
+        sectionFilesSet = set()
+
+        for f in sectionFiles.split(','):
+            f = f.strip()
+
+            if len(f) > 0:
+                sectionFilesSet.add(f.strip())
+
+        installerSections.append({'name': section,
+                                  'description': sectionDescription,
+                                  'checked': sectionChecked,
+                                  'files': list(sectionFilesSet)})
+
     outPackage = os.path.join(outputDir, packageName)
 
     if showTargetPlatform:
@@ -606,4 +701,5 @@ def run(globs, configs, dataDir, outputDir, mutex):
                     installScript,
                     requiresAdminRights,
                     multiUserInstall,
+                    installerSections,
                     verbose)

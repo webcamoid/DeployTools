@@ -64,11 +64,6 @@ def createInstaller(globs,
         if uninstallScript != '' and os.path.exists(uninstallScript):
             DTUtils.copy(uninstallScript, tmpdir)
 
-            mkselfVersion = makeselfVersion()
-
-            if DTUtils.versionCode(mkselfVersion) >= DTUtils.versionCode('2.4.2'):
-                params += ['--cleanup', './{}'.format(os.path.basename(uninstallScript))]
-
         if licenseFile != '':
             licenseOutFile = os.path.join(tmpdir, os.path.basename(licenseFile))
             charReplacement = {'"': '\\"',

@@ -383,6 +383,7 @@ def isAvailable(configs):
     sdkBuildToolsRevision = DTAndroid.buildToolsVersion(configs)
     verbose = configs.get('AndroidAPK', 'verbose', fallback='false').strip()
     verbose = DTUtils.toBool(verbose)
+    verbose = True
 
     if len(DTUtils.whereBin('gradle')) < 1:
         if verbose:
@@ -438,6 +439,7 @@ def run(globs, configs, dataDir, outputDir, mutex):
     packageTypes = list(pkgTypes)
     verbose = configs.get('AndroidAPK', 'verbose', fallback='false').strip()
     verbose = DTUtils.toBool(verbose)
+    verbose = True
     qtVersion = configs.get('Qt', 'version', fallback='6').strip()
 
     try:

@@ -327,6 +327,7 @@ def copyAndroidTemplates(dataDir,
         f.write('buildDir=build\n')
         f.write('qt{}AndroidDir={}\n'.format(qtVersion, javaDir))
         f.write('qtAndroidDir={}\n'.format(javaDir))
+        f.write('legacyPackaging=true\n')
 
     buildGradle = os.path.join(dataDir, 'build.gradle')
 

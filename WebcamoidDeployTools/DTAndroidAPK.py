@@ -383,6 +383,7 @@ def isAvailable(configs):
     sdkBuildToolsRevision = DTAndroid.buildToolsVersion(configs)
     verbose = configs.get('AndroidAPK', 'verbose', fallback='false').strip()
     verbose = DTUtils.toBool(verbose)
+    verbose = True
 
     if len(DTUtils.whereBin('gradle')) < 1:
         if verbose:

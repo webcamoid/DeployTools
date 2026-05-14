@@ -459,7 +459,7 @@ def createInstaller(globs,
                 f.write('    !insertmacro MULTIUSER_INIT\n')
 
             f.write('    ; Check for previous installation and auto-uninstall\n')
-            f.write('    ReadRegStr $R0 HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${' + 'APP_NAME' + '}" "UninstallString"\n')
+            f.write('    ReadRegStr $R0 HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${' + 'APP_NAME' + '}" "QuietUninstallString"\n')
             f.write('    StrCmp $R0 "" check_current_user\n')
             f.write('    MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \\\n')
             f.write('        "An older version of ${' + 'APP_NAME' + '} was found.$\\n$\\n\\\n')
@@ -472,7 +472,7 @@ def createInstaller(globs,
             f.write('        ExecWait \'$R0\'\n')
             f.write('    \n')
             f.write('    check_current_user:\n')
-            f.write('    ReadRegStr $R0 HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${' + 'APP_NAME' + '}" "UninstallString"\n')
+            f.write('    ReadRegStr $R0 HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${' + 'APP_NAME' + '}" "QuietUninstallString"\n')
             f.write('    StrCmp $R0 "" continue_install\n')
             f.write('    MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \\\n')
             f.write('        "An older version of ${' + 'APP_NAME' + '} was found for the current user.$\\n$\\n\\\n')

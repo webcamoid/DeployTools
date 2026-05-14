@@ -473,6 +473,7 @@ def createInstaller(globs,
             f.write('    \n')
             f.write('    check_current_user:\n')
             f.write('    ReadRegStr $R0 HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${' + 'APP_NAME' + '}" "UninstallString"\n')
+            f.write('    MessageBox MB_OK "Uninstaller: $R0"\n')
             f.write('    StrCmp $R0 "" continue_install\n')
             f.write('    MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \\\n')
             f.write('        "An older version of ${' + 'APP_NAME' + '} was found for the current user.$\\n$\\n\\\n')

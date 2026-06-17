@@ -143,13 +143,15 @@ class BinaryTools:
         threads = []
 
         for binary in self.find(path):
-            thread = threading.Thread(target=self.strip, args=(binary,))
-            threads.append(thread)
-
             while threading.active_count() >= DTUtils.numThreads():
                 time.sleep(0.25)
 
-            thread.start()
+            try:
+                thread = threading.Thread(target=self.strip, args=(binary,))
+                thread.start()
+                threads.append(thread)
+            except RuntimeError:
+                self.strip(binary)
 
         for thread in threads:
             thread.join()

@@ -320,8 +320,8 @@ def readConfigs(configFile):
 def numThreads():
     nthreads = multiprocessing.cpu_count()
 
-    if nthreads < 4:
-        return 4
+    if nthreads < 2:
+        return 2
 
     return nthreads
 

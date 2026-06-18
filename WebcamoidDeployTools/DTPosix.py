@@ -68,18 +68,20 @@ def fixRpaths(solver, dataDir, libDir):
     threads = []
 
     for elf in solver.find(dataDir):
-        thread = threading.Thread(target=fixLibRpath,
-                                  args=(solver,
-                                        mutex,
-                                        elf,
-                                        dataDir,
-                                        libDir,))
-        threads.append(thread)
-
         while threading.active_count() >= DTUtils.numThreads():
             time.sleep(0.25)
 
-        thread.start()
+        try:
+            thread = threading.Thread(target=fixLibRpath,
+                                      args=(solver,
+                                            mutex,
+                                            elf,
+                                            dataDir,
+                                            libDir,))
+            thread.start()
+            threads.append(thread)
+        except RuntimeError:
+            fixLibRpath(solver, mutex, elf, dataDir, libDir)
 
     for thread in threads:
         thread.join()

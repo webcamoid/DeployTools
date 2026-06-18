@@ -198,15 +198,21 @@ if __name__ =='__main__':
 
             for format in packagingTools:
                 mod = importlib.import_module('WebcamoidDeployTools.DT' + format)
-                threads.append(threading.Thread(target=mod.run,
-                                                args=(globs,
-                                                      configs,
-                                                      options.data_dir,
-                                                      options.output_dir,
-                                                      mutex,)))
 
-            for thread in threads:
-                thread.start()
+                while threading.active_count() >= DTUtils.numThreads():
+                    time.sleep(0.25)
+
+                try:
+                    thread = threading.Thread(target=mod.run,
+                                              args=(globs,
+                                                    configs,
+                                                    options.data_dir,
+                                                    options.output_dir,
+                                                    mutex,))
+                    thread.start()
+                    threads.append(thread)
+                except RuntimeError:
+                    mod.run(globs, configs, options.data_dir, options.output_dir, mutex)
 
             for thread in threads:
                 thread.join()

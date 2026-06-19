@@ -194,13 +194,30 @@ def copy(src, dst='.', copyReals=False, overwrite=True, rootPath=''):
                     copy(srcdir, dstdir, copyReals, overwrite, rootPath)
                 else:
                     realsrcdir = realPath(srcdir)
-                    relsrcdir = os.path.relpath(realsrcdir,
-                                                os.path.dirname(srcdir))
+                    srcParentDir = os.path.dirname(srcdir)
+                    relTarget = os.path.relpath(realsrcdir, srcParentDir)
+                    dstParentDir = os.path.dirname(dstdir)
+                    dstRealDir = os.path.normpath(os.path.join(dstParentDir, relTarget))
+
+                    linkTarget = relTarget
+
+                    if rootPath != '' and isPathHiger(dstRealDir, rootPath):
+                        rep = os.path.dirname(repositionPath(dstRealDir, rootPath))
+                        reldst = os.path.relpath(rep, dstParentDir)
+                        linkTarget = os.path.join(reldst, os.path.basename(dstRealDir))
 
                     try:
-                        os.symlink(relsrcdir, dstdir)
+                        os.symlink(linkTarget, dstdir)
                     except:
                         pass
+
+                    finalDstRealDir = dstRealDir
+
+                    if rootPath != '':
+                        finalDstRealDir = repositionPath(finalDstRealDir, rootPath)
+
+                    if not copy(realsrcdir, finalDstRealDir, copyReals, overwrite, rootPath):
+                        return False
             else:
                 try:
                     os.makedirs(dstdir)

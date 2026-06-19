@@ -135,6 +135,18 @@ def copy(src, dst='.', copyReals=False, overwrite=True, rootPath=''):
                     os.symlink(dstlink, dstfile)
                 except:
                     return False
+            elif not copyReals and os.path.islink(src):
+                # Always point the new link to the fully resolved
+                # target (dstlink), instead of preserving the
+                # original link verbatim (which is what shutil.copy
+                # with follow_symlinks=False does). The original link
+                # may be just one hop in a multi-level symlink chain, 
+                # and that intermediate hop is never copied on its 
+                # own, leaving a dangling link in the deployed package.
+                try:
+                    os.symlink(dstlink, dstfile)
+                except:
+                    return False
             else:
                 try:
                     shutil.copy(src, dstfile, follow_symlinks=copyReals)

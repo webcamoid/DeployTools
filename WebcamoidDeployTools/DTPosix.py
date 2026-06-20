@@ -31,13 +31,46 @@ from . import DTSystemPackages
 from . import DTUtils
 
 
-def fixLibRpath(solver, mutex, elf, dataDir, libDir):
+def libDirSymlinkRealpaths(libDir):
+    # Build the set of real (fully resolved) paths that flat symlinks
+    # directly inside libDir point to. Any ELF file whose realpath
+    # shows up in this set is always actually opened through that
+    # flat symlink by other binaries (since their RPATH/RUNPATH point
+    # straight at libDir) - never through its own, deeper, real
+    # location.
+    realpaths = set()
+
+    if os.path.isdir(libDir):
+        for entry in os.listdir(libDir):
+            path = os.path.join(libDir, entry)
+
+            if os.path.islink(path):
+                try:
+                    realpaths.add(os.path.realpath(path))
+                except:
+                    pass
+
+    return realpaths
+
+def fixLibRpath(solver, mutex, elf, dataDir, libDir, flatSymlinkTargets):
     log = '\tFixing {}\n\n'.format(elf)
     elfInfo = solver.dump(elf)
     elfDir = os.path.dirname(elf)
     rpath = ''
 
     if elfDir.startswith(os.path.join(dataDir, 'up')):
+        rpath = '$ORIGIN'
+    elif elfDir != libDir and os.path.realpath(elf) in flatSymlinkTargets:
+        # This file doesn't physically live in libDir, but a flat
+        # symlink inside libDir points to it. On Linux, $ORIGIN is
+        # resolved from the pathname used to *open* the object, not
+        # from its realpath - and every other binary that needs this
+        # library finds it via that flat symlink (their own
+        # RPATH/RUNPATH point at libDir). So at runtime $ORIGIN will
+        # be libDir, not this file's real, deeper directory.
+        # Computing the rpath as if it lived in its real location
+        # (e.g. "$ORIGIN/../../../../lib") would be wrong - it has to
+        # be computed as if it lived directly in libDir instead.
         rpath = '$ORIGIN'
     else:
         rpath = os.path.join('$ORIGIN',
@@ -64,6 +97,7 @@ def fixRpaths(solver, dataDir, libDir):
 
         return
 
+    flatSymlinkTargets = libDirSymlinkRealpaths(libDir)
     mutex = threading.Lock()
     threads = []
 
@@ -77,11 +111,12 @@ def fixRpaths(solver, dataDir, libDir):
                                             mutex,
                                             elf,
                                             dataDir,
-                                            libDir,))
+                                            libDir,
+                                            flatSymlinkTargets,))
             thread.start()
             threads.append(thread)
         except RuntimeError:
-            fixLibRpath(solver, mutex, elf, dataDir, libDir)
+            fixLibRpath(solver, mutex, elf, dataDir, libDir, flatSymlinkTargets)
 
     for thread in threads:
         thread.join()

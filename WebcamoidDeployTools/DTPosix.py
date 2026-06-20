@@ -52,7 +52,17 @@ def libDirSymlinkRealpaths(libDir):
 
     return realpaths
 
-def fixLibRpath(solver, mutex, elf, dataDir, libDir, flatSymlinkTargets):
+def buildLibNameIndex(libDir):
+    index = {}
+
+    if os.path.isdir(libDir):
+        for root, _, files in os.walk(libDir):
+            for f in files:
+                index.setdefault(f, set()).add(root)
+
+    return index
+
+def fixLibRpath(solver, mutex, elf, dataDir, libDir, flatSymlinkTargets, libNameIndex):
     log = '\tFixing {}\n\n'.format(elf)
     elfInfo = solver.dump(elf)
     elfDir = os.path.dirname(elf)
@@ -76,6 +86,27 @@ def fixLibRpath(solver, mutex, elf, dataDir, libDir, flatSymlinkTargets):
         rpath = os.path.join('$ORIGIN',
                              os.path.relpath(libDir, elfDir))
 
+    neededLibs = elfInfo.get('imports') or elfInfo.get('links') or set()
+    extraRpaths = []
+
+    for needed in neededLibs:
+        dirs = libNameIndex.get(needed)
+
+        if not dirs:
+            continue
+
+        for libFileDir in dirs:
+            if libFileDir == elfDir:
+                continue
+
+            extra = os.path.join('$ORIGIN', os.path.relpath(libFileDir, elfDir))
+
+            if extra != rpath and extra not in extraRpaths:
+                extraRpaths.append(extra)
+
+    if extraRpaths:
+        rpath = ':'.join(([rpath] if rpath != '' else []) + extraRpaths)
+
     # Change rpath
 
     if rpath != '' and not rpath in elfInfo['rpath']:
@@ -98,6 +129,7 @@ def fixRpaths(solver, dataDir, libDir):
         return
 
     flatSymlinkTargets = libDirSymlinkRealpaths(libDir)
+    libNameIndex = buildLibNameIndex(libDir)
     mutex = threading.Lock()
     threads = []
 
@@ -112,11 +144,12 @@ def fixRpaths(solver, dataDir, libDir):
                                             elf,
                                             dataDir,
                                             libDir,
-                                            flatSymlinkTargets,))
+                                            flatSymlinkTargets,
+                                            libNameIndex,))
             thread.start()
             threads.append(thread)
         except RuntimeError:
-            fixLibRpath(solver, mutex, elf, dataDir, libDir, flatSymlinkTargets)
+            fixLibRpath(solver, mutex, elf, dataDir, libDir, flatSymlinkTargets, libNameIndex)
 
     for thread in threads:
         thread.join()

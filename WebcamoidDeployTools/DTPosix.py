@@ -52,11 +52,11 @@ def libDirSymlinkRealpaths(libDir):
 
     return realpaths
 
-def buildLibNameIndex(libDir):
+def buildLibNameIndex(dataDir):
     index = {}
 
-    if os.path.isdir(libDir):
-        for root, _, files in os.walk(libDir):
+    if os.path.isdir(dataDir):
+        for root, _, files in os.walk(dataDir):
             for f in files:
                 index.setdefault(f, set()).add(root)
 
@@ -129,7 +129,7 @@ def fixRpaths(solver, dataDir, libDir):
         return
 
     flatSymlinkTargets = libDirSymlinkRealpaths(libDir)
-    libNameIndex = buildLibNameIndex(libDir)
+    libNameIndex = buildLibNameIndex(dataDir)
     mutex = threading.Lock()
     threads = []
 

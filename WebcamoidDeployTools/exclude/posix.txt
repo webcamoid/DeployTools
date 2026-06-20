@@ -20,36 +20,36 @@
 (.*/)*libstdc\+\+.so.[0-9]+
 
 # Core libraries
-(.*/)*libSM.so.[0-9]+
-(.*/)*libblkid.so.[0-9]+
-(.*/)*libcap.so.[0-9]+
-(.*/)*libcom_err.so.[0-9]+
-(.*/)*libcrypto.so.1.0.0
-(.*/)*libdb-5.3.so
-(.*/)*libdbus-1.so.[0-9]+
-(.*/)*libexpat.so.[0-9]+
-(.*/)*libfontconfig.so.[0-9]+
-(.*/)*libfreetype.so.[0-9]+
-(.*/)*libgcrypt.so.[0-9]+
-(.*/)*libgmp.so.[0-9]+
-(.*/)*libgpg-error.so.[0-9]+
-(.*/)*libgssapi_krb5.so.[0-9]+
-(.*/)*libharfbuzz.so.[0-9]+
-(.*/)*libk5crypto.so.[0-9]+
-(.*/)*libkeyutils.so.[0-9]+
-(.*/)*libkrb5.so.[0-9]+
-(.*/)*libkrb5support.so.[0-9]+
-(.*/)*liblz4.so.[0-9]+
-(.*/)*liblzma.so.[0-9]+
-(.*/)*libmount.so.[0-9]+
-(.*/)*libpcre.so.[0-9]+$
-(.*/)*libpcre16.so.[0-9]+
-(.*/)*libssh2.so.[0-9]+
-(.*/)*libssl.so.1.0.0
-(.*/)*libtasn1.so.[0-9]+
-(.*/)*libusb-1.0.so.[0-9]+
-(.*/)*libuuid.so.[0-9]+
-(.*/)*libz.so.[0-9]+
+#(.*/)*libSM.so.[0-9]+
+#(.*/)*libblkid.so.[0-9]+
+#(.*/)*libcap.so.[0-9]+
+#(.*/)*libcom_err.so.[0-9]+
+#(.*/)*libcrypto.so.1.0.0
+#(.*/)*libdb-5.3.so
+#(.*/)*libdbus-1.so.[0-9]+
+#(.*/)*libexpat.so.[0-9]+
+#(.*/)*libfontconfig.so.[0-9]+
+#(.*/)*libfreetype.so.[0-9]+
+#(.*/)*libgcrypt.so.[0-9]+
+#(.*/)*libgmp.so.[0-9]+
+#(.*/)*libgpg-error.so.[0-9]+
+#(.*/)*libgssapi_krb5.so.[0-9]+
+#(.*/)*libharfbuzz.so.[0-9]+
+#(.*/)*libk5crypto.so.[0-9]+
+#(.*/)*libkeyutils.so.[0-9]+
+#(.*/)*libkrb5.so.[0-9]+
+#(.*/)*libkrb5support.so.[0-9]+
+#(.*/)*liblz4.so.[0-9]+
+#(.*/)*liblzma.so.[0-9]+
+#(.*/)*libmount.so.[0-9]+
+#(.*/)*libpcre.so.[0-9]+$
+#(.*/)*libpcre16.so.[0-9]+
+#(.*/)*libssh2.so.[0-9]+
+#(.*/)*libssl.so.1.0.0
+#(.*/)*libtasn1.so.[0-9]+
+#(.*/)*libusb-1.0.so.[0-9]+
+#(.*/)*libuuid.so.[0-9]+
+#(.*/)*libz.so.[0-9]+
 
 # Glib2
 (.*/)*libgio-2.0.so.[0-9]+
@@ -110,11 +110,11 @@
 (.*/)*libgbm.so.[0-9]+
 
 # Use system library instead
-(.*/)*libasound.so.[0-9]+
-(.*/)*libjack.so.[0-9]+
-(.*/)*libpulse-simple.so.[0-9]+
-(.*/)*libpulse.so.[0-9]+
-(.*/)*libv4l2.so.[0-9]+
+#(.*/)*libasound.so.[0-9]+
+#(.*/)*libjack.so.[0-9]+
+#(.*/)*libpulse-simple.so.[0-9]+
+#(.*/)*libpulse.so.[0-9]+
+#(.*/)*libv4l2.so.[0-9]+
 
 # KDE
 (.*/)*libKF5.*.so.[0-9]+

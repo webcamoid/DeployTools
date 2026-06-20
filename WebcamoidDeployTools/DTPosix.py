@@ -68,6 +68,8 @@ def fixLibRpath(solver, mutex, elf, dataDir, libDir, flatSymlinkTargets, libName
     elfDir = os.path.dirname(elf)
     rpath = ''
 
+    originDir = elfDir
+
     if elfDir.startswith(os.path.join(dataDir, 'up')):
         rpath = '$ORIGIN'
     elif elfDir != libDir and os.path.realpath(elf) in flatSymlinkTargets:
@@ -82,6 +84,7 @@ def fixLibRpath(solver, mutex, elf, dataDir, libDir, flatSymlinkTargets, libName
         # (e.g. "$ORIGIN/../../../../lib") would be wrong - it has to
         # be computed as if it lived directly in libDir instead.
         rpath = '$ORIGIN'
+        originDir = libDir
     else:
         rpath = os.path.join('$ORIGIN',
                              os.path.relpath(libDir, elfDir))
@@ -96,10 +99,10 @@ def fixLibRpath(solver, mutex, elf, dataDir, libDir, flatSymlinkTargets, libName
             continue
 
         for libFileDir in dirs:
-            if libFileDir == elfDir:
+            if libFileDir == originDir:
                 continue
 
-            extra = os.path.join('$ORIGIN', os.path.relpath(libFileDir, elfDir))
+            extra = os.path.join('$ORIGIN', os.path.relpath(libFileDir, originDir))
 
             if extra != rpath and extra not in extraRpaths:
                 extraRpaths.append(extra)

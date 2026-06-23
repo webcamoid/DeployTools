@@ -98,7 +98,7 @@
 (.*/)*libxshmfence.so.[0-9]+
 
 # Wayland
-(.*/)*libwayland-[a-z]+.so.[0-9]+
+#(.*/)*libwayland-[a-z]+.so.[0-9]+
 
 # OpenGL
 (.*/)*libEGL.so.[0-9]+

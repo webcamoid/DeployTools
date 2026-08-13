@@ -105,7 +105,8 @@ def copySpaPlugins(globs,
             DTUtils.copy(sysPluginPath, pluginPath)
             globs['dependencies'].add(sysPluginPath)
 
-def copyAlsaPlugins(configs,
+def copyAlsaPlugins(globs,
+                    configs,
                     targetPlatform,
                     targetArch,
                     debug,
@@ -127,6 +128,9 @@ def copyAlsaPlugins(configs,
             srcAlsaPluginsPath = os.path.join(os.path.dirname(dep),
                                               alsaPluiginsDir)
             dstAlsaPluginsPath = os.path.join(libDir, alsaPluiginsDir)
+            print('PipeWire ALSA plugins directory: {}'.format(srcAlsaPluginsPath))
+            print('PipeWire ALSA plugins output directory: {}'.format(dstAlsaPluginsPath))
+            print()
 
             for alsaPluginPath in glob.glob('libasound_module_*_pipewire.so', root_dir=srcAlsaPluginsPath):
                 print('    {} -> {}'.format(alsaPluginPath, dstAlsaPluginsPath))
@@ -228,7 +232,8 @@ def preRun(globs, configs, dataDir):
     print()
 
     if havePipeWire:
-        copyAlsaPlugins(configs,
+        copyAlsaPlugins(globs,
+                        configs,
                         targetPlatform,
                         targetArch,
                         debug,

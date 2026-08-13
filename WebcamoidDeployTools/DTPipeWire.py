@@ -104,6 +104,36 @@ def copySpaPlugins(globs,
             DTUtils.copy(sysPluginPath, pluginPath)
             globs['dependencies'].add(sysPluginPath)
 
+def copyAlsaPlugins(configs,
+                    targetPlatform,
+                    targetArch,
+                    debug,
+                    dataDir,
+                    sysLibDir,
+                    libDir):
+    solver = DTBinary.BinaryTools(configs,
+                                  DTUtils.hostPlatform(),
+                                  targetPlatform,
+                                  targetArch,
+                                  debug,
+                                  sysLibDir)
+
+    for dep in solver.scanDependencies(dataDir):
+        libName = solver.name(dep)
+
+        if libName == 'asound':
+            alsaPluiginsDir = 'alsa-lib'
+            srcAlsaPluginsPath = os.path.join(os.path.dirname(dep),
+                                              alsaPluiginsDir)
+            dstAlsaPluginsPath = os.path.join(libDir, alsaPluiginsDir)
+
+            for alsaPluginPath in glob.glob('libasound_module_*_pipewire.so', root_dir=srcAlsaPluginsPath):
+                print('    {} -> {}'.format(alsaPluginPath, dstAlsaPluginsPath))
+                DTUtils.copy(alsaPluginPath, dstAlsaPluginsPath)
+                globs['dependencies'].add(alsaPluginPath)
+
+            break
+
 def preRun(globs, configs, dataDir):
     targetPlatform = configs.get('Package', 'targetPlatform', fallback='').strip()
     targetArch = configs.get('Package', 'targetArch', fallback='').strip()
@@ -112,6 +142,8 @@ def preRun(globs, configs, dataDir):
     outputPipeWireModulesDir = configs.get('PipeWire', 'outputModulesDir', fallback='pipewire-modules').strip()
     outputPipeWireModulesDir = os.path.join(dataDir, outputPipeWireModulesDir)
     pipeWireModulesDir = configs.get('PipeWire', 'modulesDir', fallback='').strip()
+    libDir = configs.get('Package', 'libDir', fallback='lib').strip()
+    libDir = os.path.join(dataDir, libDir)
 
     if pipeWireModulesDir == '':
         if 'PIPEWIRE_MODULE_DIR' in os.environ:
@@ -189,6 +221,19 @@ def preRun(globs, configs, dataDir):
                        outputSpaPluginsDir,
                        spaPlugins,
                        spaPluginsDir)
+
+    print()
+    print('Copying required PipeWire ALSA plugins')
+    print()
+
+    if havePipeWire:
+        copyAlsaPlugins(configs,
+                        targetPlatform,
+                        targetArch,
+                        debug,
+                        dataDir,
+                        sysLibDir,
+                        libDir)
 
 def postRun(globs, configs, dataDir):
     pass

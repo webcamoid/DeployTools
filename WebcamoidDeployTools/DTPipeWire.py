@@ -19,6 +19,7 @@
 #
 # Web-Site: http://github.com/webcamoid/DeployTools/
 
+import glob
 import os
 
 from . import DTBinary

@@ -463,8 +463,11 @@ def run(globs, configs, dataDir, outputDir, mutex):
         outPackage += '-' + targetArch
 
     # Remove old file
-    if os.path.exists(outPackage):
-        os.remove(outPackage)
+    for ext in ['apk', 'aab']:
+        op = outPackage + '.' + ext
+
+        if os.path.exists(op):
+            os.remove(op)
 
     createApk(globs,
               mutex,

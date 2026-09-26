@@ -80,7 +80,7 @@ def fixDependencies(solver, packageLibDir, androidOpensslSuffix, verbose):
 
     sslLibs = ['crypto', 'ssl']
 
-    for lib in glob.glob('*.so', root_dir=packageLibDir):
+    for lib in glob.glob('*.so', root_dir=packageLibDir, recursive=True):
         libPath = os.path.join(packageLibDir, lib)
 
         for dep in solver.dependencies(libPath):
@@ -90,7 +90,9 @@ def fixDependencies(solver, packageLibDir, androidOpensslSuffix, verbose):
                 if os.path.basename(dep) == fullSslDep:
                     print('    Patching {}'.format(libPath))
                     params = [patchelfCmd,
-                              '--replace-needed', fullSslDep, 'lib{}{}.so'.format(sslDep, androidOpensslSuffix),
+                              '--replace-needed',
+                              fullSslDep,
+                              'lib{}{}.so'.format(sslDep, androidOpensslSuffix),
                               libPath]
 
                     if verbose:
@@ -101,6 +103,19 @@ def fixDependencies(solver, packageLibDir, androidOpensslSuffix, verbose):
                                                 stderr=subprocess.PIPE)
 
                     process.communicate()
+
+    if len(androidOpensslSuffix) > 0:
+        print()
+        print('Removing original OpenSSL libraries')
+        print()
+
+        for sslDep in sslLibs:
+            originalLib = 'lib{}.so'.format(sslDep)
+            originalPath = os.path.join(packageLibDir, originalLib)
+
+            if os.path.exists(originalPath):
+                print('    Removing {}'.format(originalPath))
+                os.remove(originalPath)
 
 def preRun(globs, configs, dataDir):
     pass

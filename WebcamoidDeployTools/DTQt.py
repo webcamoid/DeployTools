@@ -973,6 +973,15 @@ def solvedepsPlugins(globs,
 
                 print('    {} -> {}'.format(sysPluginPath, pluginPath))
                 DTUtils.copy(sysPluginPath, pluginPath)
+
+                if plugin == 'platforms' and os.path.isdir(pluginPath):
+                    for f in os.listdir(pluginPath):
+                        if 'qminimal' in f or 'qoffscreen' in f:
+                            platformFile = os.path.join(pluginPath, f)
+
+                            if os.path.isfile(platformFile):
+                                os.remove(platformFile)
+
                 plugins.append(plugin)
                 globs['dependencies'].add(sysPluginPath)
 
@@ -986,6 +995,15 @@ def solvedepsPlugins(globs,
 
             print('    {} -> {}'.format(sysPluginPath, pluginPath))
             DTUtils.copy(sysPluginPath, pluginPath)
+
+            if plugin == 'platforms' and os.path.isdir(pluginPath):
+                for f in os.listdir(pluginPath):
+                    if 'qminimal' in f or 'qoffscreen' in f:
+                        platformFile = os.path.join(pluginPath, f)
+
+                        if os.path.isfile(platformFile):
+                            os.remove(platformFile)
+
             plugins.append(plugin)
             globs['dependencies'].add(sysPluginPath)
 

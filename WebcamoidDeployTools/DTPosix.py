@@ -19,6 +19,7 @@
 #
 # Web-Site: http://github.com/webcamoid/DeployTools/
 
+import glob
 import os
 import platform
 import subprocess
@@ -225,10 +226,36 @@ def writeBuildInfo(globs, buildInfoFile, sourcesDir):
             print('    ' + packge)
             f.write(packge + '\n')
 
+def hasBundledLib(libDir, libName):
+    # Check if the library was copied to the package.
+
+    return len(glob.glob(os.path.join(libDir, libName + '.so*'))) > 0
+
+def writeFontconfigEnvironment(launcher):
+    # Fontconfig looks for its configuration in the path it was configured
+    # with (for example the Homebrew prefix), which does not exist in the
+    # system where the package is run, so it ends with no fonts at all. Point
+    # it to the system configuration, unless the user already defined it.
+
+    launcher.write('\n')
+    launcher.write('# The bundled Fontconfig can\'t find its default configuration\n')
+    launcher.write('if [ -z \"${FONTCONFIG_FILE}\" ] && [ -z \"${FONTCONFIG_PATH}\" ]; then\n')
+    launcher.write('    for fontsDir in /etc/fonts /usr/etc/fonts /usr/local/etc/fonts; do\n')
+    launcher.write('        if [ -r \"${fontsDir}/fonts.conf\" ]; then\n')
+    launcher.write('            export FONTCONFIG_FILE=\"${fontsDir}/fonts.conf\"\n')
+    launcher.write('            export FONTCONFIG_PATH=\"${fontsDir}\"\n')
+    launcher.write('\n')
+    launcher.write('            break\n')
+    launcher.write('        fi\n')
+    launcher.write('    done\n')
+    launcher.write('fi\n')
+    launcher.write('\n')
+
 def createLauncher(globs, mainExecutable, dataDir, libDir, runFixRpaths):
     programName = os.path.basename(mainExecutable)
     launcherScript = os.path.join(dataDir, programName) + '.sh'
     binDir = os.path.relpath(os.path.dirname(mainExecutable), dataDir)
+    fontconfigBundled = hasBundledLib(libDir, 'libfontconfig')
     libDir = os.path.relpath(libDir, dataDir)
 
     with open(launcherScript, 'w') as launcher:
@@ -240,6 +267,9 @@ def createLauncher(globs, mainExecutable, dataDir, libDir, runFixRpaths):
 
         if not runFixRpaths:
             launcher.write('export LD_LIBRARY_PATH="${{ROOTDIR}}/{}:$LD_LIBRARY_PATH"\n'.format(libDir))
+
+        if fontconfigBundled:
+            writeFontconfigEnvironment(launcher)
 
         if 'environment' in globs:
             for env in globs['environment']:
